@@ -55,7 +55,6 @@ interface AuthenticationOptions {
 interface AuthenticationResult {
   fileName: string;
   originalBufferSize: number;
-  watermarkedPath: string;
   outputFormat: string;
   sha256Hash: string;
   shortHash: string;
@@ -204,7 +203,7 @@ export const addWatermark = async (
   imageBuffer: Buffer,
   watermarkData: string,
   creatorId: string
-): Promise<{ watermarkedBuffer: Buffer; watermarkedPath: string; sha256Hash: string; pHash: string; watermarkData: string; createdAt: string; authenticatedAt: string }> => {
+): Promise<{ watermarkedBuffer: Buffer; sha256Hash: string; pHash: string; watermarkData: string; createdAt: string; authenticatedAt: string }> => {
   try {
     // Generate unique identifiers
     const timestamp = new Date().toISOString();
@@ -231,7 +230,6 @@ export const addWatermark = async (
 
     return {
       watermarkedBuffer,
-      watermarkedPath: `/tmp/watermarked_${sha256Hash}.png`, // Keep path for reference but don't use it
       sha256Hash,
       pHash: pHash.hash,
       watermarkData,
@@ -310,9 +308,8 @@ const processImageForAuthentication = async (
       .digest('hex');
     
     return {
-      fileName: path.basename(watermarkResult.watermarkedPath),
+      fileName: `watermarked_${sha256Hash}.png`,
       originalBufferSize: imageBuffer.length,
-      watermarkedPath: watermarkResult.watermarkedPath,
       outputFormat: 'png',
       sha256Hash,
       shortHash,
