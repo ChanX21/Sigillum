@@ -67,6 +67,7 @@ interface AuthenticationResult {
     computedAt: number;
   };
   watermarkData: string;
+  watermarkedBuffer: Buffer;
   createdAt: number;
   authenticatedAt: string;
   verificationData: VerificationData;
@@ -199,33 +200,19 @@ const generatePerceptualHash = async (
  * @param options - Watermark options
  * @returns Watermark result
  */
-const addWatermark = async (
-  imageBuffer: Buffer, 
-  options: WatermarkOptions = {}
-): Promise<WatermarkResult> => {
-  if (!Buffer.isBuffer(imageBuffer)) {
-    throw new TypeError('Expected an image Buffer');
-  }
-
+export const addWatermark = async (
+  imageBuffer: Buffer,
+  watermarkData: string,
+  creatorId: string
+): Promise<{ watermarkedBuffer: Buffer; watermarkedPath: string; sha256Hash: string; pHash: string; watermarkData: string; createdAt: string; authenticatedAt: string }> => {
   try {
-    const timestamp = Date.now();
-    const creatorId = options.creatorId || 'Sigillum';
-    const outputFormat = options.outputFormat || 'png';
-    const uniqueId = crypto.randomBytes(16).toString('hex');
-    const fileName = `watermarked_${uniqueId}.${outputFormat}`;
+    // Generate unique identifiers
+    const timestamp = new Date().toISOString();
+    const sha256Hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+    const pHash = await generatePerceptualHash(imageBuffer);
     
-    // Create watermark data including hash of the original image for verification
-    const originalHash = generateSHA256Hash(imageBuffer).substring(0, 16); // use portion of hash
-    const watermarkData = JSON.stringify({
-      creator: creatorId,
-      timestamp,
-      id: uniqueId,
-      originalHash,
-      version: '1.0'
-    });
-    const outputPath = path.resolve('./tmp', fileName);
-    // Generate watermarked image
-    await sharp(imageBuffer)
+    // Generate watermarked image buffer
+    const watermarkedBuffer = await sharp(imageBuffer)
       .withMetadata({
         exif: {
           IFD0: {
@@ -235,32 +222,21 @@ const addWatermark = async (
           }
         }
       })
-      // Embed data in image comment - use type assertion for options that aren't in the type definitions
-      .jpeg({
-        quality: 95,
-        force: outputFormat === 'jpeg',
-        chromaSubsampling: '4:4:4', // Better quality
-        comment: watermarkData
-      } as sharp.JpegOptions & { comment: string })
       .png({
-        force: outputFormat === 'png',
         compressionLevel: 9,
         adaptiveFiltering: true,
         comment: watermarkData
       } as sharp.PngOptions & { comment: string })
-      .webp({
-        force: outputFormat === 'webp',
-        quality: 95,
-        exif: watermarkData
-      } as sharp.WebpOptions & { exif: string })
-      .toFile(outputPath);
-    
+      .toBuffer();
+
     return {
-      path: outputPath,
-      watermarkData: watermarkData,
-      timestamp,
-      uniqueId,
-      format: outputFormat
+      watermarkedBuffer,
+      watermarkedPath: `/tmp/watermarked_${sha256Hash}.png`, // Keep path for reference but don't use it
+      sha256Hash,
+      pHash: pHash.hash,
+      watermarkData,
+      createdAt: timestamp,
+      authenticatedAt: new Date().toISOString()
     };
   } catch (error) {
     console.error('Error adding watermark:', error);
@@ -297,11 +273,21 @@ const processImageForAuthentication = async (
       highPrecision: options.highPrecision || false
     });
     
-    // Add watermark
-    const watermarkResult = await addWatermark(imageBuffer, {
-      creatorId: options.creatorId || 'Sigillum',
-      outputFormat: options.outputFormat || 'png'
+    // Create watermark data
+    const watermarkData = JSON.stringify({
+      creator: options.creatorId || 'Sigillum',
+      timestamp: processingTimestamp,
+      id: processingId,
+      originalHash: shortHash,
+      version: '1.0'
     });
+    
+    // Add watermark
+    const watermarkResult = await addWatermark(
+      imageBuffer,
+      watermarkData,
+      options.creatorId || 'Sigillum'
+    );
     
     // Create verification data structure for blockchain storage
     const verificationData: VerificationData = {
@@ -311,31 +297,26 @@ const processImageForAuthentication = async (
       hashAlgorithm: 'SHA-256',
       pHashAlgorithm: pHashResult.algorithm,
       pHashBits: pHashResult.bits,
-      watermarkId: watermarkResult.uniqueId,
+      watermarkId: processingId,
       creatorId: options.creatorId || 'Sigillum',
       timestamp: processingTimestamp,
       authenticatedAt: new Date().toISOString()
     };
     
-    // Sign verification data (in a real system this would use a proper keypair)
+    // Sign verification data
     const signature = crypto
       .createHmac('sha256', process.env.SIGNATURE_SECRET || 'sigillum-verification-secret')
       .update(JSON.stringify(verificationData))
       .digest('hex');
     
     return {
-      // File information
-      fileName: path.basename(watermarkResult.path),
+      fileName: path.basename(watermarkResult.watermarkedPath),
       originalBufferSize: imageBuffer.length,
-      watermarkedPath: watermarkResult.path,
-      outputFormat: watermarkResult.format,
-      
-      // Hash information
+      watermarkedPath: watermarkResult.watermarkedPath,
+      outputFormat: 'png',
       sha256Hash,
       shortHash,
       pHash: pHashResult.hash,
-      
-      // Metadata
       processingId,
       pHashMetadata: {
         algorithm: pHashResult.algorithm,
@@ -343,12 +324,9 @@ const processImageForAuthentication = async (
         computedAt: pHashResult.timestamp
       },
       watermarkData: watermarkResult.watermarkData,
-      
-      // Timestamps
+      watermarkedBuffer: watermarkResult.watermarkedBuffer,
       createdAt: processingTimestamp,
       authenticatedAt: new Date().toISOString(),
-      
-      // Verification
       verificationData,
       signature
     };
@@ -361,6 +339,5 @@ const processImageForAuthentication = async (
 export {
   generateSHA256Hash,
   generatePerceptualHash,
-  addWatermark,
   processImageForAuthentication
 }; 

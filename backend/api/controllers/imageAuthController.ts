@@ -24,6 +24,7 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
 
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer);
+    
     const existingImage = await AuthenticatedImage.findOne({
       $or: [
         { 'authentication.sha256Hash': authenticationData.sha256Hash },
@@ -34,12 +35,13 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
+    
     // Upload original image to IPFS
     const originalIpfsCid = await uploadToIPFS(req.file.buffer);
     
     // Upload watermarked image to IPFS
-    const watermarkedIpfsCid = await uploadToIPFS(Buffer.from(fs.readFileSync(authenticationData.watermarkedPath)));
-    fs.unlinkSync(authenticationData.watermarkedPath);
+    const watermarkedIpfsCid = await uploadToIPFS(authenticationData.watermarkedBuffer);
+    
     const creatorAddress = req.params.address;
     let metadata: Metadata = {
       metadataCID: '', // Will be set after IPFS upload
