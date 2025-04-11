@@ -21,7 +21,7 @@ export interface IAuthenticatedImage extends Document {
   watermarked: string;
   authentication: IAuthentication;
   blockchain: IBlockchain;
-  status: 'pending' | 'authenticated' | 'minted' | 'verified' | 'error';
+  status: 'pending'  | 'minted' | 'verified' | 'error';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,7 +72,7 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
   },
   status: {
     type: String,
-    enum: ['pending', 'authenticated', 'minted', 'verified', 'error'],
+    enum: ['pending', 'minted', 'verified', 'error'],
     default: 'pending'
   },
   createdAt: {

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import { processImageForAuthentication } from '../utils/imageUtils';
 import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService';
-import { mintNFT, verifyImage as verifyBlockchainImage } from '../services/blockchainService';
+import { mintNFT, verifyImage as verifyBlockchainImage, Metadata } from '../services/blockchainService';
 import AuthenticatedImage, { IAuthenticatedImage } from '../models/AuthenticatedImage';
 
 // Custom interface for request with file
@@ -21,15 +21,37 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
       res.status(400).json({ message: 'No image file uploaded' });
       return;
     }
+
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer);
-    
+    const existingImage = await AuthenticatedImage.findOne({
+      $or: [
+        { 'authentication.sha256Hash': authenticationData.sha256Hash },
+        { 'authentication.pHash': authenticationData.pHash },
+      ]
+    });
+    if (existingImage) {
+      res.status(400).json({ message: 'Image already authenticated' });
+      return;
+    }
     // Upload original image to IPFS
     const originalIpfsCid = await uploadToIPFS(req.file.buffer);
     
     // Upload watermarked image to IPFS
     const watermarkedIpfsCid = await uploadToIPFS(Buffer.from(fs.readFileSync(authenticationData.watermarkedPath)));
     fs.unlinkSync(authenticationData.watermarkedPath);
+    const creatorAddress = req.params.address;
+    let metadata: Metadata = {
+      metadataCID: '', // Will be set after IPFS upload
+      image: `https://${process.env.PINATA_GATEWAY}/ipfs/${originalIpfsCid}`,
+      sha256Hash: authenticationData.sha256Hash,
+      pHash: authenticationData.pHash,
+      dHash: authenticationData.pHash,
+      watermarkData: authenticationData.watermarkData
+    };
+    const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
+    metadata.metadataCID = metadataIpfsCid;
+    const result = await mintNFT(creatorAddress, metadata);
     
     // Create new authenticated image record
     const newAuthenticatedImage = new AuthenticatedImage({
@@ -43,12 +65,12 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
         authenticatedAt: new Date(authenticationData.authenticatedAt)
       },
       blockchain: {
-        transactionHash: '99999999999990999999999999999999999999999999999999999999999999999',
-        tokenId: '99999999999999999999999999999999999999999999999999999999999999999',
-        creator: '99999999999999999999999999999999999999999999999999999999999999999',
-        metadataURI: '99999999999999999999999999999999999999999999999999999999999999999'
+        transactionHash: result.transactionHash,
+        tokenId: result.tokenId,
+        creator: creatorAddress,
+        metadataURI: `https://${process.env.PINATA_GATEWAY}/ipfs/${metadataIpfsCid}`
       },
-      status: 'authenticated'
+      status: 'minted'
     });
     
     await newAuthenticatedImage.save();
@@ -61,33 +83,12 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
         pHash: authenticationData.pHash,
         originalIpfsCid,
         watermarkedIpfsCid,
-        status: 'authenticated'
+        status: 'minted'
       }
     });
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
-  }
-};
-
-interface MintRequest extends Request {
-  body: {
-    imageId: string;
-    ownerAddress: string;
-  }
-}
-
-/**
- * Mint an NFT for an authenticated image
- * @param req - Express request object
- * @param res - Express response object
- */
-export const mintImageNFT = async (req: MintRequest, res: Response): Promise<void> => {
-  try {
-    const { imageId, ownerAddress } = req.body;
-  } catch (error) {
-    console.error('Error minting NFT:', error);
-    res.status(500).json({ message: 'Failed to mint NFT' });
   }
 };
 

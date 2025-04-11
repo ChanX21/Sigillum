@@ -223,16 +223,7 @@ const addWatermark = async (
       originalHash,
       version: '1.0'
     });
-    
-    // Ensure upload directory exists
-    const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    // Output path
-    const outputPath = path.join(uploadDir, fileName);
-    
+    const outputPath = path.resolve('./tmp', fileName);
     // Generate watermarked image
     await sharp(imageBuffer)
       .withMetadata({

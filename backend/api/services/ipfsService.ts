@@ -50,7 +50,7 @@ export const createAndUploadNFTMetadata = async (imageData: any, imageCID: strin
     const metadata = {
       name: `PicSecure Authenticated Image`,
       description: `Authenticated image with blockchain verification`,
-      image: `ipfs://${imageCID}`,
+      image: `https://${process.env.PINATA_GATEWAY}/ipfs/${imageCID}`,
       attributes: [
         {
           trait_type: 'SHA256 Hash',

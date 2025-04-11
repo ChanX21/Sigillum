@@ -4,14 +4,15 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-  "build": "tsc -p .",
-  "start": "node api/index.ts",
-  "dev": "nodemon --watch api -e js,ts,ejs --exec \"npm run build && node dist/\""
-},
+    "build": "tsc -p .",
+    "start": "node api/index.ts",
+    "dev": "nodemon --watch api -e js,ts,ejs --exec \"npm run build && node dist/\""
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@mysten/sui": "^1.26.1",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",
