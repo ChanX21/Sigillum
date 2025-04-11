@@ -3,10 +3,17 @@ import { Input } from "../ui/input";
 import { FaEthereum } from "react-icons/fa";
 import { Button } from "../ui/button";
 import { UserAvatar } from "./UserAvatar";
+import { Shield } from "lucide-react";
+import Link from "next/link";
 
 export const Header = () => (
   <header className="flex justify-between h-16 fixed z-50 w-full p-2 px-10 bg-background border-stone-300 border-b">
-    <div className="h-full w-40 bg-white rounded-full" role="banner" />
+    <Link href="/" className="flex items-center gap-2 bg-white rounded-full p-3 font-bold text-[#0d0d0d]">
+      <div className="flex items-center justify-center w-6 h-6 bg-[#1b263b] rounded-full">
+        <Shield className="w-3 h-3 text-white" />
+      </div>
+      SIGILLUM
+    </Link>
     <nav className="h-full bg-white rounded-full flex p-1 gap-2">
       <div className="flex rounded-full w-[250px] bg-background h-full relative items-center">
         <IoSearchSharp
