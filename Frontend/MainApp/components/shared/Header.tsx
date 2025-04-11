@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { UserAvatar } from "./UserAvatar";
 
 export const Header = () => (
-  <header className="flex justify-between h-16 fixed z-50 w-full p-2 px-10 bg-background">
+  <header className="flex justify-between h-16 fixed z-50 w-full p-2 px-10 bg-background border-stone-300 border-b">
     <div className="h-full w-40 bg-white rounded-full" role="banner" />
     <nav className="h-full bg-white rounded-full flex p-1 gap-2">
       <div className="flex rounded-full w-[250px] bg-background h-full relative items-center">
