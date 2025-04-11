@@ -21,25 +21,25 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => (
       />
     </div>
 
-    <div className="w-[50%] h-full flex flex-col justify-center gap-5">
+    <div className="w-[50%] h-full flex flex-col md:px-3 justify-between md:py-3 gap-5">
       <h3 className="text-md font-semibold">{nft.title}</h3>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 relative">
         <div>
           <p className="text-gray-500 text-sm">Current Bid</p>
           <p className="text-sm font-medium">{nft.currentBid} ETH</p>
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex gap-2 justify-center relative">
           <Button
             variant="default"
-            className="rounded-md w-[45%] cursor-pointer"
+            className="rounded-md w-[50%] cursor-pointer"
           >
             Place bid
           </Button>
           <Button
             variant="outline"
-            className="rounded-md w-[45%] cursor-pointer border border-primary bg-white"
+            className="rounded-md w-[50%] cursor-pointer border border-primary bg-white"
           >
             Instant buy
           </Button>
@@ -49,8 +49,8 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => (
       {nft.metadata && (
         <div className="text-gray-500">
           <h3 className="text-sm">Description</h3>
-          <ul className="list-disc list-outside text-xs pl-3">
-            <li>
+          <ul className="list-disc flex flex-col gap-3 list-outside text-sm md:mx-1 pl-3">
+            <li className="mt-3">
               <div className="flex justify-between">
                 <span>date</span>
                 <span>{nft.metadata.date}</span>

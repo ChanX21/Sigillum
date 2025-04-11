@@ -51,7 +51,7 @@ export default function Home() {
 
       <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10">
         <section
-          className="min-h-[50vh] grid grid-cols-1 md:grid-cols-2 gap-10"
+          className="min-h-[50vh] grid grid-cols-1 md:grid-cols-2 gap-10 mb-10"
           aria-label="Featured NFTs"
         >
           {featuredNFTs.map((nft, index) => (
