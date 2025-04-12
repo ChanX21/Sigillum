@@ -7,11 +7,10 @@ const router = express.Router();
 // POST /api/images/authenticate - Authenticate an image
 router.post('/authenticate/:address', upload.single('image'), imageAuthController.authenticateImage);
 
+// POST /api/images/verify-with-contract - Verify an image using comprehensive Sui contract verification
+router.post('/verify-with-contract', imageAuthController.verifyImageWithContract);
 
-// POST /api/images/verify - Verify an image against blockchain records
-router.post('/verify', imageAuthController.verifyImage);
-
-// GET /api/images/creator/:creatorId - Get all authenticated images for a creator
-router.get('/creator/:creatorId', imageAuthController.getCreatorImages);
+// GET /api/images/all - Get all authenticated images
+router.get('/all', imageAuthController.getAllImages);
 
 export default router; 

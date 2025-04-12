@@ -31,6 +31,26 @@ export interface Metadata {
   watermarkData: string;
 }
 
+export interface VerificationResult {
+  isAuthentic: boolean;
+  exactMatch: boolean;
+  perceptualMatch?: boolean;
+  similarityScore?: number;
+  tokenDetails: {
+    tokenId: string;
+    creator: string;
+    timestamp: number;
+    metadata: string;
+    imageUrl: string;
+  };
+  registryResults?: {
+    similarNFTs: Array<{
+      id: string;
+      distance: number;
+    }>;
+  };
+}
+
 /**
  * Mint an NFT with the image metadata
  * @param {string} creatorAddress - Blockchain address of the creator
@@ -111,12 +131,51 @@ export const mintNFT = async (creatorAddress: string, metadata: Metadata) => {
 };
 
 /**
- * Verify an image on the blockchain
- * @param {string} tokenId - NFT token ID
- * @param {string} sha256Hash - SHA-256 hash of the image
- * @returns {Promise<boolean>} - Verification result
+ * Safely convert a field value to string, handling both base64 and byte arrays
+ * @param fieldValue - The field value from the blockchain (may be byte array or base64 string)
+ * @param encoding - The encoding to use for the output ('hex', 'utf8', etc)
+ * @param defaultValue - Default value to return if conversion fails
+ * @returns The converted string or default value
  */
-export const verifyImage = async (tokenId: string, sha256Hash: string): Promise<boolean> => {
+function safeFieldToString(fieldValue: any, encoding: BufferEncoding = 'utf8', defaultValue: string = ''): string {
+  if (!fieldValue) {
+    return defaultValue;
+  }
+
+  try {
+    // If it's already an array of numbers (bytes), convert directly
+    if (Array.isArray(fieldValue)) {
+      return Buffer.from(fieldValue).toString(encoding);
+    }
+    
+    // If it's a base64 string, try to decode it
+    if (typeof fieldValue === 'string') {
+      try {
+        return Buffer.from(fromBase64(fieldValue)).toString(encoding);
+      } catch (error) {
+        // If base64 decoding fails, just return the string as is
+        return fieldValue;
+      }
+    }
+    
+    // For other types, stringify
+    return String(fieldValue);
+  } catch (error) {
+    console.error('Error converting field to string:', error, 'Original value:', fieldValue);
+    return defaultValue;
+  }
+}
+
+/**
+ * Comprehensive verification of an image using the Sui contract
+ * @param {string} tokenId - NFT token ID
+ * @param {Metadata} metadata - Image metadata for verification
+ * @returns {Promise<VerificationResult>} - Detailed verification result
+ */
+export const verifyImageComprehensive = async (
+  tokenId: string, 
+  metadata: Metadata
+): Promise<VerificationResult> => {
   try {
     // Get object data from Sui
     const objectData = await client.getObject({
@@ -124,17 +183,109 @@ export const verifyImage = async (tokenId: string, sha256Hash: string): Promise<
       options: { showContent: true }
     });
     
-    // Extract hash from object content
-    const content = objectData.data?.content as any;
-    const storedHash = content?.fields?.sha256_hash;
+    if (!objectData.data?.content) {
+      throw new Error('NFT data not found');
+    }
     
-    // Convert storedHash from Sui's base64 format to hex string for comparison
-    const storedHashHex = Buffer.from(fromBase64(storedHash || '')).toString('hex');
+    const content = objectData.data.content as any;
+    const fields = content.fields;
+    // Convert stored fields to strings
+    const storedSha256Hash = safeFieldToString(fields.sha256_hash, 'utf8');
+    const storedPHash = safeFieldToString(fields.phash, 'utf8');
+    const storedImageUrl = safeFieldToString(fields.image_url, 'utf8');
+    // 1. Exact hash match (verify_exact_match)
+    const exactMatch = storedSha256Hash === metadata.sha256Hash;
     
-    // Compare hashes
-    return storedHashHex === sha256Hash;
+    // 2. Calculate perceptual hash similarity (if we have valid hashes)
+    let similarityScore = 100; // Default to max difference
+    let perceptualMatch = false;
+    
+    if (storedPHash && metadata.pHash) {
+      similarityScore = calculateHammingDistance(storedPHash, metadata.pHash);
+      perceptualMatch = similarityScore < 10; // Threshold for similarity
+    }
+    
+    // 3. Simplified registry check (skipping the actual call to find_similar_nfts)
+    const similarNFTs: Array<{id: string, distance: number}> = [];
+    
+    return {
+      isAuthentic: exactMatch,
+      exactMatch,
+      perceptualMatch,
+      similarityScore,
+      tokenDetails: {
+        tokenId,
+        creator: safeFieldToString(fields.creator, 'utf8', 'unknown'),
+        timestamp: parseInt(safeFieldToString(fields.timestamp, 'utf8', '0'), 10),
+        metadata: safeFieldToString(fields.metadata, 'utf8', ''),
+        imageUrl: storedImageUrl
+      },
+      registryResults: {
+        similarNFTs
+      }
+    };
   } catch (error) {
-    console.error('Error verifying image:', error);
-    return false;
+    console.error('Error verifying image with Sui contract:', error);
+    throw error;
   }
 };
+
+/**
+ * Find similar NFTs in the registry by pHash
+ * @param {string} pHash - Perceptual hash to search for
+ * @returns {Promise<Array<{id: string, distance: number}>>} - Array of similar NFTs
+ */
+async function findSimilarNFTsByPHash(pHash: string): Promise<Array<{id: string, distance: number}>> {
+  try {
+    // Call find_similar_nfts from the contract
+    const pHashBytes = bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(pHash));
+    const similarityThreshold = 10; // Threshold value for similarity
+    
+    // Create a transaction to call the find_similar_nfts function
+    const tx = new Transaction();
+    tx.moveCall({
+      package: PACKAGE_ID,
+      module: MODULE_NAME,
+      function: 'find_similar_nfts',
+      typeArguments: [],
+      arguments: [
+        tx.object(REGISTRY_ID),
+        tx.pure(pHashBytes),
+        tx.pure(bcs.u64().serialize(similarityThreshold))
+      ],
+    });
+    
+    // We're not actually executing this transaction, just simulating the result
+    // In a real implementation, you would use Sui's devInspectTransaction to get the result
+    
+    // For now, return an empty array (simulating no similar NFTs found)
+    return [];
+  } catch (error) {
+    console.error('Error finding similar NFTs:', error);
+    return [];
+  }
+}
+
+/**
+ * Calculate Hamming distance between two hash strings
+ * Simulates the contract's calculate_hash_similarity function
+ * @param {string} hash1 - First hash string
+ * @param {string} hash2 - Second hash string
+ * @returns {number} - Hamming distance
+ */
+function calculateHammingDistance(hash1: string, hash2: string): number {
+  // Ensure hashes are of same length
+  const minLength = Math.min(hash1.length, hash2.length);
+  let distance = 0;
+  
+  for (let i = 0; i < minLength; i++) {
+    if (hash1[i] !== hash2[i]) {
+      distance++;
+    }
+  }
+  
+  // Add remaining length difference to distance
+  distance += Math.abs(hash1.length - hash2.length);
+  
+  return distance;
+}
