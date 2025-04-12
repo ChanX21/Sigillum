@@ -80,7 +80,7 @@ interface AuthenticationResult {
  * @returns The SHA-256 hash
  * @throws Error If hashing fails
  */
-const generateSHA256Hash = (imageBuffer: Buffer, options: HashOptions = {}): string => {
+const generateSHA256 = (imageBuffer: Buffer, options: HashOptions = {}): string => {
   if (!Buffer.isBuffer(imageBuffer)) {
     throw new TypeError('Expected an image Buffer');
   }
@@ -263,7 +263,7 @@ const processImageForAuthentication = async (
     const processingTimestamp = Date.now();
     
     // Generate SHA-256 hash
-    const sha256Hash = generateSHA256Hash(imageBuffer);
+    const sha256Hash = generateSHA256(imageBuffer);
     const shortHash = sha256Hash.substring(0, 16);
     
     // Generate perceptual hash
@@ -334,7 +334,7 @@ const processImageForAuthentication = async (
 };
 
 export {
-  generateSHA256Hash,
+  generateSHA256,
   generatePerceptualHash,
   processImageForAuthentication
 }; 

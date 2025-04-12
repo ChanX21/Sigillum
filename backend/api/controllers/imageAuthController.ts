@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
-import { processImageForAuthentication } from '../utils/imageUtils';
+import { generateSHA256, processImageForAuthentication } from '../utils/imageUtils';
 import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService';
 import { 
-  mintNFT, 
-  verifyImageComprehensive,
+  mintNFT,
+  verifyImageByHash,
   Metadata,
+  VerificationResult 
 } from '../services/blockchainService';
 import AuthenticatedImage, { IAuthenticatedImage } from '../models/AuthenticatedImage';
 
@@ -103,98 +104,91 @@ interface VerifyRequest extends Request {
     sha256Hash?: string;
     tokenId?: string;
   }
-}
+} 
 
 /**
- * Verify an image using comprehensive Sui contract verification
- * @param req - Express request object
+ * Verify an image directly by its hash against the blockchain
+ * @param req - Express request with image hash
  * @param res - Express response object
  */
-export const verifyImageWithContract = async (req: VerifyRequest, res: Response): Promise<void> => {
+export const verify = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { sha256Hash, tokenId } = req.body;
+    if (!req.file) {
+      res.status(400).json({ message: 'No image file uploaded' });
+      return;
+    }
+    const imageHash = generateSHA256(req.file.buffer);
+    const authenticationData = await AuthenticatedImage.findOne({
+      'authentication.sha256Hash': imageHash
+    });
     
-    if (!tokenId && !sha256Hash) {
-      res.status(400).json({ message: 'Token ID or image hash is required for verification' });
+    if (!authenticationData) {
+      res.status(400).json({ message: 'Image not authenticated' });
       return;
     }
     
-    // Get image data either by tokenId or imageHash
-    let authenticatedImage: IAuthenticatedImage | null = null;
+    // Get pHash from database
+    const pHash = authenticationData.authentication.pHash || '';
     
-    if (tokenId) {
-      authenticatedImage = await AuthenticatedImage.findOne({
-        'blockchain.tokenId': tokenId
-      });
-    } else if (sha256Hash) {
-      authenticatedImage = await AuthenticatedImage.findOne({
-        'authentication.sha256Hash': sha256Hash
-      });
-      
-      if (!authenticatedImage || !authenticatedImage.blockchain.tokenId) {
-        res.status(404).json({ message: 'No token ID found for this image hash' });
-        return;
-      }
-    }
-    
-    if (!authenticatedImage) {
-      res.status(404).json({ message: 'No authenticated image found' });
-      return;
-    }
-    
-    // Create metadata object for comprehensive verification
-    const metadata: Metadata = {
-      metadataCID: authenticatedImage.blockchain.metadataURI || '',
-      image: authenticatedImage.original || '',
-      sha256Hash: authenticatedImage.authentication.sha256Hash || '',
-      pHash: authenticatedImage.authentication.pHash || '',
-      dHash: authenticatedImage.authentication.pHash || '', // Using pHash as dHash if not available
-      watermarkData: authenticatedImage.authentication.watermarkData || ''
-    };
-    
-    // Perform comprehensive verification
-    const verificationResult = await verifyImageComprehensive(
-      authenticatedImage.blockchain.tokenId,
-      metadata
+    // Verify using tokenId, hash and pHash
+    const verificationResult = await verifyImageByHash(
+      authenticationData.blockchain.tokenId, 
+      imageHash,
+      pHash
     );
     
-    // Update status to verified if verification was successful
-    if (verificationResult.isAuthentic && authenticatedImage.status !== 'verified') {
-      authenticatedImage.status = 'verified';
-      authenticatedImage.updatedAt = new Date();
-      await authenticatedImage.save();
-    }
+    // Find image record in our database (if it exists)
+    const authenticatedImage = await AuthenticatedImage.findOne({
+      'authentication.sha256Hash': imageHash
+    });
     
-    // Construct creator object
-    const creator = {
-      id: typeof authenticatedImage.blockchain.creator === 'object' ? 
-        authenticatedImage.blockchain.creator : 
-        authenticatedImage.blockchain.creator,
-      username: typeof authenticatedImage.blockchain.creator === 'object' ? 
-        (authenticatedImage.blockchain.creator as any).username : 
-        'Unknown'
-    };
+    // Prepare response data
+    const isAuthentic = verificationResult.isAuthentic;
     
-    res.status(200).json({
-      message: verificationResult.isAuthentic 
-        ? 'Image verification successful' 
-        : 'Image verification failed',
-      verification: {
+    let databaseRecord = null;
+    if (authenticatedImage) {
+      // Construct creator object
+      const creator = {
+        id: typeof authenticatedImage.blockchain.creator === 'object' ? 
+          authenticatedImage.blockchain.creator : 
+          authenticatedImage.blockchain.creator,
+        username: typeof authenticatedImage.blockchain.creator === 'object' ? 
+          (authenticatedImage.blockchain.creator as any).username : 
+          'Unknown'
+      };
+      
+      databaseRecord = {
         imageId: authenticatedImage._id,
         sha256Hash: authenticatedImage.authentication.sha256Hash,
         pHash: authenticatedImage.authentication.pHash,
         creator,
         authenticatedAt: authenticatedImage.authentication.authenticatedAt,
         blockchain: authenticatedImage.blockchain,
-        verificationResult,
-        originalIpfsUrl: `https://ipfs.io/ipfs/${authenticatedImage.original}`,
-        watermarkedIpfsUrl: `https://ipfs.io/ipfs/${authenticatedImage.watermarked}`
+        originalIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.original}`,
+        watermarkedIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.watermarked}`
+      };
+      
+      // Update status to verified if verification was successful
+      if (isAuthentic && authenticatedImage.status !== 'verified') {
+        authenticatedImage.status = 'verified';
+        authenticatedImage.updatedAt = new Date();
+        await authenticatedImage.save();
       }
+    }
+    
+    // Status code - 200 if we found matches or have a DB record, 404 if nothing found
+    const statusCode = isAuthentic || databaseRecord ? 200 : 404;
+    
+    res.status(statusCode).json({
+      message: isAuthentic 
+        ? 'Image verification successful' 
+        : 'No matching NFTs found on blockchain for this hash',
+      verificationResult,
     });
   } catch (error) {
-    console.error('Error performing comprehensive verification:', error);
+    console.error('Error verifying image by hash:', error);
     res.status(500).json({ 
-      message: 'Failed to verify image with comprehensive verification',
+      message: 'Failed to verify image by hash',
       error: (error as Error).message 
     });
   }
@@ -214,4 +208,3 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ message: 'Failed to fetch all images' });
   }
 };
-

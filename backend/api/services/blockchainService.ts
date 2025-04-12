@@ -169,12 +169,14 @@ function safeFieldToString(fieldValue: any, encoding: BufferEncoding = 'utf8', d
 /**
  * Comprehensive verification of an image using the Sui contract
  * @param {string} tokenId - NFT token ID
- * @param {Metadata} metadata - Image metadata for verification
+ * @param {string} sha256Hash - Image hash for verification
+ * @param {string} pHash - Perceptual hash for verification
  * @returns {Promise<VerificationResult>} - Detailed verification result
  */
-export const verifyImageComprehensive = async (
+export const verifyImageByHash = async (
   tokenId: string, 
-  metadata: Metadata
+  sha256Hash: string,
+  pHash: string,
 ): Promise<VerificationResult> => {
   try {
     // Get object data from Sui
@@ -193,15 +195,16 @@ export const verifyImageComprehensive = async (
     const storedSha256Hash = safeFieldToString(fields.sha256_hash, 'utf8');
     const storedPHash = safeFieldToString(fields.phash, 'utf8');
     const storedImageUrl = safeFieldToString(fields.image_url, 'utf8');
+    
     // 1. Exact hash match (verify_exact_match)
-    const exactMatch = storedSha256Hash === metadata.sha256Hash;
+    const exactMatch = storedSha256Hash === sha256Hash;
     
     // 2. Calculate perceptual hash similarity (if we have valid hashes)
     let similarityScore = 100; // Default to max difference
     let perceptualMatch = false;
     
-    if (storedPHash && metadata.pHash) {
-      similarityScore = calculateHammingDistance(storedPHash, metadata.pHash);
+    if (storedPHash && pHash) {
+      similarityScore = calculateHammingDistance(storedPHash, pHash);
       perceptualMatch = similarityScore < 10; // Threshold for similarity
     }
     
@@ -230,41 +233,6 @@ export const verifyImageComprehensive = async (
   }
 };
 
-/**
- * Find similar NFTs in the registry by pHash
- * @param {string} pHash - Perceptual hash to search for
- * @returns {Promise<Array<{id: string, distance: number}>>} - Array of similar NFTs
- */
-async function findSimilarNFTsByPHash(pHash: string): Promise<Array<{id: string, distance: number}>> {
-  try {
-    // Call find_similar_nfts from the contract
-    const pHashBytes = bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(pHash));
-    const similarityThreshold = 10; // Threshold value for similarity
-    
-    // Create a transaction to call the find_similar_nfts function
-    const tx = new Transaction();
-    tx.moveCall({
-      package: PACKAGE_ID,
-      module: MODULE_NAME,
-      function: 'find_similar_nfts',
-      typeArguments: [],
-      arguments: [
-        tx.object(REGISTRY_ID),
-        tx.pure(pHashBytes),
-        tx.pure(bcs.u64().serialize(similarityThreshold))
-      ],
-    });
-    
-    // We're not actually executing this transaction, just simulating the result
-    // In a real implementation, you would use Sui's devInspectTransaction to get the result
-    
-    // For now, return an empty array (simulating no similar NFTs found)
-    return [];
-  } catch (error) {
-    console.error('Error finding similar NFTs:', error);
-    return [];
-  }
-}
 
 /**
  * Calculate Hamming distance between two hash strings
