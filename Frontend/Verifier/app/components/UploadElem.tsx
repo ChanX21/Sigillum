@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Camera, Upload, X } from 'lucide-react'
@@ -26,6 +26,23 @@ const UploadElem = ({
     videoRef: React.RefObject<HTMLVideoElement | null>;
     capturePhoto: () => void;
 }) => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        // Set up camera with rear-facing preference on mobile
+       
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            // Cleanup camera stream
+        };
+    }, [isMobile]);
+
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault()
         setIsDragging(true)
@@ -37,9 +54,9 @@ const UploadElem = ({
     }
 
     return (
-        <Card className="bg-white rounded-xl shadow-sm overflow-hidden border-0">
-            <CardContent className="p-0">
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <Card className={`bg-white rounded-xl shadow-sm overflow-hidden border-0 ${isMobile && activeTab === 'camera' ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
+            <CardContent className={`p-0 ${isMobile && activeTab === 'camera' ? 'h-screen' : ''}`}>
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
                     <TabsContent value="upload" className="m-0">
                         <div
                             className={`border-2 border-dashed ${isDragging ? 'border-[#1b263b] bg-[#f1f3f5]' : 'border-[#d9d9d9] bg-[#fafafa]'} rounded-b-lg p-16 text-center cursor-pointer hover:border-[#1b263b] transition-colors`}
@@ -60,7 +77,7 @@ const UploadElem = ({
                                 <p className="text-[#616161] mb-6">Drag and drop or click to browse your files</p>
                                 <div className="flex justify-center items-center gap-2">
                                     <Button
-                                        className="bg-[#1b263b] hover:bg-[#2d3748] text-white px-6 py-6 rounded-xl"
+                                        className="bg-[#1b263b] hover:bg-[#2d3748] text-white px-6 py-6 rounded-xl text-sm "
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             fileInputRef.current?.click()
@@ -70,7 +87,7 @@ const UploadElem = ({
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="bg-transparent text-black border-black hover:bg-black/10 hover:text-black px-6 py-6 rounded-xl font-medium"
+                                        className="bg-transparent text-black border-black hover:bg-black/10 hover:text-black px-6 py-6 rounded-xl font-medium text-sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setActiveTab("camera");
@@ -84,8 +101,8 @@ const UploadElem = ({
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="camera" className="m-0">
-                        <div className="relative rounded-b-lg overflow-hidden bg-black aspect-video">
+                    <TabsContent value="camera" className={`m-0 ${isMobile ? 'h-full' : ''}`}>
+                        <div className={`relative rounded-b-lg overflow-hidden bg-black ${isMobile ? 'h-full' : 'aspect-video'}`}>
                             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                             <Button
                                 onClick={() => setActiveTab("upload")}
@@ -93,7 +110,7 @@ const UploadElem = ({
                             >
                                 <X className="w-5 h-5" />
                             </Button>
-                            <div className="absolute bottom-0 inset-x-0 p-6 flex justify-center">
+                            <div className="absolute md:bottom-0 inset-x-0 p-6 flex justify-center bottom-12">
                                 <Button
                                     onClick={capturePhoto}
                                     className="bg-white text-[#1b263b] hover:bg-[#f1f3f5] rounded-full w-16 h-16 p-0 flex items-center justify-center shadow-lg"
