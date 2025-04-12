@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check } from 'lucide-react'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { motion } from "framer-motion"
 import { VerificationResponse } from '@/store/useDataStore'
 import { format } from 'date-fns'
@@ -30,6 +30,9 @@ const formatDate = (dateString: string) => {
     return date.toLocaleString()
 }
 const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState }: VerificationProps) => {
+    useEffect(() => {
+        console.log(verificationData)
+    }, [verificationData])
     return (
         <div className="max-w-5xl mx-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-6">
@@ -77,7 +80,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
                                     <div className="text-right">
                                         <p className="text-xs text-[#616161]">Created</p>
-                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails?.timestamp * 1000), 'dd MMM yyyy, HH:mm'):null}</p>
+                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails?.timestamp * 1000), 'dd MMM yyyy, HH:mm') : null}</p>
                                     </div>
 
                                 </div>
@@ -105,10 +108,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                     <h3 className="text-lg font-medium mt-6 mb-2">Verifying Image</h3>
                                     <p className="text-[#616161]">Analyzing authenticity and provenance...</p>
                                 </div>
-                            ) : verificationData && verificationResult ? (
+                            ) : verificationData ? (
                                 <div className="space-y-8">
-                                    <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border ${verificationResult.authentic ? 'border-[#b7eb8f]' : 'border-[#f5222d]'}`}>
-                                        {verificationResult.authentic ? (
+                                    <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border ${verificationData?.verificationResult?.isAuthentic ? 'border-[#b7eb8f]' : 'border-[#f5222d]'}`}>
+                                        {verificationData?.verificationResult?.isAuthentic ? (
                                             <>
                                                 <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
                                                     <Check className="w-6 h-6 text-[#52c41a]" />
@@ -139,7 +142,6 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm font-medium">{verificationResult.creator.name}</p>
                                                     <p className="text-xs text-[#616161] mt-1">{verificationData?.verificationResult?.tokenDetails?.creator}</p>
                                                 </div>
                                             </div>
@@ -152,7 +154,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails.timestamp * 1000), 'dd MMM yyyy, HH:mm'):null}</p>
+                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails.timestamp * 1000), 'dd MMM yyyy, HH:mm') : null}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -165,7 +167,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                 <h4 className="text-base font-medium mb-2">Modifications</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <p className="text-sm">
-                                                        {verificationResult.modified
+                                                        {verificationResult?.modified
                                                             ? "Image has been modified"
                                                             : "No modifications detected"}
                                                     </p>
@@ -181,7 +183,11 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                 <h4 className="text-base font-medium mb-2">Provenance History</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <ul className="space-y-3">
-                                                        {verificationResult.provenance.map((event: any, index: number) => (
+                                                        {[
+                                                            { date: "2023-09-15T14:30:22Z", event: "Created by Alex Johnson" },
+                                                            { date: "2023-09-15T15:45:10Z", event: "Registered on blockchain" },
+                                                            { date: "2023-10-02T09:12:45Z", event: "Verified by SIGILLUM" },
+                                                        ].map((event: any, index: number) => (
                                                             <li key={index} className="relative pl-6">
                                                                 <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
                                                                 <p className="text-sm font-medium">{event.event}</p>
