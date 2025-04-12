@@ -50,7 +50,16 @@ export default function Home() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      const constraints = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) 
+        ? { video: { facingMode: { exact: "environment" } } }
+        : { video: true }
+        
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        .catch(async () => {
+          // Fallback to any camera if back camera fails
+          return await navigator.mediaDevices.getUserMedia({ video: true })
+        })
+        
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         streamRef.current = stream

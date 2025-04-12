@@ -19,9 +19,9 @@ const HeroSection = ({ image, fileInputRef, setActiveTab, handleFileUpload }: {
                                 Upload or capture an image to instantly verify its authenticity, creator information, and provenance
                                 history.
                             </p>
-                            <div className="flex gap-4">
+                            <div className="flex lg:gap-4 gap-2">
                                 <Button
-                                    className="bg-white text-[#1b263b] hover:bg-[#f1f3f5] px-6 py-6 rounded-xl text-lg font-medium"
+                                    className="bg-white text-[#1b263b] hover:bg-[#f1f3f5] md:px-6 md:py-6 px-2 py-3 rounded-xl md:text-lg text-md font-medium"
                                     onClick={() => fileInputRef.current?.click()}
                                 >
                                     <Upload className="w-5 h-5 mr-2" />
@@ -29,7 +29,7 @@ const HeroSection = ({ image, fileInputRef, setActiveTab, handleFileUpload }: {
                                 </Button>
                                 <Button
                                     variant="outline"
-                                    className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white px-6 py-6 rounded-xl text-lg font-medium"
+                                    className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white md:px-6 md:py-6 px-2 py-3 rounded-xl md:text-lg text-md font-medium"
                                     onClick={() => setActiveTab("camera")}
                                 >
                                     <Camera className="w-5 h-5 mr-2" />
