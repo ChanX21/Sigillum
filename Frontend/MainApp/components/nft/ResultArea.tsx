@@ -12,9 +12,9 @@ export const ResultArea = ({
 }) => {
   return (
     <div>
-      <div className="min-h-[550px] rounded-lg p-10 grid grid-cols-2 w-full gap-36">
-        <div className="col-span-1 flex flex-col justify-between">
-          <div className="w-full aspect-[16/9] relative overflow-hidden h-[80%]">
+      <div className="min-h-[550px] rounded-lg p-10 grid md:grid-cols-2 w-full gap-10 md:gap-36 ">
+        <div className="col-span-1 flex flex-col">
+          <div className="w-full aspect-[16/9] relative overflow-hidden mb-10">
             <Image
               alt="nft"
               src="/image.png"
