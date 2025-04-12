@@ -64,7 +64,7 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                         />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium">0x9E64c9F7a0497c289d8a420348</p>
+                                        <p className="text-sm font-medium">0x9E64c9F7a04...420348</p>
                                         <p className="text-xs text-[#616161]">Creator</p>
                                     </div>
                                 </div>
@@ -186,11 +186,11 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                     </div>
 
                                     <div className="flex gap-4 pt-4 border-t border-[#f1f3f5]">
-                                        <Button className="flex-1 bg-[#1b263b] hover:bg-[#2d3748] text-white gap-2 py-6">
+                                        <Button className="md:flex-1 w-[50%] px-3 bg-[#1b263b] hover:bg-[#2d3748] text-white gap-2 md:py-6 py-3">
                                             <Download className="w-4 h-4" />
                                             Download Report
                                         </Button>
-                                        <Button variant="outline" className="flex-1 gap-2 py-6 border-[#1b263b] text-[#1b263b]">
+                                        <Button variant="outline" className="md:flex-1 w-[50%] px-3 gap-2 md:py-6 py-3 border-[#1b263b] text-[#1b263b]">
                                             <Share2 className="w-4 h-4" />
                                             Share Results
                                         </Button>
