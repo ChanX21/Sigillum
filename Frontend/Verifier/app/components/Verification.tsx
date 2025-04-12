@@ -3,9 +3,12 @@ import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, Us
 import Image from 'next/image'
 import React from 'react'
 import { motion } from "framer-motion"
-
+import { VerificationResponse } from '@/store/useDataStore'
+import { format } from 'date-fns'
 interface VerificationProps {
     image: string | null
+    verificationError: string | null,
+    verificationData: VerificationResponse,
     isVerifying: boolean
     verificationResult: {
         authentic: boolean
@@ -26,7 +29,7 @@ const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
 }
-const Verification = ({ image, isVerifying, verificationResult, resetState }: VerificationProps) => {
+const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState }: VerificationProps) => {
     return (
         <div className="max-w-5xl mx-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-6">
@@ -51,29 +54,35 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                         <div className="relative aspect-square">
                             <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
                         </div>
-                        <div className="p-4 border-t border-[#f1f3f5]">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-[#f1f3f5] flex items-center justify-center">
-                                        <Image
-                                            src="/placeholder.svg?height=24&width=24"
-                                            alt="Creator"
-                                            width={24}
-                                            height={24}
-                                            className="rounded-full"
-                                        />
+                        {!verificationError && !isVerifying && (
+                            <div className="p-4 border-t border-[#f1f3f5]">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-[#f1f3f5] flex items-center justify-center">
+                                            <Image
+                                                src="/placeholder.svg?height=24&width=24"
+                                                alt="Creator"
+                                                width={24}
+                                                height={24}
+                                                className="rounded-full"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <p className="text-sm font-medium">{verificationData?.verificationResult?.tokenDetails?.creator}</p>
+                                            <p className="text-xs text-[#616161]">Creator</p>
+                                        </div>
+
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium">0x9E64c9F7a04...420348</p>
-                                        <p className="text-xs text-[#616161]">Creator</p>
+
+                                    <div className="text-right">
+                                        <p className="text-xs text-[#616161]">Created</p>
+                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails?.timestamp * 1000), 'dd MMM yyyy, HH:mm'):null}</p>
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-[#616161]">Created</p>
-                                    <p className="text-sm">Sep 15, 2023</p>
+
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </motion.div>
 
@@ -96,7 +105,7 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                     <h3 className="text-lg font-medium mt-6 mb-2">Verifying Image</h3>
                                     <p className="text-[#616161]">Analyzing authenticity and provenance...</p>
                                 </div>
-                            ) : verificationResult ? (
+                            ) : verificationData && verificationResult ? (
                                 <div className="space-y-8">
                                     <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border ${verificationResult.authentic ? 'border-[#b7eb8f]' : 'border-[#f5222d]'}`}>
                                         {verificationResult.authentic ? (
@@ -131,7 +140,7 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <p className="text-sm font-medium">{verificationResult.creator.name}</p>
-                                                    <p className="text-xs text-[#616161] mt-1">{verificationResult.creator.id}</p>
+                                                    <p className="text-xs text-[#616161] mt-1">{verificationData?.verificationResult?.tokenDetails?.creator}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -143,7 +152,7 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm">{formatDate(verificationResult.creationDate)}</p>
+                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails.timestamp * 1000), 'dd MMM yyyy, HH:mm'):null}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -196,11 +205,17 @@ const Verification = ({ image, isVerifying, verificationResult, resetState }: Ve
                                         </Button>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-16">
-                                    <p className="text-[#616161]">No verification results yet</p>
+                            ) : verificationError ? (
+                                <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border  border-[#f5222d]`}>
+                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
+                                        <FileWarning className="w-6 h-6 text-[#f5222d]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-medium text-[#f5222d]">Verification Failed</h3>
+                                        <p className="text-sm">{verificationError}</p>
+                                    </div>
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </motion.div>
