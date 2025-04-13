@@ -12,6 +12,19 @@ export interface NFTCard {
   };
 }
 
+export interface imageAuthResponse {
+  image: imageAuthDetails;
+  message: string;
+}
+export interface imageAuthDetails {
+  id: string;
+  originalIpfsCid: string;
+  pHash: string;
+  sha256Hash: string;
+  status: string;
+  watermarkedIpfsCid: string;
+}
+
 export type MediaRecord = {
   _id: string;
   original: string;

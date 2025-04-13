@@ -182,7 +182,11 @@ export const Header = () => {
             <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
               <FaEthereum size={15} className="text-gray-700" />
             </div>
-            <p className="text-sm font-semibold whitespace-nowrap">{balance && (balance)}</p>
+            <p className="text-sm font-semibold whitespace-nowrap">{balance && (balance)} {loading && (
+              <div className="relative w-5 h-5">
+                <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
+              </div>
+            )}</p>
           </div>
 
           <Button
