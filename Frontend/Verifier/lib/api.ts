@@ -1,21 +1,29 @@
-export async function authenticateImage(userAddress: string, imageFile: File) {
+export async function authenticateImage(imageFile: File) {
     const formData = new FormData()
-    formData.append("image", imageFile)
+    formData.append("image", imageFile, imageFile.name)
 
+
+
+    console.log("Has image?", formData.has("image"));
     try {
-        const response = await fetch(`https://sui-be.vercel.app/authenticate/${userAddress}`, {
+        const response = await fetch(`https://sui-be.vercel.app/verify`, {
             method: 'POST',
             body: formData,
+            headers: {
+                'Accept': 'application/json',
+            },
         });
+        
+        // Always try to parse the response as JSON
+        const data = await response.json();
+
         if (!response.ok) {
-            const errorText = await response.text(); // get error body (optional)
-            throw new Error(`API Error: ${response.status} ${errorText}`);
+            // Handle non-OK response but using the parsed data
+            throw new Error(data.message || "Verification failed");
         }
 
-        const data = await response.json();
         return data;
     } catch (error: any) {
-        console.error('Authentication Error:', error?.message);
-        throw new Error(`Failed to authenticate user: ${error?.message}`);
+        throw new Error(`${error?.message}`);
     }
 }

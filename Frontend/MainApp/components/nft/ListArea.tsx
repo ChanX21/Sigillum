@@ -5,9 +5,9 @@ import { ListForm } from "./ListForm";
 export const ListArea = () => {
   return (
     <div>
-      <div className="min-h-[550px] rounded-lg p-10 grid grid-cols-2 w-full gap-36">
+      <div className="min-h-[550px] rounded-lg p-10 grid md:grid-cols-2 w-full gap-10 md:gap-36 ">
         <div className="col-span-1 flex flex-col gap-10">
-          <div className="w-full aspect-[16/9] relative overflow-hidden h-[90%] max-h-[300px]">
+          <div className="w-full aspect-[16/9] relative overflow-hidden max-h-[300px]">
             <Image
               alt="nft"
               src="/image.png"

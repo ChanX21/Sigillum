@@ -15,7 +15,7 @@ export default function Upload() {
     <>
       <Header />
 
-      <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10">
+      <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10 mb-12 ">
         <div className="w-full max-w-5xl mx-auto">
           <ProgressIndicator step={step} />
 

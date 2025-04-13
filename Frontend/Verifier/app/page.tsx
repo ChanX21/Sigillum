@@ -10,10 +10,12 @@ import Footer from '@/app/components/Footer'
 import HeroSection from "@/app/components/HeroSection"
 import Verification from "@/app/components/Verification"
 import UploadElem from "@/app/components/UploadElem"
+import { DataState, useDataStore } from "@/store/useDataStore"
 
 export default function Home() {
   const [image, setImage] = useState<string | null>(null)
-  const [isVerifying, setIsVerifying] = useState(false)
+  const [imageBuffer, setImageBuffer] = useState<File | null>(null)
+  // const [isVerifying, setIsVerifying] = useState(false)
   const [verificationResult, setVerificationResult] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("upload")
   const [isDragging, setIsDragging] = useState(false)
@@ -21,12 +23,16 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
+
+  const { data, loading: isVerifying, error, fetchData } = useDataStore() as DataState
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onload = (event) => {
         setImage(event.target?.result as string)
+        setImageBuffer(file)
         verifyImage()
       }
       reader.readAsDataURL(file)
@@ -50,16 +56,16 @@ export default function Home() {
 
   const startCamera = async () => {
     try {
-      const constraints = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) 
+      const constraints = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
         ? { video: { facingMode: { exact: "environment" } } }
         : { video: true }
-        
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
         .catch(async () => {
           // Fallback to any camera if back camera fails
           return await navigator.mediaDevices.getUserMedia({ video: true })
         })
-        
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         streamRef.current = stream
@@ -90,24 +96,11 @@ export default function Home() {
   }
 
   const verifyImage = () => {
-    setIsVerifying(true)
-    // Simulate API call to verify image
-    setTimeout(() => {
-      setVerificationResult({
-        authentic: false,
-        creator: {
-          id: "0x9E64c9F7a0497c289d8a420348",
-        },
-        creationDate: "2023-09-15T14:30:22Z",
-        modified: false,
-        provenance: [
-          { date: "2023-09-15T14:30:22Z", event: "Created by Alex Johnson" },
-          { date: "2023-09-15T15:45:10Z", event: "Registered on blockchain" },
-          { date: "2023-10-02T09:12:45Z", event: "Verified by SIGILLUM" },
-        ],
-      })
-      setIsVerifying(false)
-    }, 2000)
+    console.log("Verifying....")
+    if (imageBuffer) {
+      fetchData(imageBuffer)
+    }
+
   }
 
   const resetState = () => {
@@ -127,8 +120,18 @@ export default function Home() {
     }
   }
 
-  
 
+  useEffect(() => {
+    if(imageBuffer) {
+      verifyImage()
+    }
+  }, [imageBuffer])
+  useEffect(() => {
+    if(data) {
+      console.log("Data",data)
+    }
+  }, [data])
+ 
   useEffect(() => {
     if (activeTab === "camera") {
       startCamera()
@@ -165,7 +168,9 @@ export default function Home() {
           </>
         ) : (
           <Verification
-            image={image}
+          image={image}
+            verificationError={error}
+            verificationData={data}
             isVerifying={isVerifying}
             verificationResult={verificationResult}
             resetState={resetState}
