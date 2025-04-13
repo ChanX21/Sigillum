@@ -125,6 +125,7 @@
 * {
   scrollbar-width: none; /* For Firefox */
   -ms-overflow-style: none; /* For Internet Explorer */
+  box-sizing: border-box;
 }
 
 /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */

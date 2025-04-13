@@ -1,44 +1,71 @@
 import { Button } from "@/components/ui/button";
-import { NFTCard } from "@/types";
+import { MediaRecord, NFTMetadata } from "@/types";
+import { fetchMetadata } from "@/utils/web2";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface NFTCardBrowseProps {
-  nft: NFTCard;
+  nft: MediaRecord;
   idx: number;
 }
 
-export const NFTCardBrowse = ({ nft, idx }: NFTCardBrowseProps) => (
-  <Link href={`/detail/${idx}`}>
+export const NFTCardBrowse = ({ nft, idx }: NFTCardBrowseProps) => {
+  const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetchMetadata(nft.blockchain.metadataURI || "");
+        setMetadata(response);
+      } catch (error) {
+        console.error("Error fetching metadata:", error);
+      }
+    };
+
+    if (nft?.blockchain?.metadataURI) {
+      fetchData();
+    }
+  }, [nft]);
+
+  return (
     <div className="w-[320px] rounded-4xl bg-white h-[400px] p-2 flex flex-col gap-2 hover:shadow-lg transition-shadow">
       <div className="w-full aspect-[16/9] relative overflow-hidden h-[70%]">
-        <Image
-          alt={nft.title}
-          src={nft.image}
-          fill
-          className="rounded-4xl object-cover"
-          priority
-          sizes="(max-width: 768px) 100vw, 320px"
-        />
+        <Link href={`/detail/${nft._id}`}>
+          {" "}
+          <Image
+            alt={metadata?.name || "nft image"}
+            src={metadata?.image || "/fallback.png"}
+            fill
+            className="rounded-4xl object-cover"
+            priority
+            sizes="(max-width: 768px) 100vw, 320px"
+          />
+        </Link>
       </div>
 
-      <div className="flex h-12 justify-between md:px-2">
+      <div className="flex flex-col h-12 justify-between md:px-2 gap-1">
         <div className="flex items-center gap-2">
           <div className="h-full flex flex-col justify-center">
-            <p className="text-xl font-medium">{nft.title}</p>
+            <Link href={`/detail/${nft._id}`}>
+              <p className="text-md font-medium">{metadata?.name || ""}</p>
+            </Link>
           </div>
         </div>
         {idx % 2 == 0 && (
-          <div className="h-full flex flex-col justify-center">
+          <div className="h-full flex  justify-between">
             <p className="text-xs text-gray-400">Current bid</p>
-            <p className="text-xs font-semibold">{nft.currentBid} ETH</p>
+            <p className="text-xs font-semibold">{} ETH</p>
           </div>
         )}
       </div>
 
       {idx % 2 == 0 ? (
         <div className="flex justify-between">
-          <Button variant="default" className="rounded-md w-full cursor-pointer">
+          <Button
+            variant="default"
+            className="rounded-md w-full cursor-pointer"
+          >
             Place bid
           </Button>
         </div>
@@ -59,5 +86,5 @@ export const NFTCardBrowse = ({ nft, idx }: NFTCardBrowseProps) => (
         </div>
       )}
     </div>
-  </Link>
-);
+  );
+};
