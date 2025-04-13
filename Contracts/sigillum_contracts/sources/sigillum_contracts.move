@@ -10,9 +10,9 @@ module sigillum_contracts::sigillum_contracts;
 
 
 module sigillum_contracts::sigillum_nft {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    // use sui::object::{Self, UID};
+    // use sui::transfer;
+    // use sui::tx_context::{Self, TxContext};
     use std::string::{String};
     use sui::event;
     use sui::table::{Self, Table};

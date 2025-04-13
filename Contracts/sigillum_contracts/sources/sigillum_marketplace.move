@@ -1,803 +1,659 @@
-// module sigillum_contracts::sigillum_marketplace {
-//     use sui::object::{Self, UID, ID};
-//     use sui::transfer;
-//     use sui::tx_context::{Self, TxContext};
-//     use sui::coin::{Self, Coin};
-//     use sui::sui::SUI;
-//     use sui::event;
-//     use sui::table::{Self, Table};
-//     use sui::vec_map::{Self, VecMap};
-//     use sui::balance::{Self, Balance};
-//     use std::string::{String};
-//     use std::vector;
-//     use sigillum_contracts::sigillum_nft::{Self, PhotoNFT};
-
-//     // === Error Constants ===
-//     const EListingNotFound: u64 = 1;
-//     const EInvalidPrice: u64 = 2;
-//     const EUnauthorized: u64 = 3;
-//     const ESoftBidAlreadyExists: u64 = 4;
-//     const EInvalidBidAmount: u64 = 5;
-//     const EBidNotFound: u64 = 6;
-//     const EInsufficientFunds: u64 = 7;
-//     const ENotListed: u64 = 8;
-//     const ENotSoftListed: u64 = 9;
-//     const ESoftListingExistsForNFT: u64 = 10;
-
-//     // === Core Structs ===
-
-//     // Capability for marketplace administration
-//     public struct AdminCap has key, store {
-//         id: UID
-//     }
-
-//     // Central marketplace object
-//     public struct Marketplace has key {
-//         id: UID,
-//         // Tables to track listings and soft bids
-//         listings: Table<ID, Listing>,
-//         soft_listings: Table<ID, SoftListing>,
-//         soft_bids: Table<ID, VecMap<address, SoftBid>>,
-//         bids: Table<ID, VecMap<address, Bid>>,
-//         // Marketplace fee in basis points (e.g., 250 = 2.5%)
-//         fee_bps: u64,
-//         // Treasury address to collect fees
-//         treasury: address,
-//         // Balance to hold fees
-//         fee_balance: Balance<SUI>,
-//     }
-
-//     // Regular listing for direct purchase
-//     public struct Listing has store, drop {
-//         nft_id: ID,
-//         seller: address,
-//         price: u64,
-//         description: String,
-//         created_at: u64,
-//     }
-
-//     // Soft listing allows showing interest in selling without commitment
-//     public struct SoftListing has store, drop {
-//         nft_id: ID,
-//         owner: address,
-//         suggested_price: u64,
-//         description: String,
-//         created_at: u64,
-//         // Added by which admin
-//         created_by: address,
-//     }
-
-//     // Soft bid shows interest without financial commitment
-//     public struct SoftBid has store, drop {
-//         bidder: address,
-//         amount: u64,
-//         message: String,
-//         created_at: u64,
-//     }
-
-//     // Real bid with locked funds
-//     public struct Bid has store {
-//         bidder: address,
-//         amount: Balance<SUI>,
-//         message: String,
-//         created_at: u64,
-//     }
-
-//     // Receipt given to a seller when they list an NFT
-//     public struct ListingReceipt has key, store {
-//         id: UID,
-//         nft_id: ID,
-//         marketplace_id: ID,
-//         seller: address,
-//         price: u64,
-//         created_at: u64,
-//     }
-
-//     // === Events ===
+module sigillum_contracts::sigillum_marketplace {
+    /*
+    Sigillum Marketplace Contract
     
-//     public struct NFTListed has copy, drop {
-//         nft_id: ID,
-//         seller: address,
-//         price: u64,
-//         marketplace_id: ID,
-//     }
+    This marketplace supports a two-stage listing process:
+    
+    1. Soft Listing: 
+       - Initially, NFTs are soft-listed for valuation and authenticity verification only
+       - Users can place indicative bids to suggest the value of the NFT
+       - These bids don't involve actual cryptocurrency transfers
+       - Experts can provide authentication verification scores
+       
+    2. Real Listing:
+       - Only after an NFT has been soft-listed, the owner can convert it to a real listing
+       - Only the owner of the soft listing can convert it to a real listing
+       - Real listings enable actual sales with cryptocurrency transfers
+       - Bids are held in escrow
+       - Sales can be completed automatically or manually by the owner
+       
+    Flow:
+    1. Owner mints an NFT through the sigillum_nft module
+    2. Owner creates a soft listing using create_soft_listing
+    3. Users place indicative bids using place_bid
+    4. Experts verify authenticity using update_verification_score
+    5. Owner converts to real listing using convert_to_real_listing (if they decide to sell)
+    6. Users place actual bids with cryptocurrency using place_bid
+    7. Sale completes either automatically (if bid exceeds price) or manually (via accept_bid)
+    
+    This design ensures that NFTs are first properly valued and authenticated 
+    before they can be sold on the marketplace.
+    */
+    
+    // use sui::object::{Self, UID};
+    // use sui::transfer;
+    // use sui::tx_context::{Self, TxContext};
+    use sui::coin::{Self, Coin};
+    use sui::sui::SUI;
+    use sui::balance::{Self, Balance};
+    use sui::table::{Self, Table};
+    use sui::vec_map::{Self, VecMap};
+    use sui::event;
+    use std::string::{String};
+    // use std::vector;
+    // use sigillum_contracts::sigillum_nft::{Self, PhotoNFT};
 
-//     public struct NFTSoftListed has copy, drop {
-//         nft_id: ID,
-//         owner: address,
-//         suggested_price: u64,
-//         marketplace_id: ID,
-//         admin: address,
-//     }
+    // Error constants
+    const EInvalidListing: u64 = 1;
+    const EInvalidBid: u64 = 2;
+    const EInsufficientBid: u64 = 3;
+    const EListingNotActive: u64 = 4;
+    const ENotOwner: u64 = 5;
+    const EInvalidPrice: u64 = 6;
+    // const EAlreadyListed: u64 = 7;
+    const ENotListed: u64 = 8;
+    // const EInvalidAuth: u64 = 9;
+    const EInvalidListingNotRealListing: u64 = 10;
 
-//     public struct SoftListingConvertedToListing has copy, drop {
-//         nft_id: ID,
-//         owner: address,
-//         price: u64,
-//     }
 
-//     public struct SoftBidPlaced has copy, drop {
-//         nft_id: ID,
-//         bidder: address,
-//         amount: u64,
-//     }
+    // MarketplaceCap for admin operations
+    public struct MarketplaceCap has key, store {
+        id: UID
+    }
 
-//     public struct BidPlaced has copy, drop {
-//         nft_id: ID,
-//         bidder: address,
-//         amount: u64,
-//     }
+    // Listing types
+    const SOFT_LISTING: u8 = 0;   // For valuation and authenticity only
+    const REAL_LISTING: u8 = 1;   // For actual sale
 
-//     public struct NFTSold has copy, drop {
-//         nft_id: ID,
-//         seller: address,
-//         buyer: address,
-//         price: u64,
-//     }
+    // Structs for the marketplace
+    
+    // Represents a listing in the marketplace (both soft and real)
+    public struct Listing has store {
+        owner: address,              // Owner of the NFT
+        nft_id: address,             // ID of the PhotoNFT
+        list_price: u64,             // Price set by the owner (only for REAL_LISTING)
+        listing_type: u8,            // SOFT_LISTING or REAL_LISTING
+        min_bid: u64,                // Minimum bid amount
+        highest_bid: u64,            // Current highest bid
+        highest_bidder: address,     // Address of highest bidder
+        active: bool,                // Whether the listing is currently active
+        verification_score: u64,     // Authenticity verification score (0-100)
+        start_time: u64,             // When the listing became active
+        end_time: u64,               // When the listing will end (0 for no end time)
+        description: String,         // Listing description
+        metadata: String,            // Additional listing metadata (as JSON)
+    }
 
-//     public struct BidAccepted has copy, drop {
-//         nft_id: ID,
-//         seller: address,
-//         bidder: address,
-//         amount: u64,
-//     }
+    public struct AdminCap has key, store {
+        id: UID
+    }
 
-//     // === Initialization ===
-    
-//     fun init(ctx: &mut TxContext) {
-//         // Create admin capability
-//         transfer::transfer(
-//             AdminCap { id: object::new(ctx) },
-//             tx_context::sender(ctx)
-//         );
-        
-//         let marketplace = Marketplace {
-//             id: object::new(ctx),
-//             listings: table::new(ctx),
-//             soft_listings: table::new(ctx),
-//             soft_bids: table::new(ctx),
-//             bids: table::new(ctx),
-//             fee_bps: 250, // Default 2.5% fee
-//             treasury: tx_context::sender(ctx),
-//             fee_balance: balance::zero(),
-//         };
-        
-//         transfer::share_object(marketplace);
-//     }
 
-//     // For testing purposes only
-//     #[test_only]
-//     public fun init_for_testing(ctx: &mut TxContext): AdminCap {
-//         let admin_cap = AdminCap { id: object::new(ctx) };
-        
-//         let marketplace = Marketplace {
-//             id: object::new(ctx),
-//             listings: table::new(ctx),
-//             soft_listings: table::new(ctx),
-//             soft_bids: table::new(ctx),
-//             bids: table::new(ctx),
-//             fee_bps: 250, // Default 2.5% fee
-//             treasury: tx_context::sender(ctx),
-//             fee_balance: balance::zero(),
-//         };
-        
-//         transfer::share_object(marketplace);
-//         admin_cap
-//     }
+    // Holds all bids for a listing
+    public struct BidPool has store {
+        bids: VecMap<address, u64>,  // Maps bidder address to bid amount
+        bid_count: u64,              // Number of bids received
+    }
+
+    // Marketplace object to keep track of all listings
+    public struct Marketplace has key {
+        id: UID,
+        // Maps listing ID to Listing object
+        listings: Table<address, Listing>,
+        // Maps listing ID to BidPool
+        bid_pools: Table<address, BidPool>,
+        // Maps listing ID to escrow funds for REAL_LISTING
+        escrow: Table<address, Balance<SUI>>,
+        // Platform fee percentage (in basis points, e.g., 250 = 2.5%)
+        fee_percentage: u64,
+        // Treasury to collect platform fees
+        treasury: Balance<SUI>,
+        // Total volume traded
+        total_volume: u64,
+        // Total listings count
+        total_listings: u64,
+    }
+
+    // Events
     
-//     // === Soft Listing Functions ===
-    
-//     // Only admin can create soft listings
-//     public entry fun create_soft_listing(
-//         _: &AdminCap,
-//         marketplace: &mut Marketplace,
-//         nft_id: ID,
-//         owner: address,
-//         suggested_price: u64,
-//         description: String,
-//         ctx: &mut TxContext
-//     ) {
-//         // Verify NFT doesn't already have a soft listing
-//         assert!(!table::contains(&marketplace.soft_listings, nft_id), ESoftListingExistsForNFT);
+    // Emitted when a new listing is created
+    public struct ListingCreated has copy, drop {
+        listing_id: address,
+        nft_id: address,
+        owner: address,
+        listing_type: u8,
+        price: u64,
+        min_bid: u64,
+        start_time: u64,
+        end_time: u64,
+    }
+
+    // Emitted when a bid is placed
+    public struct BidPlaced has copy, drop {
+        listing_id: address,
+        bidder: address,
+        bid_amount: u64,
+        is_highest: bool,
+    }
+
+    // Emitted when a listing is completed (sale or expired)
+    public struct ListingCompleted has copy, drop {
+        listing_id: address,
+        nft_id: address,
+        seller: address,
+        buyer: address,
+        final_price: u64,
+        listing_type: u8,
+        success: bool,
+    }
+
+    // Emitted when an authenticity verification score is updated
+    public struct VerificationUpdated has copy, drop {
+        listing_id: address,
+        nft_id: address,
+        new_score: u64,
+        verifier: address,
+    }
+
+    // === Initialization ===
+    fun init(ctx: &mut TxContext) {
+        // Create admin capability
+        transfer::transfer(
+            MarketplaceCap { id: object::new(ctx) },
+            tx_context::sender(ctx)
+        );
         
-//         let admin = tx_context::sender(ctx);
+        // Create and share the marketplace
+        let marketplace = Marketplace {
+            id: object::new(ctx),
+            listings: table::new(ctx),
+            bid_pools: table::new(ctx),
+            escrow: table::new(ctx),
+            fee_percentage: 250, // 2.5% default fee
+            treasury: balance::zero(),
+            total_volume: 0,
+            total_listings: 0,
+        };
+
+        transfer::transfer(
+            AdminCap { id: object::new(ctx) },
+            tx_context::sender(ctx)
+        );
         
-//         // Create soft listing
-//         let soft_listing = SoftListing {
-//             nft_id,
-//             owner,
-//             suggested_price,
-//             description,
-//             created_at: tx_context::epoch(ctx),
-//             created_by: admin,
-//         };
+        transfer::share_object(marketplace);
+    }
+
+    // === Core Functions ===
+
+    // Create a soft listing for valuation and authenticity verification
+    public entry fun create_soft_listing(
+        _: &AdminCap,
+        marketplace: &mut Marketplace,
+        nft_id: address,
+        min_bid: u64,
+        description: String,
+        metadata: String,
+        end_time: u64,
+        ctx: &mut TxContext
+    ) {
+        let owner = tx_context::sender(ctx);
+        let listing_id = object::new(ctx);
+        let listing_id_address = object::uid_to_address(&listing_id);
         
-//         // Add to marketplace
-//         table::add(&mut marketplace.soft_listings, nft_id, soft_listing);
+        // Create the listing
+        let listing = Listing {
+            owner,
+            nft_id,
+            list_price: 0, // Not for sale
+            listing_type: SOFT_LISTING,
+            min_bid,
+            highest_bid: 0,
+            highest_bidder: @0x0,
+            active: true,
+            verification_score: 0,
+            start_time: tx_context::epoch(ctx),
+            end_time,
+            description,
+            metadata,
+        };
         
-//         // Initialize empty soft bids table for this NFT
-//         if (!table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::add(&mut marketplace.soft_bids, nft_id, vec_map::empty<address, SoftBid>());
-//         };
+        // Create an empty bid pool for this listing
+        let bid_pool = BidPool {
+            bids: vec_map::empty(),
+            bid_count: 0,
+        };
         
-//         event::emit(NFTSoftListed {
-//             nft_id,
-//             owner,
-//             suggested_price,
-//             marketplace_id: object::id(marketplace),
-//             admin,
-//         });
-//     }
-    
-//     // Owner can convert soft listing to a formal listing
-//     public entry fun convert_soft_to_listing(
-//         marketplace: &mut Marketplace,
-//         nft: PhotoNFT,
-//         price: u64,
-//         ctx: &mut TxContext
-//     ) {
-//         let nft_id = object::id(&nft);
-//         let sender = tx_context::sender(ctx);
+        // Add the listing and bid pool to the marketplace
+        table::add(&mut marketplace.listings, listing_id_address, listing);
+        table::add(&mut marketplace.bid_pools, listing_id_address, bid_pool);
         
-//         // Verify there's a soft listing for this NFT
-//         assert!(table::contains(&marketplace.soft_listings, nft_id), ENotSoftListed);
-//         let soft_listing = table::borrow(&marketplace.soft_listings, nft_id);
+        // Increment total listings
+        marketplace.total_listings = marketplace.total_listings + 1;
         
-//         // Verify sender is the owner specified in the soft listing
-//         assert!(soft_listing.owner == sender, EUnauthorized);
+        // Emit listing created event
+        event::emit(ListingCreated {
+            listing_id: listing_id_address,
+            nft_id,
+            owner,
+            listing_type: SOFT_LISTING,
+            price: 0,
+            min_bid,
+            start_time: tx_context::epoch(ctx),
+            end_time,
+        });
         
-//         // Verify price is valid
-//         assert!(price > 0, EInvalidPrice);
+        object::delete(listing_id);
+    }
+
+    // Create a real listing for selling the NFT - function signature kept for reference
+    // This original function is now commented out as we're replacing it with convert_to_real_listing
+    /* 
+    public entry fun create_real_listing(
+        marketplace: &mut Marketplace,
+        photo: &PhotoNFT,
+        list_price: u64,
+        min_bid: u64,
+        description: String,
+        metadata: String,
+        end_time: u64,
+        ctx: &mut TxContext
+    ) {
+        // Original implementation...
+    }
+    */
+
+    // Convert a soft listing to a real listing for selling the NFT
+    public entry fun convert_to_real_listing(
+        marketplace: &mut Marketplace,
+        soft_listing_id: address,
+        list_price: u64,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
         
-//         // Create formal listing using data from soft listing
-//         let listing = Listing {
-//             nft_id,
-//             seller: sender,
-//             price,
-//             description: soft_listing.description,
-//             created_at: tx_context::epoch(ctx),
-//         };
+        // Verify the soft listing exists and is active
+        assert!(table::contains(&marketplace.listings, soft_listing_id), ENotListed);
+        let listing = table::borrow_mut(&mut marketplace.listings, soft_listing_id);
         
-//         // Add to marketplace listings
-//         if (table::contains(&marketplace.listings, nft_id)) {
-//             table::remove(&mut marketplace.listings, nft_id);
-//         };
-//         table::add(&mut marketplace.listings, nft_id, listing);
+        // Verify it's a soft listing
+        assert!(listing.listing_type == SOFT_LISTING, EInvalidListing);
         
-//         // Remove soft listing
-//         table::remove(&mut marketplace.soft_listings, nft_id);
+        // Verify sender is the owner
+        assert!(listing.owner == sender, ENotOwner);
         
-//         // Create and transfer a receipt to the seller
-//         let receipt = ListingReceipt {
-//             id: object::new(ctx),
-//             nft_id,
-//             marketplace_id: object::id(marketplace),
-//             seller: sender,
-//             price,
-//             created_at: tx_context::epoch(ctx),
-//         };
-//         transfer::transfer(receipt, sender);
+        // Verify the listing is active
+        assert!(listing.active, EListingNotActive);
         
-//         // Transfer NFT to marketplace module (escrow)
-//         transfer::public_share_object(nft);
+        // Ensure the price is valid
+        assert!(list_price > 0, EInvalidPrice);
         
-//         event::emit(SoftListingConvertedToListing {
-//             nft_id,
-//             owner: sender,
-//             price,
-//         });
+        // Convert the listing to a real listing
+        listing.listing_type = REAL_LISTING;
+        listing.list_price = list_price;
         
-//         event::emit(NFTListed {
-//             nft_id,
-//             seller: sender,
-//             price,
-//             marketplace_id: object::id(marketplace),
-//         });
-//     }
-    
-//     // Place a soft bid - show interest in buying without financial commitment
-//     public entry fun place_soft_bid(
-//         marketplace: &mut Marketplace,
-//         nft_id: ID,
-//         amount: u64,
-//         message: String,
-//         ctx: &mut TxContext
-//     ) {
-//         let sender = tx_context::sender(ctx);
+        // Create an empty escrow balance for the listing
+        let empty_balance = balance::zero<SUI>();
+        table::add(&mut marketplace.escrow, soft_listing_id, empty_balance);
         
-//         // Verify NFT has a soft listing
-//         assert!(table::contains(&marketplace.soft_listings, nft_id), ENotSoftListed);
+        // Emit listing converted event
+        event::emit(ListingCreated {
+            listing_id: soft_listing_id,
+            nft_id: listing.nft_id,
+            owner: listing.owner,
+            listing_type: REAL_LISTING,
+            price: list_price,
+            min_bid: listing.min_bid,
+            start_time: tx_context::epoch(ctx), // Reset start time to conversion time
+            end_time: listing.end_time,
+        });
+    }
+
+    // Place a bid on a listing (handles both soft and real listings)
+    public entry fun place_bid(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let bidder = tx_context::sender(ctx);
+        let bid_amount = coin::value(&payment);
         
-//         // Ensure there's a place to store bids for this NFT
-//         if (!table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::add(&mut marketplace.soft_bids, nft_id, vec_map::empty<address, SoftBid>());
-//         };
+        // Get the listing and bid pool
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        assert!(listing.active, EListingNotActive);
+        assert!(bid_amount >= listing.min_bid, EInsufficientBid);
         
-//         let soft_bids = table::borrow_mut(&mut marketplace.soft_bids, nft_id);
+        // Check if end time has passed
+        if (listing.end_time > 0) {
+            assert!(tx_context::epoch(ctx) <= listing.end_time, EListingNotActive);
+        };
         
-//         // Create new soft bid
-//         let soft_bid = SoftBid {
-//             bidder: sender,
-//             amount,
-//             message,
-//             created_at: tx_context::epoch(ctx),
-//         };
+        let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
         
-//         // Store the bid, replacing any previous bid from this bidder
-//         if (vec_map::contains(soft_bids, &sender)) {
-//             let _old_bid = vec_map::remove(soft_bids, &sender);
-//             // Old bid is dropped because SoftBid has drop ability
-//         };
-//         vec_map::insert(soft_bids, sender, soft_bid);
-        
-//         event::emit(SoftBidPlaced {
-//             nft_id,
-//             bidder: sender,
-//             amount,
-//         });
-//     }
-    
-//     // === Real Listing Functions ===
-    
-//     // List an NFT for sale (can be used directly without soft listing)
-//     public entry fun list_nft(
-//         marketplace: &mut Marketplace,
-//         nft: PhotoNFT,
-//         price: u64,
-//         description: String,
-//         ctx: &mut TxContext
-//     ) {
-//         assert!(price > 0, EInvalidPrice);
-        
-//         let nft_id = object::id(&nft);
-//         let sender = tx_context::sender(ctx);
-        
-//         // Create listing
-//         let listing = Listing {
-//             nft_id,
-//             seller: sender,
-//             price,
-//             description,
-//             created_at: tx_context::epoch(ctx),
-//         };
-        
-//         // Add to marketplace
-//         if (table::contains(&marketplace.listings, nft_id)) {
-//             let _old_listing = table::remove(&mut marketplace.listings, nft_id);
-//             // Need to handle old_listing properly since Listing doesn't have drop
-//         };
-//         table::add(&mut marketplace.listings, nft_id, listing);
-        
-//         // If there was a soft listing, remove it
-//         if (table::contains(&marketplace.soft_listings, nft_id)) {
-//             let _old_soft_listing = table::remove(&mut marketplace.soft_listings, nft_id);
-//             // Need to handle old_soft_listing properly since SoftListing doesn't have drop
-//         };
-        
-//         // Create and transfer a receipt to the seller
-//         let receipt = ListingReceipt {
-//             id: object::new(ctx),
-//             nft_id,
-//             marketplace_id: object::id(marketplace),
-//             seller: sender,
-//             price,
-//             created_at: tx_context::epoch(ctx),
-//         };
-//         transfer::transfer(receipt, sender);
-        
-//         // Transfer NFT to marketplace module (escrow)
-//         transfer::public_share_object(nft);
-        
-//         event::emit(NFTListed {
-//             nft_id,
-//             seller: sender,
-//             price,
-//             marketplace_id: object::id(marketplace),
-//         });
-//     }
-    
-//     // Buy an NFT at the listed price
-//     public entry fun buy_nft(
-//         marketplace: &mut Marketplace,
-//         nft: &mut PhotoNFT,
-//         payment: Coin<SUI>,
-//         ctx: &mut TxContext
-//     ) {
-//         let nft_id = object::id(nft);
-//         assert!(table::contains(&marketplace.listings, nft_id), ENotListed);
-        
-//         let listing = table::borrow(&marketplace.listings, nft_id);
-//         let price = listing.price;
-//         let seller = listing.seller;
-        
-//         // Verify payment amount
-//         assert!(coin::value(&payment) >= price, EInsufficientFunds);
-        
-//         // Calculate fee
-//         let fee_amount = (price * marketplace.fee_bps) / 10000;
-//         let seller_amount = price - fee_amount;
-        
-//         // Split payment and deposit fee
-//         let fee_coin = coin::split(&mut payment, fee_amount, ctx);
-//         coin::put(&mut marketplace.fee_balance, fee_coin);
-        
-//         // Send remaining payment to seller
-//         transfer::public_transfer(payment, seller);
-        
-//         // Transfer NFT to buyer
-//         transfer::public_transfer(nft, tx_context::sender(ctx));
-        
-//         // Remove listing
-//         let _old_listing = table::remove(&mut marketplace.listings, nft_id);
-//         // Need to handle old_listing properly
-        
-//         // Clear any bids
-//         if (table::contains(&marketplace.bids, nft_id)) {
-//             let bids = table::remove(&mut marketplace.bids, nft_id);
-//             // Process refunds for all bidders
-//             process_bid_refunds(bids, ctx);
-//         };
-        
-//         // Clear any soft bids
-//         if (table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::remove(&mut marketplace.soft_bids, nft_id);
-//         };
-        
-//         // Emit event
-//         event::emit(NFTSold {
-//             nft_id,
-//             seller,
-//             buyer: tx_context::sender(ctx),
-//             price,
-//         });
-//     }
-    
-//     // Cancel a listing and return the NFT to the seller
-//     public entry fun cancel_listing(
-//         marketplace: &mut Marketplace,
-//         receipt: ListingReceipt,
-//         nft: PhotoNFT,
-//         ctx: &mut TxContext
-//     ) {
-//         let nft_id = receipt.nft_id;
-//         let seller = receipt.seller;
-        
-//         // Verify sender is the seller
-//         assert!(tx_context::sender(ctx) == seller, EUnauthorized);
-//         assert!(object::id(&nft) == nft_id, EUnauthorized);
-        
-//         // Remove listing
-//         if (table::contains(&marketplace.listings, nft_id)) {
-//             let _old_listing = table::remove(&mut marketplace.listings, nft_id);
-//             // Need to handle old_listing properly
-//         };
-        
-//         // Return NFT to seller
-//         transfer::public_transfer(nft, seller);
-        
-//         // Burn receipt
-//         let ListingReceipt { id, nft_id: _, marketplace_id: _, seller: _, price: _, created_at: _ } = receipt;
-//         object::delete(id);
-//     }
-    
-//     // Helper to process bid refunds
-//     fun process_bid_refunds(bids: VecMap<address, Bid>, ctx: &mut TxContext) {
-//         let keys = vec_map::keys(&bids);
-//         let i = 0;
-//         let len = vector::length(&keys);
-        
-//         while (i < len) {
-//             let bidder = *vector::borrow(&keys, i);
+        // Handle based on listing type
+        if (listing.listing_type == REAL_LISTING) {
+            // For real listings, handle payment and escrow
             
-//             // Get bid via vec_map::remove which gives ownership
-//             if (vec_map::contains(&bids, &bidder)) {
-//                 let Bid { bidder: _, amount, message: _, created_at: _ } = vec_map::remove(&mut bids, &bidder);
-//                 let refund = coin::from_balance(amount, ctx);
-//                 transfer::public_transfer(refund, bidder);
-//             };
+            // Handle previous bid from this bidder if it exists
+            if (vec_map::contains(&bid_pool.bids, &bidder)) {
+                let previous_bid = *vec_map::get(&bid_pool.bids, &bidder);
+                let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+                
+                // Return previous bid to bidder
+                let prev_balance = balance::split(escrow, previous_bid);
+                let prev_payment = coin::from_balance(prev_balance, ctx);
+                transfer::public_transfer(prev_payment, bidder);
+            } else {
+                // Increment bid count for new bidder
+                bid_pool.bid_count = bid_pool.bid_count + 1;
+            };
             
-//             i = i + 1;
-//         };
-//     }
-    
-//     // === Bidding Functions ===
-    
-//     // Place a bid with funds (can be for soft-listed or formally listed NFTs)
-//     public entry fun place_bid(
-//         marketplace: &mut Marketplace,
-//         nft_id: ID,
-//         payment: Coin<SUI>,
-//         message: String,
-//         ctx: &mut TxContext
-//     ) {
-//         let amount = coin::value(&payment);
-//         assert!(amount > 0, EInvalidBidAmount);
+            // Put new bid in escrow
+            let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+            balance::join(escrow, coin::into_balance(payment));
+            
+        } else {
+            // For soft listings, just record the bid amount without payment
+            // Return the payment to the bidder as it's just an indicative bid
+            transfer::public_transfer(payment, bidder);
+            
+            // Update bid count if this is a new bidder
+            if (!vec_map::contains(&bid_pool.bids, &bidder)) {
+                bid_pool.bid_count = bid_pool.bid_count + 1;
+            };
+        };
         
-//         // Verify NFT has either a soft listing or a formal listing
-//         assert!(
-//             table::contains(&marketplace.soft_listings, nft_id) || 
-//             table::contains(&marketplace.listings, nft_id), 
-//             ENotListed
-//         );
+        // Update bid in bid pool
+        vec_map::insert(&mut bid_pool.bids, bidder, bid_amount);
         
-//         let sender = tx_context::sender(ctx);
+        // Update highest bid if necessary
+        let mut is_highest = false;
+        if (bid_amount > listing.highest_bid) {
+            listing.highest_bid = bid_amount;
+            listing.highest_bidder = bidder;
+            is_highest = true;
+            
+            // If bid matches or exceeds list price, auto-complete the listing (only for real listings)
+            if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
+                complete_listing(marketplace, listing_id, ctx);
+            };
+        };
         
-//         // Ensure there's a place to store bids for this NFT
-//         if (!table::contains(&marketplace.bids, nft_id)) {
-//             table::add(&mut marketplace.bids, nft_id, vec_map::empty<address, Bid>());
-//         };
-        
-//         let bids = table::borrow_mut(&mut marketplace.bids, nft_id);
-        
-//         // If user already has a bid, return their previous funds first
-//         if (vec_map::contains(bids, &sender)) {
-//             let old_bid = vec_map::remove(bids, &sender);
-//             let Bid { bidder: _, amount: old_amount, message: _, created_at: _ } = old_bid;
-//             let old_coin = coin::from_balance(old_amount, ctx);
-//             transfer::public_transfer(old_coin, sender);
-//         };
-        
-//         // Create new bid with funds
-//         let bid = Bid {
-//             bidder: sender,
-//             amount: coin::into_balance(payment),
-//             message,
-//             created_at: tx_context::epoch(ctx),
-//         };
-        
-//         // Store the bid
-//         vec_map::insert(bids, sender, bid);
-        
-//         event::emit(BidPlaced {
-//             nft_id,
-//             bidder: sender,
-//             amount,
-//         });
-//     }
-    
-//     // Accept a bid for a soft-listed NFT (requires the owner to provide the NFT)
-//     public entry fun accept_bid_for_soft_listing(
-//         marketplace: &mut Marketplace,
-//         nft: PhotoNFT,
-//         bidder: address,
-//         ctx: &mut TxContext
-//     ) {
-//         let nft_id = object::id(&nft);
-//         let sender = tx_context::sender(ctx);
-        
-//         // Verify NFT has a soft listing
-//         assert!(table::contains(&marketplace.soft_listings, nft_id), ENotSoftListed);
-//         let soft_listing = table::borrow(&marketplace.soft_listings, nft_id);
-        
-//         // Verify sender is the owner specified in the soft listing
-//         assert!(soft_listing.owner == sender, EUnauthorized);
-        
-//         // Verify bid exists
-//         assert!(table::contains(&marketplace.bids, nft_id), EBidNotFound);
-//         let bids = table::borrow_mut(&mut marketplace.bids, nft_id);
-//         assert!(vec_map::contains(bids, &bidder), EBidNotFound);
-        
-//         // Extract bid
-//         let bid = vec_map::remove(bids, &bidder);
-//         let Bid { bidder: bid_sender, amount, message: _, created_at: _ } = bid;
-        
-//         // Calculate fee
-//         let bid_amount = balance::value(&amount);
-//         let fee_amount = (bid_amount * marketplace.fee_bps) / 10000;
-//         let seller_amount = bid_amount - fee_amount;
-        
-//         // Extract fee
-//         let fee_balance = balance::split(&mut amount, fee_amount);
-//         balance::join(&mut marketplace.fee_balance, fee_balance);
-        
-//         // Convert balance to coin and send to seller
-//         let seller_payment = coin::from_balance(amount, ctx);
-//         transfer::public_transfer(seller_payment, sender);
-        
-//         // Transfer NFT to bidder
-//         transfer::public_transfer(nft, bidder);
-        
-//         // Remove soft listing
-//         let _old_listing = table::remove(&mut marketplace.soft_listings, nft_id);
-        
-//         // Clear any remaining bids for this NFT
-//         if (table::contains(&marketplace.bids, nft_id)) {
-//             let bids_map = table::remove(&mut marketplace.bids, nft_id);
-//             process_bid_refunds(bids_map, ctx);
-//         };
-        
-//         // Clear any soft bids
-//         if (table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::remove(&mut marketplace.soft_bids, nft_id);
-//         };
-        
-//         // Emit event
-//         event::emit(BidAccepted {
-//             nft_id,
-//             seller: sender,
-//             bidder: bid_sender,
-//             amount: bid_amount,
-//         });
-//     }
-    
-//     // Accept a bid for a formally listed NFT
-//     public entry fun accept_bid_for_listing(
-//         marketplace: &mut Marketplace,
-//         receipt: ListingReceipt,
-//         nft: PhotoNFT,
-//         bidder: address,
-//         ctx: &mut TxContext
-//     ) {
-//         let nft_id = receipt.nft_id;
-//         let seller = receipt.seller;
-        
-//         // Verify sender is the seller
-//         assert!(tx_context::sender(ctx) == seller, EUnauthorized);
-//         assert!(object::id(&nft) == nft_id, EUnauthorized);
-        
-//         // Verify NFT is listed
-//         assert!(table::contains(&marketplace.listings, nft_id), ENotListed);
-        
-//         // Verify bid exists
-//         assert!(table::contains(&marketplace.bids, nft_id), EBidNotFound);
-//         let bids = table::borrow_mut(&mut marketplace.bids, nft_id);
-//         assert!(vec_map::contains(bids, &bidder), EBidNotFound);
-        
-//         // Extract bid
-//         let bid = vec_map::remove(bids, &bidder);
-//         let Bid { bidder: bid_sender, amount, message: _, created_at: _ } = bid;
-        
-//         // Calculate fee
-//         let bid_amount = balance::value(&amount);
-//         let fee_amount = (bid_amount * marketplace.fee_bps) / 10000;
-//         let seller_amount = bid_amount - fee_amount;
-        
-//         // Extract fee
-//         let fee_balance = balance::split(&mut amount, fee_amount);
-//         balance::join(&mut marketplace.fee_balance, fee_balance);
-        
-//         // Convert balance to coin and send to seller
-//         let seller_payment = coin::from_balance(amount, ctx);
-//         transfer::public_transfer(seller_payment, seller);
-        
-//         // Transfer NFT to bidder
-//         transfer::public_transfer(nft, bidder);
-        
-//         // Remove listing
-//         let _old_listing = table::remove(&mut marketplace.listings, nft_id);
-        
-//         // Clear any remaining bids
-//         if (table::contains(&marketplace.bids, nft_id)) {
-//             let bids_map = table::remove(&mut marketplace.bids, nft_id);
-//             process_bid_refunds(bids_map, ctx);
-//         };
-        
-//         // Clear any soft bids
-//         if (table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::remove(&mut marketplace.soft_bids, nft_id);
-//         };
-        
-//         // Burn receipt
-//         let ListingReceipt { id, nft_id: _, marketplace_id: _, seller: _, price: _, created_at: _ } = receipt;
-//         object::delete(id);
-        
-//         // Emit event
-//         event::emit(BidAccepted {
-//             nft_id,
-//             seller,
-//             bidder: bid_sender,
-//             amount: bid_amount,
-//         });
-//     }
-    
-//     // Cancel a bid and refund funds
-//     public entry fun cancel_bid(
-//         marketplace: &mut Marketplace,
-//         nft_id: ID,
-//         ctx: &mut TxContext
-//     ) {
-//         let sender = tx_context::sender(ctx);
-        
-//         // Verify bid exists
-//         assert!(table::contains(&marketplace.bids, nft_id), EBidNotFound);
-//         let bids = table::borrow_mut(&mut marketplace.bids, nft_id);
-//         assert!(vec_map::contains(bids, &sender), EBidNotFound);
-        
-//         // Extract bid
-//         let bid = vec_map::remove(bids, &sender);
-//         let Bid { bidder, amount, message: _, created_at: _ } = bid;
-        
-//         // Convert balance to coin and return to bidder
-//         let refund = coin::from_balance(amount, ctx);
-//         transfer::public_transfer(refund, bidder);
-//     }
-    
-//     // === Admin Functions ===
-    
-//     // Admin can remove a soft listing
-//     public entry fun remove_soft_listing(
-//         _: &AdminCap,
-//         marketplace: &mut Marketplace,
-//         nft_id: ID
-//     ) {
-//         // Remove soft listing if it exists
-//         if (table::contains(&marketplace.soft_listings, nft_id)) {
-//             let _old_listing = table::remove(&mut marketplace.soft_listings, nft_id);
-//             // Need to handle old_listing properly
-//         };
-        
-//         // Clear any soft bids
-//         if (table::contains(&marketplace.soft_bids, nft_id)) {
-//             table::remove(&mut marketplace.soft_bids, nft_id);
-//         };
-//     }
-    
-//     // Update marketplace fee
-//     public entry fun update_fee(
-//         _: &AdminCap,
-//         marketplace: &mut Marketplace,
-//         new_fee_bps: u64
-//     ) {
-//         assert!(new_fee_bps <= 1000, EInvalidPrice); // Max 10% fee
-//         marketplace.fee_bps = new_fee_bps;
-//     }
-    
-//     // Update treasury address
-//     public entry fun update_treasury(
-//         _: &AdminCap,
-//         marketplace: &mut Marketplace,
-//         new_treasury: address
-//     ) {
-//         marketplace.treasury = new_treasury;
-//     }
-    
-//     // Withdraw accumulated fees
-//     public entry fun withdraw_fees(
-//         _: &AdminCap,
-//         marketplace: &mut Marketplace,
-//         ctx: &mut TxContext
-//     ) {
-//         let amount = balance::value(&marketplace.fee_balance);
-//         if (amount > 0) {
-//             let fee_coin = coin::from_balance(balance::withdraw_all(&mut marketplace.fee_balance), ctx);
-//             transfer::public_transfer(fee_coin, marketplace.treasury);
-//         }
-//     }
-    
-//     // === View Functions ===
-    
-//     // Check if NFT is listed
-//     public fun is_listed(marketplace: &Marketplace, nft_id: ID): bool {
-//         table::contains(&marketplace.listings, nft_id)
-//     }
-    
-//     // Get listing information
-//     public fun get_listing(marketplace: &Marketplace, nft_id: ID): (address, u64, u64) {
-//         assert!(table::contains(&marketplace.listings, nft_id), EListingNotFound);
-//         let listing = table::borrow(&marketplace.listings, nft_id);
-//         (listing.seller, listing.price, listing.created_at)
-//     }
-    
-//     // Check if NFT has soft listing
-//     public fun has_soft_listing(marketplace: &Marketplace, nft_id: ID): bool {
-//         table::contains(&marketplace.soft_listings, nft_id)
-//     }
-    
-//     // Get soft listing information
-//     public fun get_soft_listing(marketplace: &Marketplace, nft_id: ID): (address, u64, u64, address) {
-//         assert!(table::contains(&marketplace.soft_listings, nft_id), EListingNotFound);
-//         let listing = table::borrow(&marketplace.soft_listings, nft_id);
-//         (listing.owner, listing.suggested_price, listing.created_at, listing.created_by)
-//     }
-    
-//     // Get marketplace fee
-//     public fun get_fee_bps(marketplace: &Marketplace): u64 {
-//         marketplace.fee_bps
-//     }
+        // Emit bid placed event
+        event::emit(BidPlaced {
+            listing_id,
+            bidder,
+            bid_amount,
+            is_highest,
+        });
+    }
 
-//     // For testing - get total fee balance
-//     #[test_only]
-//     public fun get_fee_balance(marketplace: &Marketplace): u64 {
-//         balance::value(&marketplace.fee_balance)
-//     }
-// } 
+    // Accept a bid and complete a real listing
+    public entry fun accept_bid(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        
+        // Only owner can accept a bid
+        assert!(listing.owner == sender, ENotOwner);
+        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
+        assert!(listing.active, EListingNotActive);
+        assert!(listing.highest_bid > 0, EInvalidBid);
+        
+        complete_listing(marketplace, listing_id, ctx);
+    }
+
+    // Cancel a listing
+    public entry fun cancel_listing(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        
+        // Only owner can cancel a listing
+        assert!(listing.owner == sender, ENotOwner);
+        assert!(listing.active, EListingNotActive);
+        
+        // Mark listing as inactive
+        listing.active = false;
+        
+        // For real listings, return all bids
+        if (listing.listing_type == REAL_LISTING) {
+            let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+            let bidders = vec_map::keys(&bid_pool.bids);
+            let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+            
+            let mut i = 0;
+            let len = vector::length(&bidders);
+            
+            while (i < len) {
+                let bidder = *vector::borrow(&bidders, i);
+                let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
+                
+                // Return bid to bidder
+                if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
+                    let bid_balance = balance::split(escrow, bid_amount);
+                    let payment = coin::from_balance(bid_balance, ctx);
+                    transfer::public_transfer(payment, bidder);
+                };
+                
+                i = i + 1;
+            };
+        };
+        
+        // Emit listing completed event
+        event::emit(ListingCompleted {
+            listing_id,
+            nft_id: listing.nft_id,
+            seller: listing.owner,
+            buyer: @0x0,
+            final_price: 0,
+            listing_type: listing.listing_type,
+            success: false,
+        });
+    }
+
+    // Update the verification score for a listing (admin or trusted verifier only)
+    public entry fun update_verification_score(
+        _: &MarketplaceCap,
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        score: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(score <= 100, EInvalidListing); // Score must be 0-100
+        
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        listing.verification_score = score;
+        
+        // Emit verification updated event
+        event::emit(VerificationUpdated {
+            listing_id,
+            nft_id: listing.nft_id,
+            new_score: score,
+            verifier: tx_context::sender(ctx),
+        });
+    }
+
+    // === Helper Functions ===
+
+    // Complete a listing by transferring the NFT and payment
+    fun complete_listing(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        ctx: &mut TxContext
+    ) {
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        assert!(listing.active, EListingNotActive);
+        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
+        assert!(listing.highest_bid > 0, EInvalidBid);
+        
+        // Mark listing as inactive
+        listing.active = false;
+        
+        let final_price = listing.highest_bid;
+        let buyer = listing.highest_bidder;
+        let seller = listing.owner;
+        
+        // Update marketplace statistics
+        marketplace.total_volume = marketplace.total_volume + final_price;
+        
+        // Calculate and deduct platform fee
+        let fee_amount = (final_price * marketplace.fee_percentage) / 10000;
+        let seller_amount = final_price - fee_amount;
+        
+        // Transfer funds from escrow
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        
+        // Add fee to treasury
+        let fee_balance = balance::split(escrow, fee_amount);
+        balance::join(&mut marketplace.treasury, fee_balance);
+        
+        // Send payment to seller
+        let seller_balance = balance::split(escrow, seller_amount);
+        let seller_payment = coin::from_balance(seller_balance, ctx);
+        transfer::public_transfer(seller_payment, seller);
+        
+        // For any remaining bids, return them to their bidders
+        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+        let bidders = vec_map::keys(&bid_pool.bids);
+        
+        let mut i = 0;
+        let len = vector::length(&bidders);
+        
+        while (i < len) {
+            let bidder = *vector::borrow(&bidders, i);
+            
+            // Skip the winner, their payment is already handled
+            if (bidder != buyer) {
+                let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
+                
+                // Return bid to bidder if there's enough in escrow
+                if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
+                    let bid_balance = balance::split(escrow, bid_amount);
+                    let payment = coin::from_balance(bid_balance, ctx);
+                    transfer::public_transfer(payment, bidder);
+                };
+            };
+            
+            i = i + 1;
+        };
+        
+        // Emit listing completed event
+        event::emit(ListingCompleted {
+            listing_id,
+            nft_id: listing.nft_id,
+            seller,
+            buyer,
+            final_price,
+            listing_type: REAL_LISTING,
+            success: true,
+        });
+    }
+
+    // === View Functions ===
+
+    // Get listing details
+    public fun get_listing_details(
+        marketplace: &Marketplace, 
+        listing_id: address
+    ): (address, address, u64, u8, u64, u64, address, bool, u64, u64, u64) {
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        
+        (
+            listing.owner,
+            listing.nft_id,
+            listing.list_price,
+            listing.listing_type,
+            listing.min_bid,
+            listing.highest_bid,
+            listing.highest_bidder,
+            listing.active,
+            listing.verification_score,
+            listing.start_time,
+            listing.end_time
+        )
+    }
+
+    // Get the number of bids on a listing
+    public fun get_bid_count(
+        marketplace: &Marketplace, 
+        listing_id: address
+    ): u64 {
+        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+        bid_pool.bid_count
+    }
+
+    // Get the platform fee percentage
+    public fun get_fee_percentage(marketplace: &Marketplace): u64 {
+        marketplace.fee_percentage
+    }
+
+    // Get the total trading volume
+    public fun get_total_volume(marketplace: &Marketplace): u64 {
+        marketplace.total_volume
+    }
+
+    // Get the total number of listings
+    public fun get_total_listings(marketplace: &Marketplace): u64 {
+        marketplace.total_listings
+    }
+
+    // Check if an NFT is already listed
+    // public fun is_nft_listed(
+    //     marketplace: &Marketplace, 
+    //     nft_id: address
+    // ): bool {
+    //     // Use direct search rather than iteration
+    //     // This requires scanning all entries but avoids using the keys/values functions
+    //     let exists = false;
+        
+    //     // We maintain a vector of all current listing IDs in the marketplace object
+    //     let listing_count = marketplace.total_listings;
+        
+    //     // If there are no listings, return false immediately
+    //     if (listing_count == 0) {
+    //         return false
+    //     };
+        
+    //     // This is a simplified check that iterates through entries in the table
+    //     // In a production environment, we would maintain a mapping of nft_id to listing_id
+    //     // to make this more efficient
+        
+    //     // Since we can't iterate directly over the table with a "for each" loop,
+    //     // we'll return a simple boolean based on a scan of active listings
+    //     exists
+    // }
+
+    // === Admin Functions ===
+
+    // Update the platform fee percentage (admin only)
+    public entry fun update_fee_percentage(
+        _: &MarketplaceCap,
+        marketplace: &mut Marketplace, 
+        new_percentage: u64
+    ) {
+        assert!(new_percentage <= 1000, EInvalidListing); // Max 10%
+        marketplace.fee_percentage = new_percentage;
+    }
+
+    // Withdraw accumulated fees from treasury (admin only)
+    public entry fun withdraw_fees(
+        _: &MarketplaceCap,
+        marketplace: &mut Marketplace, 
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        assert!(amount <= balance::value(&marketplace.treasury), EInsufficientBid);
+        
+        let fee_balance = balance::split(&mut marketplace.treasury, amount);
+        let payment = coin::from_balance(fee_balance, ctx);
+        transfer::public_transfer(payment, recipient);
+    }
+}
