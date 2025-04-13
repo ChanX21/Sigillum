@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
 import { generateSHA256, processImageForAuthentication } from '../utils/imageUtils';
 import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService';
 import { 
   mintNFT,
   verifyImageByHash,
   Metadata,
-  VerificationResult 
 } from '../services/blockchainService';
-import AuthenticatedImage, { IAuthenticatedImage } from '../models/AuthenticatedImage';
+import { AuthenticatedImage } from '../models/AuthenticatedImage';
+import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
@@ -23,12 +22,39 @@ interface FileRequest extends Request {
 export const authenticateImage = async (req: FileRequest, res: Response): Promise<void> => {
   try {
     if (!req.file) {
-      res.status(400).json({ message: 'No image file uploaded' });
+      res.status(400).json({ 
+        message: 'No image file uploaded',
+        hint: 'Make sure you are sending a multipart/form-data request with an image field'
+      });
+      return;
+    }
+
+    // Get signature data from form fields
+    const { signature, message } = req.body;
+    const creatorAddress = req.params.address;
+    
+    if (!signature || !message) {
+      res.status(400).json({ 
+        message: 'Signature and message are required for authentication',
+        hint: 'Send these as form fields in the same multipart/form-data request as the image'
+      });
+      return;
+    }
+
+    // Verify the signature
+    const publicKey = await verifyPersonalMessageSignature(message, signature);
+    if (!publicKey.verifyAddress(creatorAddress)) {
+      res.status(400).json({ 
+        message: 'Signature verification failed',
+        hint: 'Please check your signature and message'
+      });
       return;
     }
 
     // Process image for authentication
-    const authenticationData = await processImageForAuthentication(req.file.buffer);
+    const authenticationData = await processImageForAuthentication(req.file.buffer, {
+      creatorId: creatorAddress
+    });
     
     const existingImage = await AuthenticatedImage.findOne({
       $or: [
@@ -47,7 +73,6 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
     // Upload watermarked image to IPFS
     const watermarkedIpfsCid = await uploadToIPFS(authenticationData.watermarkedBuffer);
     
-    const creatorAddress = req.params.address;
     let metadata: Metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: `https://${process.env.PINATA_GATEWAY}/ipfs/${originalIpfsCid}`,
@@ -183,7 +208,9 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       message: isAuthentic 
         ? 'Image verification successful' 
         : 'No matching NFTs found on blockchain for this hash',
-      verificationResult,
+      verified: isAuthentic,
+      databaseRecord,
+      verificationResult
     });
   } catch (error) {
     console.error('Error verifying image by hash:', error);

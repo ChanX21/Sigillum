@@ -16,6 +16,7 @@ interface IBlockchain {
   metadataURI: string;
 }
 
+
 export interface IAuthenticatedImage extends Document {
   original: string;
   watermarked: string;
@@ -91,4 +92,4 @@ authenticatedImageSchema.index({ 'authentication.pHash': 1 });
 
 const AuthenticatedImage = mongoose.model<IAuthenticatedImage>('AuthenticatedImage', authenticatedImageSchema);
 
-export default AuthenticatedImage; 
+export { AuthenticatedImage};

@@ -4,7 +4,7 @@ import upload from '../middleware/upload';
 
 const router = express.Router();
 
-// POST /api/images/authenticate - Authenticate an image
+// POST /api/images/authenticate - Authenticate an image with creator's signature
 router.post('/authenticate/:address', upload.single('image'), imageAuthController.authenticateImage);
 
 // POST /api/images/verify - Verify an image using the uploaded file
