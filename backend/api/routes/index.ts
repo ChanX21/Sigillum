@@ -4,11 +4,11 @@ import upload from '../middleware/upload';
 
 const router = express.Router();
 
-// POST /api/images/authenticate - Authenticate an image
+// POST /api/images/authenticate - Authenticate an image with creator's signature
 router.post('/authenticate/:address', upload.single('image'), imageAuthController.authenticateImage);
 
-// POST /api/images/verify-with-contract - Verify an image using comprehensive Sui contract verification
-router.post('/verify-with-contract', imageAuthController.verifyImageWithContract);
+// POST /api/images/verify - Verify an image using the uploaded file
+router.post('/verify', upload.single('image'), imageAuthController.verify);
 
 // GET /api/images/all - Get all authenticated images
 router.get('/all', imageAuthController.getAllImages);

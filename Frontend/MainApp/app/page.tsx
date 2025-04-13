@@ -9,6 +9,7 @@ import { Footer } from "@/components/shared/Footer";
 import { NFTCard } from "@/types";
 import { Header } from "@/components/shared/Header";
 
+
 export default function Home() {
   const featuredNFTs: NFTCard[] = [
     {
