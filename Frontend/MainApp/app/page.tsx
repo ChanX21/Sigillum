@@ -1,14 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FaEthereum } from "react-icons/fa";
-import { IoSearchSharp } from "react-icons/io5";
+"use client";
 import { NFTCardFeatured } from "@/components/nft/NFTCardFeatured";
 import { NFTCardBrowse } from "@/components/nft/NFTCardBrowse";
-import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Footer } from "@/components/shared/Footer";
-import { NFTCard } from "@/types";
+import { MediaRecord, NFTCard } from "@/types";
 import { Header } from "@/components/shared/Header";
-
+import { useGetAllImages } from "@/hooks/useGetAllImages";
 
 export default function Home() {
   const featuredNFTs: NFTCard[] = [
@@ -46,6 +42,8 @@ export default function Home() {
     currentBid: 0.56,
   });
 
+  const { data } = useGetAllImages();
+
   return (
     <>
       <Header />
@@ -55,7 +53,7 @@ export default function Home() {
           className="min-h-[50vh] grid grid-cols-1 md:grid-cols-2 gap-10 mb-10"
           aria-label="Featured NFTs"
         >
-          {featuredNFTs.map((nft, index) => (
+          {data?.slice(-2).map((nft: MediaRecord, index: number) => (
             <NFTCardFeatured key={index} nft={nft} />
           ))}
         </section>
@@ -66,7 +64,7 @@ export default function Home() {
         >
           <h1 className="text-3xl font-bold mb-8">Browse</h1>
           <div className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-            {browseNFTs.map((nft, index) => (
+            {data?.map((nft: MediaRecord, index: number) => (
               <div key={index} className="snap-start">
                 <NFTCardBrowse nft={nft} idx={index} />
               </div>
