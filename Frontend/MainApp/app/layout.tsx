@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Albert_Sans } from "next/font/google";
 import "./globals.css";
 import { Provider } from "./Provider";
+import { Toaster } from "sonner";
 
 
 const albertSans = Albert_Sans({
@@ -25,6 +26,7 @@ export default function RootLayout({
         <Provider>
           {children}
         </Provider>
+        <Toaster />
       </body>
     </html>
   );

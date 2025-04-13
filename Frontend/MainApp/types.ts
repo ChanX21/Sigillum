@@ -11,3 +11,17 @@ export interface NFTCard {
     blockchain: string;
   };
 }
+
+export interface imageAuthResponse {
+  image: imageAuthDetails;
+  message: string;
+}
+export interface imageAuthDetails {
+  id: string;
+  originalIpfsCid: string;
+  pHash: string;
+  sha256Hash: string;
+  status: string;
+  watermarkedIpfsCid: string;
+}
+

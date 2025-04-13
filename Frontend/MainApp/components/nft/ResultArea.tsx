@@ -2,22 +2,37 @@ import Image from "next/image";
 import { AiOutlineDownload } from "react-icons/ai";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
+import { ChevronLeft, Terminal } from "lucide-react";
 import { NFTDetails } from "./NFTDetails";
+import { useEffect } from "react";
+import { AuthState, useImageAuthStore } from "@/hooks/useImageAuthStore";
 
 export const ResultArea = ({
   setStep,
 }: {
   setStep: (step: number) => void;
 }) => {
+  const { result } = useImageAuthStore() as AuthState
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = `${process.env.NEXT_PUBLIC_PINATA_URL}/${result?.image.watermarkedIpfsCid}`; // Replace with your image URL
+    link.download = "watermarked-image"; // The filename to save as
+    link.target = "_blank"
+    link.click();
+  };
   return (
     <div>
+
+      <Button variant="ghost" onClick={() => setStep(0)} className="p-2">
+        <ChevronLeft className="w-3 h-3 mx-1" />
+        Back
+      </Button>
       <div className="min-h-[550px] rounded-lg p-10 grid md:grid-cols-2 w-full gap-10 md:gap-36 ">
         <div className="col-span-1 flex flex-col">
           <div className="w-full aspect-[16/9] relative overflow-hidden mb-10">
             <Image
               alt="nft"
-              src="/image.png"
+              src={`${process.env.NEXT_PUBLIC_PINATA_URL}/${result?.image.watermarkedIpfsCid}`}
               fill
               className="rounded-4xl object-cover"
               priority
@@ -27,7 +42,7 @@ export const ResultArea = ({
 
           <Button
             variant="default"
-            onClick={() => setStep(2)}
+            onClick={handleDownload}
             className="rounded-md w-full h-12 cursor-pointer"
           >
             <AiOutlineDownload size={25} />
