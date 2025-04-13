@@ -8,12 +8,18 @@ import Link from "next/link";
 
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { UserAvatar } from "./UserAvatar";
+import { useAccountBalance, useWallet } from '@suiet/wallet-kit'
+import "@suiet/wallet-kit/style.css"
+import WalletModal from "../wallet/WalletModal";
+import { shortenAddress } from "@/utils/shortenAddress";
+
 
 export const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
+  const { connected: walletConnected, address, } = useWallet()
+  const { balance, loading } = useAccountBalance()
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -25,9 +31,22 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSearch]);
 
+
+
+  useEffect(() => {
+    if (walletConnected) {
+      setShowWalletModal(false)
+    }
+  }, [walletConnected])
+
+
   return (
     <>
+      {/* Wallet Modal */}
       <header className="fixed top-0 z-50 w-full h-16 px-4 md:px-10 bg-background border-b border-stone-300">
+        {showWalletModal && (
+          <WalletModal setShowWalletModal={setShowWalletModal} />
+        )}
         <div className="flex items-center justify-between h-full w-full gap-4">
           {/* Logo */}
           <Link
@@ -56,27 +75,51 @@ export const Header = () => {
                 aria-label="Search NFTs"
               />
             </div>
+            {walletConnected ? (
+              <>
+                {/* Balance */}
+                <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-full">
+                  <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
+                    <FaEthereum size={15} className="text-gray-700" />
+                  </div>
+                  <p className="text-sm font-semibold whitespace-nowrap">
+                    {balance && (balance)}
+                    {loading && (
+                      <div className="relative w-5 h-5">
+                        <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </p>
+                </div>
 
-            {/* Balance */}
-            <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-full">
-              <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
-                <FaEthereum size={15} className="text-gray-700" />
-              </div>
-              <p className="text-sm font-semibold whitespace-nowrap">
-                1.433 ETH
-              </p>
-            </div>
+                <Button
+                  variant="default"
+                  className="rounded-full text-sm px-4 py-2"
+                >
+                  Secure image
+                </Button>
+                {address && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full text-sm px-4 py-2"
+                  >
+                    {shortenAddress(address)}
+                  </Button>
 
-            <Button
-              variant="default"
-              className="rounded-full text-sm px-4 py-2"
-            >
-              Secure image
-            </Button>
-
-            <UserAvatar src="/user.png" alt="User profile" />
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="default"
+                  className="rounded-full text-sm px-4 py-2"
+                  onClick={() => setShowWalletModal(true)}
+                >
+                  Connect Wallet
+                </Button>
+              </>
+            )}
           </nav>
-
           {/* Mobile nav */}
           <div className="flex items-center md:hidden gap-3">
             {/* Search Toggle */}
@@ -91,11 +134,28 @@ export const Header = () => {
                 <IoSearchSharp size={20} className="text-gray-700" />
               )}
             </button>
+            {walletConnected ? (
+              <div className="relative">
+                {address && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full text-sm px-4 py-2"
+                  >
+                    {shortenAddress(address)}
+                  </Button>
 
-            {/* Avatar (dropdown trigger) */}
-            <div className="relative">
-              <UserAvatar src="/user.png" alt="User profile" />
-            </div>
+                )}
+              </div>
+            ) : (
+              <Button
+                variant="default"
+                className="rounded-full text-sm px-4 py-2"
+                onClick={() => setShowWalletModal(true)}
+              >
+                Connect Wallet
+              </Button>
+            )}
+
           </div>
         </div>
 
@@ -115,22 +175,24 @@ export const Header = () => {
           </div>
         )}
       </header>
-      <nav className="flex md:hidden items-center gap-3 bg-white p-1 rounded-full mt-16">
-        {/* Balance */}
-        <div className="flex w-1/2 items-center gap-2 bg-background px-3 py-2 rounded-full">
-          <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
-            <FaEthereum size={15} className="text-gray-700" />
+      {walletConnected && (
+        <nav className="flex md:hidden items-center gap-3 bg-white p-1 rounded-full mt-16">
+          {/* Balance */}
+          <div className="flex w-1/2 items-center gap-2 bg-background px-3 py-2 rounded-full">
+            <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
+              <FaEthereum size={15} className="text-gray-700" />
+            </div>
+            <p className="text-sm font-semibold whitespace-nowrap">{balance && (balance)}</p>
           </div>
-          <p className="text-sm font-semibold whitespace-nowrap">1.433 ETH</p>
-        </div>
 
-        <Button
-          variant="default"
-          className="rounded-full text-sm px-4 py-2 w-1/2 h-10"
-        >
-          Secure image
-        </Button>
-      </nav>
+          <Button
+            variant="default"
+            className="rounded-full text-sm px-4 py-2 w-1/2 h-10"
+          >
+            Secure image
+          </Button>
+        </nav>
+      )}
     </>
   );
 };
