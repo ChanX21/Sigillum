@@ -33,7 +33,7 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
     const { signature, message } = req.body;
     const creatorAddress = req.params.address;
     
-    if (!signature || !message) {
+   /* if (!signature || !message) {
       res.status(400).json({ 
         message: 'Signature and message are required for authentication',
         hint: 'Send these as form fields in the same multipart/form-data request as the image'
@@ -49,7 +49,7 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
         hint: 'Please check your signature and message'
       });
       return;
-    }
+    }*/
 
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer, {

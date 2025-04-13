@@ -17,11 +17,8 @@ const MODULE_NAME = (PACKAGE_ID_WITH_MODULE.split('::')[1] || 'sigillum_nft');
 const FUNCTION_NAME = 'register_photo';
 
 // Extract Registry object ID from env var (removing any module path if present)
-const REGISTRY_ID_WITH_PATH = process.env.SUI_REGISTRY_ID || '';
-const REGISTRY_ID = REGISTRY_ID_WITH_PATH.includes('::') 
-  ? REGISTRY_ID_WITH_PATH.split('::')[0]  // If it has ::, take the object ID part
-  : REGISTRY_ID_WITH_PATH;  // Otherwise use as is
-
+const REGISTRY_ID = process.env.SUI_REGISTRY_ID?.split('::')[0] || '';
+const ADMIN_CAP = process.env.SUI_ADMIN_CAP || '';
 export interface Metadata {
   metadataCID: string;
   image: string;
@@ -98,6 +95,7 @@ export const mintNFT = async (creatorAddress: string, metadata: Metadata) => {
       function: FUNCTION_NAME,
       typeArguments: [],
       arguments: [
+        tx.object(ADMIN_CAP),
         tx.object(REGISTRY_ID),
         tx.pure(txData.imageUrl),
         tx.pure(txData.sha256Hash),
