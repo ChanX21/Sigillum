@@ -19,12 +19,12 @@ fun test_sigillum_contracts_fail() {
 
 #[test_only]
 module sigillum_contracts::photo_nft_tests {
-    use sui::test_scenario;
-    use std::string;
+    use sui::test_scenario::{Self, Scenario};
+    use std::string::{Self};
     use std::vector;
     use sui::vec_map;
     
-    use sigillum_contracts::sigillum_nft::{Self, PhotoNFT, Registry};
+    use sigillum_contracts::sigillum_nft::{Self, PhotoNFT, Registry, AdminCap};
 
     // Test addresses
     const CREATOR: address = @0xA;
@@ -36,35 +36,45 @@ module sigillum_contracts::photo_nft_tests {
     const PHASH: vector<u8> = b"phash_data_here";
     const DHASH: vector<u8> = b"dhash_data_here";
     const WATERMARK_ID: vector<u8> = b"watermark_123";
-    const METADATA: vector<u8> = b"{\"title\":\"Test Photo\",\"description\":\"Test\"}";
+    const METADATA_STR: vector<u8> = b"{\"title\":\"Test Photo\",\"description\":\"Test\"}";
 
-    #[test]
-    fun test_register_photo() {
+    // Helper function to set up the test environment
+    fun setup_test(): Scenario {
         let mut scenario = test_scenario::begin(CREATOR);
         
-        // First, make sure the Registry is initialized
+        // Initialize the Registry and AdminCap
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
             sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
         };
+        
+        scenario
+    }
 
-        // Get the Registry
+    #[test]
+    fun test_register_photo() {
+        let mut scenario = setup_test();
+
+        // Get the Registry and AdminCap
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
             let mut registry = test_scenario::take_shared<Registry>(&scenario);
             
             // Register a photo as CREATOR
             sigillum_nft::register_photo(
+                &admin_cap,
                 &mut registry,
                 IMAGE_URL,
                 SHA256_HASH,
                 PHASH, 
                 DHASH,
                 WATERMARK_ID,
-                string::utf8(METADATA),
+                string::utf8(METADATA_STR),
                 test_scenario::ctx(&mut scenario)
             );
             
+            test_scenario::return_to_sender(&scenario, admin_cap);
             test_scenario::return_shared(registry);
         };
         
@@ -86,30 +96,27 @@ module sigillum_contracts::photo_nft_tests {
     
     #[test]
     fun test_transfer_photo() {
-        let mut scenario = test_scenario::begin(CREATOR);
-        
-        // Initialize the Registry
-        test_scenario::next_tx(&mut scenario, CREATOR);
-        {
-            sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
-        };
+        let mut scenario = setup_test();
         
         // Register a photo as CREATOR
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
             let mut registry = test_scenario::take_shared<Registry>(&scenario);
             
             sigillum_nft::register_photo(
+                &admin_cap,
                 &mut registry,
                 IMAGE_URL,
                 SHA256_HASH,
                 PHASH, 
                 DHASH,
                 WATERMARK_ID,
-                string::utf8(METADATA),
+                string::utf8(METADATA_STR),
                 test_scenario::ctx(&mut scenario)
             );
             
+            test_scenario::return_to_sender(&scenario, admin_cap);
             test_scenario::return_shared(registry);
         };
         
@@ -134,30 +141,27 @@ module sigillum_contracts::photo_nft_tests {
     
     #[test]
     fun test_verify_exact_match() {
-        let mut scenario = test_scenario::begin(CREATOR);
-        
-        // Initialize the Registry
-        test_scenario::next_tx(&mut scenario, CREATOR);
-        {
-            sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
-        };
+        let mut scenario = setup_test();
         
         // Register a photo
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
             let mut registry = test_scenario::take_shared<Registry>(&scenario);
             
             sigillum_nft::register_photo(
+                &admin_cap,
                 &mut registry,
                 IMAGE_URL,
                 SHA256_HASH,
                 PHASH, 
                 DHASH,
                 WATERMARK_ID,
-                string::utf8(METADATA),
+                string::utf8(METADATA_STR),
                 test_scenario::ctx(&mut scenario)
             );
             
+            test_scenario::return_to_sender(&scenario, admin_cap);
             test_scenario::return_shared(registry);
         };
         
@@ -206,30 +210,27 @@ module sigillum_contracts::photo_nft_tests {
     
     #[test]
     fun test_timestamp() {
-        let mut scenario = test_scenario::begin(CREATOR);
-        
-        // Initialize the Registry
-        test_scenario::next_tx(&mut scenario, CREATOR);
-        {
-            sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
-        };
+        let mut scenario = setup_test();
         
         // Register a photo
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
             let mut registry = test_scenario::take_shared<Registry>(&scenario);
             
             sigillum_nft::register_photo(
+                &admin_cap,
                 &mut registry,
                 IMAGE_URL,
                 SHA256_HASH,
                 PHASH, 
                 DHASH,
                 WATERMARK_ID,
-                string::utf8(METADATA),
+                string::utf8(METADATA_STR),
                 test_scenario::ctx(&mut scenario)
             );
             
+            test_scenario::return_to_sender(&scenario, admin_cap);
             test_scenario::return_shared(registry);
         };
         
@@ -248,30 +249,27 @@ module sigillum_contracts::photo_nft_tests {
     
     #[test]
     fun test_registry_lookup() {
-        let mut scenario = test_scenario::begin(CREATOR);
-        
-        // Initialize the Registry
-        test_scenario::next_tx(&mut scenario, CREATOR);
-        {
-            sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
-        };
+        let mut scenario = setup_test();
         
         // Register a photo
         test_scenario::next_tx(&mut scenario, CREATOR);
         {
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
             let mut registry = test_scenario::take_shared<Registry>(&scenario);
             
             sigillum_nft::register_photo(
+                &admin_cap,
                 &mut registry,
                 IMAGE_URL,
                 SHA256_HASH,
                 PHASH, 
                 DHASH,
                 WATERMARK_ID,
-                string::utf8(METADATA),
+                string::utf8(METADATA_STR),
                 test_scenario::ctx(&mut scenario)
             );
             
+            test_scenario::return_to_sender(&scenario, admin_cap);
             test_scenario::return_shared(registry);
         };
         
@@ -297,10 +295,31 @@ module sigillum_contracts::photo_nft_tests {
             
             // Find similar NFTs
             let similar_nfts = sigillum_nft::find_similar_nfts(&registry, phash, 0);
-            assert!(sui::vec_map::size(&similar_nfts) == 1, 3);
+            assert!(vec_map::size(&similar_nfts) == 1, 3);
             
             test_scenario::return_to_sender(&scenario, nft);
             test_scenario::return_shared(registry);
+        };
+        
+        test_scenario::end(scenario);
+    }
+    
+    #[test]
+    fun test_admin_cap() {
+        let mut scenario = test_scenario::begin(CREATOR);
+        
+        // Initialize the Registry and AdminCap
+        test_scenario::next_tx(&mut scenario, CREATOR);
+        {
+            sigillum_nft::init_for_testing(test_scenario::ctx(&mut scenario));
+        };
+        
+        // Verify AdminCap was created and transferred to CREATOR
+        test_scenario::next_tx(&mut scenario, CREATOR);
+        {
+            // This should not abort if AdminCap was properly created and transferred
+            let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
+            test_scenario::return_to_sender(&scenario, admin_cap);
         };
         
         test_scenario::end(scenario);

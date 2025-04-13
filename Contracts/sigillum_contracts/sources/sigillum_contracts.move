@@ -19,6 +19,12 @@ module sigillum_contracts::sigillum_nft {
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
     // use sui::test_utils::{Self};
+
+     // Capability for NFT stamping 
+    public struct AdminCap has key, store {
+        id: UID
+    }
+
     
     // Main PhotoNFT struct
     public struct PhotoNFT has key, store {
@@ -54,6 +60,11 @@ module sigillum_contracts::sigillum_nft {
             id: object::new(ctx),
             phash_to_nfts: table::new(ctx),
         };
+
+        transfer::transfer(
+            AdminCap { id: object::new(ctx) },
+            tx_context::sender(ctx)
+        );
         
         transfer::share_object(registry);
     }
@@ -68,6 +79,7 @@ module sigillum_contracts::sigillum_nft {
 
     // Register a new photo and mint NFT
     public entry fun register_photo(
+        _: &AdminCap,
         registry: &mut Registry,
         image_url: vector<u8>,
         sha256_hash: vector<u8>,
