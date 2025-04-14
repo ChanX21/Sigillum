@@ -1,4 +1,4 @@
-import { AuthState, useImageAuthStore } from "@/hooks/useImageAuthStore";
+import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { FaRegCopy } from "react-icons/fa";
 import { Button } from "../ui/button";
