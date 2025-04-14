@@ -235,3 +235,19 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ message: 'Failed to fetch all images' });
   }
 };
+
+/**
+ * Get a authenticated image by id
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+export const getImageById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const imageId = req.params.id;
+    const authenticatedImage = await AuthenticatedImage.findById(imageId);
+    res.status(200).json(authenticatedImage);
+  } catch (error) {
+    console.error('Error fetching image by id:', error);
+    res.status(500).json({ message: 'Failed to fetch image by id' });
+  }
+};
