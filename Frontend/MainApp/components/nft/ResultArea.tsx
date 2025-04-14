@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, Terminal } from "lucide-react";
 import { NFTDetails } from "./NFTDetails";
 import { useEffect } from "react";
-import { AuthState, useImageAuthStore } from "@/hooks/useImageAuthStore";
+import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
 
 export const ResultArea = ({
   setStep,

@@ -1,7 +1,7 @@
 // hooks/useGetData.ts
 import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { useImageAuthStore } from "./useImageAuthStore";
+import { useImageAuthStore } from "../store/useImageAuthStore";
 import { AxiosError } from "axios";
 
 export function useAuthenticateImage() {
