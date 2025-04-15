@@ -43,6 +43,7 @@ export default function Home() {
   });
 
   const { data } = useGetAllImages();
+  console.log(data);
 
   return (
     <>

@@ -3,6 +3,7 @@ import { SiSui } from "react-icons/si";
 import { UserAvatar } from "../shared/UserAvatar";
 import { MediaRecord, NFTMetadata } from "@/types";
 import { shortenAddress } from "@/utils/shortenAddress";
+import { BidForm } from "../shared/BidForm";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -26,7 +27,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
         <div>
           <p className="text-sm text-gray-500">Current Bid</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-semibold">0.15 ETH</p>
+            <p className="text-2xl font-semibold">0.15 SUI</p>
           </div>
         </div>
         <div>
@@ -35,20 +36,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 border border-stone-300 rounded-xl p-4">
-          <input
-            type="number"
-            className="flex-1 bg-transparent outline-none h-full "
-            placeholder="0.165"
-          />
-          <span className="text-lg font-medium">ETH</span>
-        </div>
-
-        <Button className="w-full py-6 text-lg rounded-md" size="lg">
-          Place a Bid
-        </Button>
-      </div>
+      <BidForm nft={nft} />
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -74,7 +62,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
               </span>
             </div>
           </div>
-          <p className="font-medium">0.15 ETH</p>
+          <p className="font-medium">0.15 SUI</p>
         </div>
       </div>
 
