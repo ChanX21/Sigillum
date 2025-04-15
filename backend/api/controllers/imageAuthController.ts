@@ -138,8 +138,8 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
   try {
     const authHeader = req.headers.authorization;
     if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
-    /*  res.status(401).json({ message: 'Unauthorized' });
-      return;*/
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
     const { action, id } = req.body;
     if (action === 'mint') {
@@ -180,7 +180,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       });
       await AuthenticatedImage.findByIdAndUpdate(
         authenticatedImage._id,
-        { status: 'soft-listed', blockchain: { listingId: listingId } }
+        { status: 'soft-listed', blockchain: { ...authenticatedImage.blockchain, listingId: listingId } }
       );
     }
   } catch (error) {
