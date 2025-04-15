@@ -1,15 +1,82 @@
-import { Button } from "@/components/ui/button";
 import { SiSui } from "react-icons/si";
 import { UserAvatar } from "../shared/UserAvatar";
 import { MediaRecord, NFTMetadata } from "@/types";
 import { shortenAddress } from "@/utils/shortenAddress";
+import { BidForm } from "../shared/BidForm";
+import { useEffect, useState } from "react";
+import { getListingDetails } from "@/utils/blockchainServices";
+import { SuiClient } from "@mysten/sui/client";
+import { getFullnodeUrl } from "@mysten/sui/client";
+import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
+import { useWallet } from "@suiet/wallet-kit";
+import { formatSuiAmount, getTimeRemaining } from "@/utils/web2";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
   metadata: NFTMetadata | null;
 }
 
+interface ListingDetails {
+  owner: string;
+  nftId: string;
+  listPrice: number;
+  listingType: number;
+  minBid: number;
+  highestBid: number;
+  highestBidder: string;
+  active: boolean;
+  verificationScore: number;
+  startTime: number;
+  endTime: number;
+}
+
 export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
+  const [listingDetails, setListingDetails] = useState<ListingDetails | null>(
+    null
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const wallet = useWallet();
+  const { address } = wallet;
+
+  useEffect(() => {
+    const fetchListingDetails = async () => {
+      if (!nft.blockchain.listingId) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+
+        const details = await getListingDetails(
+          provider,
+          PACKAGE_ID,
+          MODULE_NAME,
+          MARKETPLACE_ID,
+          nft.blockchain.listingId,
+          address
+        );
+
+        if (details) {
+          // Cast the details to match our interface
+          setListingDetails(details as unknown as ListingDetails);
+          console.log("Listing details:", details);
+        }
+      } catch (err) {
+        console.error("Error fetching listing details:", err);
+        setError("Failed to fetch listing details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListingDetails();
+  }, [nft.blockchain.listingId, address]);
+
+  // Check if there's a highest bid
+  const hasHighestBid = listingDetails && listingDetails.highestBid > 0;
+
   return (
     <div className="space-y-8">
       <div>
@@ -18,7 +85,9 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
         </h1>
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
-          <div className=" text-primary px-3 py-1  text-sm">Live Auction</div>
+          <div className=" text-primary px-3 py-1  text-sm">
+            {listingDetails?.active ? "Live Auction" : "Inactive"}
+          </div>
         </div>
       </div>
 
@@ -26,56 +95,64 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
         <div>
           <p className="text-sm text-gray-500">Current Bid</p>
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-semibold">0.15 ETH</p>
+            {loading ? (
+              <p className="text-2xl font-semibold">Loading...</p>
+            ) : error ? (
+              <p className="text-red-500 text-sm">{error}</p>
+            ) : (
+              <p className="text-2xl font-semibold">
+                {listingDetails
+                  ? `${formatSuiAmount(listingDetails.highestBid)} SUI`
+                  : "0 SUI"}
+              </p>
+            )}
           </div>
+          {listingDetails && listingDetails.minBid > 0 && (
+            <p className="text-xs text-gray-500">
+              Min bid: {formatSuiAmount(listingDetails.minBid)} SUI
+            </p>
+          )}
         </div>
         <div>
           <p className="text-sm text-gray-500">Ends in</p>
-          <p className="text-2xl font-semibold">4h 30m</p>
+          <p className="text-2xl font-semibold">
+            {loading ? "Loading..." : getTimeRemaining(listingDetails?.endTime)}
+          </p>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 border border-stone-300 rounded-xl p-4">
-          <input
-            type="number"
-            className="flex-1 bg-transparent outline-none h-full "
-            placeholder="0.165"
-          />
-          <span className="text-lg font-medium">ETH</span>
-        </div>
-
-        <Button className="w-full py-6 text-lg rounded-md" size="lg">
-          Place a Bid
-        </Button>
-      </div>
+      <BidForm nft={nft} />
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-medium text-xs">
             All Bids{" "}
             <span className="text-xs bg-primary/10 px-1.5 py-0.5 rounded-full">
-              2
+              {hasHighestBid ? "1" : "0"}
             </span>
           </h2>
         </div>
-        <div className="flex items-center justify-between py-4 border-t">
-          <div className="flex items-center gap-3">
-            <UserAvatar
-              walletAddress={nft.blockchain.creator || ""}
-              alt={nft.blockchain.creator || "Creator"}
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">
-                {shortenAddress(nft.blockchain.creator) || ""}
-              </span>
-              <span className="text-xs bg-primary/10 w-fit text-primary px-2 py-0.5 rounded">
-                1st bid
-              </span>
+        {hasHighestBid && (
+          <div className="flex items-center justify-between py-4 border-t">
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                walletAddress={listingDetails.highestBidder}
+                alt="Highest bidder"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">
+                  {shortenAddress(listingDetails.highestBidder)}
+                </span>
+                <span className="text-xs bg-primary/10 w-fit text-primary px-2 py-0.5 rounded">
+                  Highest bid
+                </span>
+              </div>
             </div>
+            <p className="font-medium">
+              {formatSuiAmount(listingDetails.highestBid)} SUI
+            </p>
           </div>
-          <p className="font-medium">0.15 ETH</p>
-        </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -98,6 +175,14 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
             <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
+            <span className="text-gray-600">Owner</span>
+            <span>
+              {listingDetails
+                ? shortenAddress(listingDetails.owner)
+                : "Unknown"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Contract</span>
             <div className="flex items-center gap-2">
               <span className="text-primary">
@@ -113,17 +198,23 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                   />
                 </svg>
               </button>
             </div>
           </div>
-          <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
-            <span className="text-gray-600">Metadata</span>
-            <span className="text-primary">IPFS</span>
-          </div>
+          {listingDetails && (
+            <div className="flex justify-between items-center py-2 border-t border-stone-300">
+              <span className="text-gray-600">Listing Type</span>
+              <span>
+                {listingDetails.listingType === 0
+                  ? "Soft Listing"
+                  : "Real Listing"}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
