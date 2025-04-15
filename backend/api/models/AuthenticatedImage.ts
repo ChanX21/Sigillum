@@ -13,7 +13,6 @@ interface IBlockchain {
   transactionHash: string;
   tokenId: string;
   creator: string;
-  metadataURI: string;
 }
 
 
@@ -22,7 +21,8 @@ export interface IAuthenticatedImage extends Document {
   watermarked: string;
   authentication: IAuthentication;
   blockchain: IBlockchain;
-  status: 'pending'  | 'minted' | 'verified' | 'error';
+  metadataCID: string;
+  status: 'uploaded'  | 'minted' | 'soft-listed' | 'verified' | 'error';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,27 +54,26 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
   blockchain: {
     transactionHash: {
       type: String,
-      required: true,
-      unique: true,
     },
     tokenId: {
       type: String,
-      required: true,
-      unique: true,
     },
     creator: {
       type: String,
       required: true,
     },
-    metadataURI: {
+    listingId: {
       type: String,
-      required: true,
     },
+  },
+  metadataCID: {
+    type: String,
+    required: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'minted', 'verified', 'error'],
-    default: 'pending'
+    enum: ['uploaded', 'minted', 'soft-listed', 'verified', 'error'],
+    default: 'uploaded'
   },
   createdAt: {
     type: Date,

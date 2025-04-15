@@ -4,16 +4,19 @@ import upload from '../middleware/upload';
 
 const router = express.Router();
 
-// POST /images/authenticate - Authenticate an image with creator's signature
-router.post('/authenticate/:address', upload.single('image'), imageAuthController.authenticateImage);
+// POST /authenticate - Authenticate an image with creator's signature
+router.post('/authenticate/:address', upload.single('image'), imageAuthController.uploadImage);
 
-// POST /images/verify - Verify an image using the uploaded file
+// POST /mint - Mint an image
+router.post('/blockchain', imageAuthController.blockchain);
+
+// POST /verify - Verify an image using the uploaded file
 router.post('/verify', upload.single('image'), imageAuthController.verify);
 
-// GET /images/all - Get all authenticated images
+// GET /all - Get all authenticated images
 router.get('/all', imageAuthController.getAllImages);
 
-// GET /images/:id - Get a authenticated image by id
+// GET /:id - Get an authenticated image by ID
 router.get('/:id', imageAuthController.getImageById);
 
 export default router; 

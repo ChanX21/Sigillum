@@ -5,9 +5,11 @@ import {
   mintNFT,
   verifyImageByHash,
   Metadata,
+  createSoftListing,
 } from '../services/blockchainService';
 import { AuthenticatedImage } from '../models/AuthenticatedImage';
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
+import axios from 'axios';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
@@ -19,7 +21,7 @@ interface FileRequest extends Request {
  * @param req - Express request object
  * @param res - Express response object
  */
-export const authenticateImage = async (req: FileRequest, res: Response): Promise<void> => {
+export const uploadImage = async (req: FileRequest, res: Response): Promise<void> => {
   try {
     if (!req.file) {
       res.status(400).json({ 
@@ -75,20 +77,19 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
     
     let metadata: Metadata = {
       metadataCID: '', // Will be set after IPFS upload
-      image: `https://${process.env.PINATA_GATEWAY}/ipfs/${originalIpfsCid}`,
+      image: originalIpfsCid,
       sha256Hash: authenticationData.sha256Hash,
       pHash: authenticationData.pHash,
       dHash: authenticationData.pHash,
       watermarkData: authenticationData.watermarkData
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
-    metadata.metadataCID = metadataIpfsCid;
-    const result = await mintNFT(creatorAddress, metadata);
     
     // Create new authenticated image record
     const newAuthenticatedImage = new AuthenticatedImage({
       original: originalIpfsCid,
       watermarked: watermarkedIpfsCid,
+      metadataCID: metadataIpfsCid,
       authentication: {
         sha256Hash: authenticationData.sha256Hash,
         pHash: authenticationData.pHash,
@@ -97,15 +98,20 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
         authenticatedAt: new Date(authenticationData.authenticatedAt)
       },
       blockchain: {
-        transactionHash: result.transactionHash,
-        tokenId: result.tokenId,
         creator: creatorAddress,
-        metadataURI: `https://${process.env.PINATA_GATEWAY}/ipfs/${metadataIpfsCid}`
       },
-      status: 'minted'
+      status: 'uploaded'
     });
     
-    await newAuthenticatedImage.save();
+    const savedImage = await newAuthenticatedImage.save();
+    await axios.post(`${process.env.BASE_URL}/blockchain`, {
+      action: 'mint',
+      id: savedImage.id
+    },
+  {headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.BE_KEY}`
+  }});
     
     res.status(201).json({
       message: 'Image authenticated successfully',
@@ -115,12 +121,74 @@ export const authenticateImage = async (req: FileRequest, res: Response): Promis
         pHash: authenticationData.pHash,
         originalIpfsCid,
         watermarkedIpfsCid,
-        status: 'minted'
+        status: 'uploaded'
       }
     });
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
+  }
+};
+/** 
+ * Mint or soft list an image
+ * @param req - Express request with image hash
+ * @param res - Express response object
+ */
+export const blockchain = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
+    /*  res.status(401).json({ message: 'Unauthorized' });
+      return;*/
+    }
+    const { action, id } = req.body;
+    if (action === 'mint') {
+      const authenticatedImage = await AuthenticatedImage.findById(id);
+    if (!authenticatedImage || authenticatedImage.status !== 'uploaded') {
+      res.status(400).json({ message: 'Image not uploaded' });
+      return;
+    }
+    res.status(200).json({ message: 'Image will be minted' });
+    const response = await axios.get(`https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.metadataCID}`);
+    const metadata: Metadata = response.data;
+    const result = await mintNFT(authenticatedImage.blockchain.creator, metadata);
+    await AuthenticatedImage.findByIdAndUpdate(
+      authenticatedImage._id,
+      { status: 'minted', blockchain: { transactionHash: result.transactionHash, tokenId: result.tokenId } }
+    );
+    await axios.post(`${process.env.BASE_URL}/blockchain`, {
+      action: 'soft-list',
+      id: authenticatedImage.id
+    },
+  {headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.BE_KEY}`
+  }});
+  }
+    else if (action === 'soft-list') {
+      const authenticatedImage = await AuthenticatedImage.findById(id);
+      if (!authenticatedImage || authenticatedImage.status !== 'minted') {
+        res.status(400).json({ message: 'Image not minted' });
+        return;
+      }
+      res.status(200).json({ message: 'Image will be soft listed' });
+      const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
+        minBid: 0,
+        endTime: 900,
+        description: 'Soft listing',
+        metadataCID: authenticatedImage.metadataCID
+      });
+      await AuthenticatedImage.findByIdAndUpdate(
+        authenticatedImage._id,
+        { status: 'soft-listed', blockchain: { listingId: listingId } }
+      );
+    }
+  } catch (error) {
+    console.error('Error minting or soft listing image:', error);
+    await AuthenticatedImage.findByIdAndUpdate(
+      req.body.id,
+      { status: 'error' }
+    );
   }
 };
 
@@ -228,7 +296,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
  */
 export const getAllImages = async (req: Request, res: Response): Promise<void> => {
   try {
-    const authenticatedImages = await AuthenticatedImage.find({});
+    const authenticatedImages = await AuthenticatedImage.find({status: 'soft-listed'});
     res.status(200).json(authenticatedImages);
   } catch (error) {
     console.error('Error fetching all images:', error);
@@ -237,8 +305,8 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
 };
 
 /**
- * Get a authenticated image by id
- * @param req - Express request object
+ * Get an authenticated image by ID
+ * @param req - Express request with image ID
  * @param res - Express response object
  */
 export const getImageById = async (req: Request, res: Response): Promise<void> => {
@@ -247,7 +315,8 @@ export const getImageById = async (req: Request, res: Response): Promise<void> =
     const authenticatedImage = await AuthenticatedImage.findById(imageId);
     res.status(200).json(authenticatedImage);
   } catch (error) {
-    console.error('Error fetching image by id:', error);
-    res.status(500).json({ message: 'Failed to fetch image by id' });
+    console.error('Error fetching image by ID:', error);
+    res.status(500).json({ message: 'Failed to fetch image by ID' });
   }
 };
+
