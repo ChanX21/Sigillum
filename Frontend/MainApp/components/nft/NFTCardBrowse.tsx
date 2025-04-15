@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 interface NFTCardBrowseProps {
   nft: MediaRecord;
   idx: number;
-  status: string
+  status?: string
 }
 
 export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
