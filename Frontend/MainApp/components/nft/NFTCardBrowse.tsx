@@ -9,9 +9,10 @@ import { useEffect, useState } from "react";
 interface NFTCardBrowseProps {
   nft: MediaRecord;
   idx: number;
+  status: string
 }
 
-export const NFTCardBrowse = ({ nft, idx }: NFTCardBrowseProps) => {
+export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   useEffect(() => {
     const fetchData = async () => {
@@ -55,36 +56,56 @@ export const NFTCardBrowse = ({ nft, idx }: NFTCardBrowseProps) => {
         {idx % 2 == 0 && (
           <div className="h-full flex  justify-between">
             <p className="text-xs text-gray-400">Current bid</p>
-            <p className="text-xs font-semibold">{} ETH</p>
+            <p className="text-xs font-semibold">{ } ETH</p>
           </div>
         )}
       </div>
-
-      {idx % 2 == 0 ? (
-        <div className="flex justify-between">
-          <Button
-            variant="default"
-            className="rounded-md w-full cursor-pointer"
-          >
-            Place bid
-          </Button>
-        </div>
-      ) : (
-        <div className="flex justify-between">
-          <Button
-            variant="default"
-            className="rounded-md w-[49%]  cursor-pointer"
-          >
-            Place bid
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
-          >
-            Instant buy
-          </Button>
-        </div>
-      )}
+      <>
+        {status === 'minted' ? (
+          <div className="flex justify-between">
+            <Button
+              variant="default"
+              className="rounded-md w-[49%]  cursor-pointer"
+            >
+              View
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
+            >
+              List
+            </Button>
+          </div>
+        ) : (
+          <>
+            {idx % 2 == 0 ? (
+              <div className="flex justify-between">
+                <Button
+                  variant="default"
+                  className="rounded-md w-full cursor-pointer"
+                >
+                  Place bid
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-between">
+                <Button
+                  variant="default"
+                  className="rounded-md w-[49%]  cursor-pointer"
+                >
+                  Place bid
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
+                >
+                  Instant buy
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </>
     </div>
   );
 };
