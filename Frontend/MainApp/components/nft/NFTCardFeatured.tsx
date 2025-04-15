@@ -15,7 +15,6 @@ interface NFTCardFeaturedProps {
 export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   useEffect(() => {
-    console.log(nft);
     const fetchData = async () => {
       try {
         const response = await fetchMetadata(nft.blockchain.metadataURI || "");
