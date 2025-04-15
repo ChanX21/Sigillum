@@ -64,44 +64,72 @@ export async function getListingDetails(
   address: string | null = null
 ) {
   if (!address) return null;
-  const tx = new Transaction();
+  // If no address is provided, use a default address for read-only operations
+  const senderAddress = address;
 
-  // Call the function
-  tx.moveCall({
-    target: `${packageId}::${moduleName}::get_listing_details`,
-    arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
-  });
+  try {
+    const tx = new Transaction();
 
-  const result = await provider.devInspectTransactionBlock({
-    sender: address, // Dummy sender address
-    transactionBlock: tx,
-  });
+    // Call the function
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::get_listing_details`,
+      arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
+    });
 
-  if (
-    result &&
-    result.results &&
-    result.results[0] &&
-    result.results[0].returnValues
-  ) {
-    const returnValues = result.results[0].returnValues;
+    console.log("Inspecting transaction with:", {
+      packageId,
+      moduleName,
+      marketplaceObjectId,
+      listingId,
+      sender: senderAddress,
+    });
 
-    // Parse the returned values
-    return {
-      owner: returnValues[0][0],
-      nftId: returnValues[1][0],
-      listPrice: Number(returnValues[2][0]),
-      listingType: Number(returnValues[3][0]),
-      minBid: Number(returnValues[4][0]),
-      highestBid: Number(returnValues[5][0]),
-      highestBidder: returnValues[6][0],
-      active: Boolean(returnValues[7][0]),
-      verificationScore: Number(returnValues[8][0]),
-      startTime: Number(returnValues[9][0]),
-      endTime: Number(returnValues[10][0]),
-    };
+    const result = await provider.devInspectTransactionBlock({
+      sender: senderAddress,
+      transactionBlock: tx,
+    });
+
+    // Check for dynamic_field error
+    if (
+      result.error &&
+      (result.error.includes("dynamic_field") ||
+        result.error.includes("MoveAbort"))
+    ) {
+      console.log("Listing not found or not accessible.", result.error);
+      return null;
+    }
+
+    if (
+      result &&
+      result.results &&
+      result.results[0] &&
+      result.results[0].returnValues &&
+      result.results[0].returnValues.length > 10
+    ) {
+      const returnValues = result.results[0].returnValues;
+
+      // Parse the returned values
+      return {
+        owner: returnValues[0][0],
+        nftId: returnValues[1][0],
+        listPrice: Number(returnValues[2][0]),
+        listingType: Number(returnValues[3][0]),
+        minBid: Number(returnValues[4][0]),
+        highestBid: Number(returnValues[5][0]),
+        highestBidder: returnValues[6][0],
+        active: Boolean(returnValues[7][0]),
+        verificationScore: Number(returnValues[8][0]),
+        startTime: Number(returnValues[9][0]),
+        endTime: Number(returnValues[10][0]),
+      };
+    } else {
+      console.error("Invalid result structure:", result);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error in getListingDetails:", error);
+    return null;
   }
-
-  throw new Error("Failed to get listing details");
 }
 
 // Function to get bid count
@@ -308,20 +336,20 @@ export async function buildPlaceBidTxWithCoinSelection(
     // Get user's coins
     const { data: coinData } = await provider.getCoins({
       owner: address,
-      coinType: "0x2::sui::SUI"
+      coinType: "0x2::sui::SUI",
     });
-    
+
     if (!coinData || coinData.length === 0) {
-      return { 
+      return {
         transaction: new Transaction(),
-        success: false, 
-        error: "No coins available" 
+        success: false,
+        error: "No coins available",
       };
     }
 
     // Find a suitable coin or create one
     let coinObjectId: string | null = null;
-    
+
     // First, try to find a coin with enough balance
     for (const coin of coinData) {
       if (BigInt(coin.balance) >= bidAmountMist) {
@@ -339,71 +367,70 @@ export async function buildPlaceBidTxWithCoinSelection(
         packageId,
         moduleName
       );
-      
+
       // Set gas budget - important to avoid dry run errors
       tx.setGasBudget(50000000); // 50M gas units
-      
+
       return { transaction: tx, success: true };
-    } 
-    
+    }
+
     // Otherwise, we need to create a transaction that:
     // 1. Merges coins to create enough balance
     // 2. Splits the right amount
     // 3. Uses that for the bid
     const tx = new Transaction();
-    
+
     // Set gas budget - important to avoid dry run errors
     tx.setGasBudget(50000000); // 50M gas units
-    
+
     // Calculate total balance
     const totalBalance = coinData.reduce(
-      (sum: bigint, coin) => sum + BigInt(coin.balance), 
+      (sum: bigint, coin) => sum + BigInt(coin.balance),
       BigInt(0)
     );
-    
+
     if (totalBalance < bidAmountMist) {
       const bidAmountSui = Number(bidAmountMist) / 1_000_000_000;
-      return { 
+      return {
         transaction: tx,
-        success: false, 
-        error: `Insufficient balance. You need at least ${bidAmountSui} SUI` 
+        success: false,
+        error: `Insufficient balance. You need at least ${bidAmountSui} SUI`,
       };
     }
-    
+
     // Merge all coins into the first coin
     const primaryCoin = coinData[0].coinObjectId;
-    const otherCoins = coinData.slice(1).map(coin => coin.coinObjectId);
-    
+    const otherCoins = coinData.slice(1).map((coin) => coin.coinObjectId);
+
     if (otherCoins.length > 0) {
       tx.mergeCoins(
-        tx.object(primaryCoin), 
+        tx.object(primaryCoin),
         otherCoins.map((id: string) => tx.object(id))
       );
     }
-    
+
     // Split the exact amount needed for the bid
-    const [bidCoin] = tx.splitCoins(
-      tx.object(primaryCoin), 
-      [tx.pure.u64(bidAmountMist.toString())]
-    );
-    
+    const [bidCoin] = tx.splitCoins(tx.object(primaryCoin), [
+      tx.pure.u64(bidAmountMist.toString()),
+    ]);
+
     // Build the place bid transaction using this coin
     tx.moveCall({
       target: `${packageId}::${moduleName}::place_bid`,
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(listingId),
-        bidCoin
+        bidCoin,
       ],
     });
-    
+
     return { transaction: tx, success: true };
   } catch (error) {
     console.error("Error building bid transaction:", error);
-    return { 
+    return {
       transaction: new Transaction(),
-      success: false, 
-      error: "Failed to build transaction" 
+      success: false,
+      error: "Failed to build transaction",
     };
   }
 }
