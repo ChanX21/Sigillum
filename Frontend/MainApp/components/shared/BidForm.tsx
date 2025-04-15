@@ -89,7 +89,6 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
         if (result) {
           toast.success("Bid placed successfully!");
-          console.log("Transaction result:", result);
         }
       } catch (txError: any) {
         console.error("Transaction execution error:", txError);
@@ -132,7 +131,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
         <input
           type="number"
           className="flex-1 bg-transparent outline-none h-full"
-          placeholder="0.165"
+          placeholder="0.0"
           value={bidAmount}
           onChange={handleBidAmountChange}
           disabled={submitting}
