@@ -8,18 +8,17 @@ import Link from "next/link";
 
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { useAccountBalance, useWallet } from '@suiet/wallet-kit'
-import "@suiet/wallet-kit/style.css"
+import { useAccountBalance, useWallet } from "@suiet/wallet-kit";
+import "@suiet/wallet-kit/style.css";
 import WalletModal from "../wallet/WalletModal";
 import { shortenAddress } from "@/utils/shortenAddress";
-
 
 export const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const { connected: walletConnected, address, } = useWallet()
-  const { balance, loading } = useAccountBalance()
+  const { connected: walletConnected, address } = useWallet();
+  const { balance, loading } = useAccountBalance();
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -31,14 +30,11 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSearch]);
 
-
-
   useEffect(() => {
     if (walletConnected) {
-      setShowWalletModal(false)
+      setShowWalletModal(false);
     }
-  }, [walletConnected])
-
+  }, [walletConnected]);
 
   return (
     <>
@@ -83,7 +79,7 @@ export const Header = () => {
                     <FaEthereum size={15} className="text-gray-700" />
                   </div>
                   <p className="text-sm font-semibold whitespace-nowrap">
-                    {balance && (balance)}
+                    {balance && balance}
                     {loading && (
                       <div className="relative w-5 h-5">
                         <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
@@ -105,7 +101,6 @@ export const Header = () => {
                   >
                     {shortenAddress(address)}
                   </Button>
-
                 )}
               </>
             ) : (
@@ -143,7 +138,6 @@ export const Header = () => {
                   >
                     {shortenAddress(address)}
                   </Button>
-
                 )}
               </div>
             ) : (
@@ -155,7 +149,6 @@ export const Header = () => {
                 Connect Wallet
               </Button>
             )}
-
           </div>
         </div>
 
@@ -182,11 +175,14 @@ export const Header = () => {
             <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
               <FaEthereum size={15} className="text-gray-700" />
             </div>
-            <p className="text-sm font-semibold whitespace-nowrap">{balance && (balance)} {loading && (
-              <div className="relative w-5 h-5">
-                <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
-              </div>
-            )}</p>
+            <p className="text-sm font-semibold whitespace-nowrap">
+              {balance && balance}{" "}
+              {loading && (
+                <div className="relative w-5 h-5">
+                  <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
+                </div>
+              )}
+            </p>
           </div>
 
           <Button

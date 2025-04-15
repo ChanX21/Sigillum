@@ -1,13 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { FaEthereum } from "react-icons/fa";
+import { SiSui } from "react-icons/si";
 import { UserAvatar } from "../shared/UserAvatar";
+import { MediaRecord, NFTMetadata } from "@/types";
+import { shortenAddress } from "@/utils/shortenAddress";
 
-export const NFTDetailView = () => {
+interface NFTDetailViewProps {
+  nft: MediaRecord;
+  metadata: NFTMetadata | null;
+}
+
+export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold mb-4 border-b border-stone-300">
-          Human Austrian Briar Art
+        <h1 className="text-2xl font-semibold mb-4 border-b border-stone-300">
+          {metadata?.name || ""}
         </h1>
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
@@ -54,10 +61,13 @@ export const NFTDetailView = () => {
         </div>
         <div className="flex items-center justify-between py-4 border-t">
           <div className="flex items-center gap-3">
-            <UserAvatar src="/user.png" alt="User avatar" />
+            <UserAvatar
+              walletAddress={nft.blockchain.creator || ""}
+              alt={nft.blockchain.creator || "Creator"}
+            />
             <div className="flex flex-col">
               <span className="text-sm font-medium">
-                0x9E64c91F7a0497c289...
+                {shortenAddress(nft.blockchain.creator) || ""}
               </span>
               <span className="text-xs bg-primary/10 w-fit text-primary px-2 py-0.5 rounded">
                 1st bid
@@ -70,11 +80,7 @@ export const NFTDetailView = () => {
 
       <div className="space-y-4">
         <h2 className="font-medium">Description</h2>
-        <p className="text-gray-600">
-          I believe that during our lifetime. Once or twice in a while, there
-          will be a magic moment. This piece was inspired by my special time. I
-          think it would be good if I had magic.
-        </p>
+        <p className="text-gray-600">{metadata?.description}</p>
       </div>
 
       <div className="space-y-4">
@@ -83,18 +89,20 @@ export const NFTDetailView = () => {
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Blockchain</span>
             <div className="flex items-center gap-2">
-              <FaEthereum />
-              <span>Ethereum</span>
+              <SiSui />
+              <span>SUI</span>
             </div>
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Token ID</span>
-            <span>12</span>
+            <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Contract</span>
             <div className="flex items-center gap-2">
-              <span className="text-primary">0x9E64...280a20348</span>
+              <span className="text-primary">
+                {shortenAddress(nft.blockchain.tokenId) || ""}
+              </span>
               <button className="text-primary">
                 <svg
                   className="w-4 h-4"
