@@ -57,3 +57,23 @@ export function formatHumanReadableDate(isoDateString: string) {
 
   return formattedDate;
 }
+
+// Calculate time remaining from a Unix timestamp
+export function getTimeRemaining(endTimeSeconds: number | undefined): string {
+  if (!endTimeSeconds || endTimeSeconds === 0) return "No deadline";
+  
+  const now = Math.floor(Date.now() / 1000); // Current time in seconds
+  const timeLeft = endTimeSeconds - now;
+  
+  if (timeLeft <= 0) return "Auction ended";
+  
+  const hours = Math.floor(timeLeft / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
+  
+  return `${hours}h ${minutes}m`;
+}
+
+// Format SUI amount (convert from MIST to SUI)
+export function formatSuiAmount(amount: number): string {
+  return (amount / 1_000_000_000).toFixed(2);
+}

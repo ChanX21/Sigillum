@@ -16,19 +16,21 @@ export default function Detail() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchMetadata(data.blockchain.metadataURI || "");
+        const response = await fetchMetadata(
+          `${process.env.NEXT_PUBLIC_PINATA_URL}${data.metadataCID}`
+        );
+
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
       }
     };
 
-    if (data?.blockchain?.metadataURI) {
+    if (data?.metadataCID) {
       fetchData();
     }
   }, [data]);
 
-  console.log(metadata);
   return (
     <>
       <Header />
