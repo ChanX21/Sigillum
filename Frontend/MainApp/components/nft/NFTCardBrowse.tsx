@@ -6,6 +6,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+
+import ListNFTButton from "./ListNFTButton";
+
+
+
 interface NFTCardBrowseProps {
   nft: MediaRecord;
   idx: number;
@@ -61,7 +66,7 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
         )}
       </div>
       <>
-        {status === 'minted' ? (
+        {status === 'minted' || status === 'soft-listed' ? (
           <div className="flex justify-between">
             <Button
               variant="default"
@@ -69,12 +74,7 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
             >
               View
             </Button>
-            <Button
-              variant="outline"
-              className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
-            >
-              List
-            </Button>
+            <ListNFTButton listingId={nft.blockchain.listingId}/>
           </div>
         ) : (
           <>

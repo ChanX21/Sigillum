@@ -29,6 +29,7 @@ export type MediaRecord = {
   _id: string;
   original: string;
   watermarked: string;
+  metadataCID: string;
   status: "minted" | "verified" | string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -45,10 +46,12 @@ export type MediaRecord = {
   blockchain: {
     transactionHash: string;
     tokenId: string;
+    listingId: string;
     creator: string;
     metadataURI: string;
   };
 };
+
 
 export type NFTMetadata = {
   name: string;
