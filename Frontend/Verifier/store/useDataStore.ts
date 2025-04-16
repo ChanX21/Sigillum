@@ -19,9 +19,30 @@ export interface VerificationResult {
         similarNFTs: Array<{ id: string, distance: number }>; // Replace `any` with a more specific type if known
     };
 }
+
+export interface DatabaseRecord {
+    blockchain: {
+        creator: string;
+        listingId: string;
+        tokenId: string;
+        transactionHash: string
+    };
+    creator:{
+        id:string;
+        username:string;
+    };
+    imageId:string;
+    originalIpfsUrl:string;
+    pHash:string;
+    sha256Hash:string;
+    watermarkedIpfsUrl:string;
+}
+
 export interface VerificationResponse {
     message: string;
     verificationResult: VerificationResult;
+    verified: Boolean;
+    databaseRecord: DatabaseRecord
 }
 export interface DataState {
     data: VerificationResponse;

@@ -7,7 +7,7 @@ export async function fetchMetadata(url: string): Promise<NFTMetadata | null> {
 
     return response.data;
   } catch (error) {
-    console.error("Failed to fetch metadata:", error);
+    console.log("Failed to fetch metadata:", error);
     return null;
   }
 }
