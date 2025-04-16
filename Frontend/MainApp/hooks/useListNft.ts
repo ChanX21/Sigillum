@@ -41,6 +41,11 @@ export function useListNft() {
                     },
                 });
 
+                const txStatus = result.effects?.status?.status;
+                if (txStatus !== 'success') {
+                    const errorMsg = result.effects?.status?.error || 'Unknown Sui execution error';
+                    throw new Error(`Transaction failed`);
+                }
                 // Return the result
                 return result;
             } catch (error) {

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
 import { useWallet } from "@suiet/wallet-kit";
+import { X } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ export const UploadArea = ({
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const {error, isSuccess, isError, isPending, mutate: authenticateImage } = useAuthenticateImage()
+  const { error, isSuccess, isError, isPending, mutate: authenticateImage } = useAuthenticateImage()
   const { address, connected } = useWallet()
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -58,7 +59,7 @@ export const UploadArea = ({
     if (!connected) {
       toast.error("Please Connect Wallet")
     }
-    if(!imageFile) {
+    if (!imageFile) {
       toast.error("Could not find any media")
     }
     if (imageFile && connected) {
@@ -117,10 +118,18 @@ export const UploadArea = ({
           </div>
         </div>
       ) : (
-        <div className="w-full flex justify-center">
+        <div className="w-full flex justify-center relative">
           <div className="relative md:w-[50%] w-full aspect-square">
             <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
           </div>
+          <Button
+            onClick={() => {
+              setImage(null)
+              setImageFile(null)
+            }}
+            variant={'secondary'} className="absolute top-0 md:-top-5 right-0">
+            <X />
+          </Button>
         </div>
       )}
 
