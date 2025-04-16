@@ -16,7 +16,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
       { label: "NFT Id", value: result?.image?.id },
       {
         label: "IPFS URL",
-        value: shortenAddress(`${process.env.NEXT_PUBLIC_PINATA_URL}/${result?.image.originalIpfsCid}`),
+        value: `${process.env.NEXT_PUBLIC_PINATA_URL}/${result?.image.originalIpfsCid}`,
       },
       {
         label: "Status",
@@ -24,11 +24,11 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
       },
       {
         label: "SHA-256 Hash",
-        value: shortenAddress(result?.image.sha256Hash),
+        value: result?.image.sha256Hash,
       },
       {
         label: "Perceptual Hash",
-        value: shortenAddress(result?.image.pHash),
+        value: result?.image.pHash,
       },
     ];
   const handleCopy = async (text: string, label: string) => {
@@ -36,7 +36,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
     await navigator.clipboard.writeText(text);
     toast.success(`Copied ${label} Successfully`)
   }
-  
+
   return (
     <div className="flex flex-col border border-primary rounded-xl shadow-lg p-6">
       <div>
@@ -50,7 +50,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
           <div key={detail.label} className="flex flex-col">
             <p className="font-semibold text-gray-500 text-md">{detail.label}</p>
             <p className="text-sm font-medium flex items-center gap-2">
-              <span>{detail.value}</span>
+              <span>{['IPFS URL', 'SHA-256 Hash', 'Perceptual Hash'].includes(detail.label) ? shortenAddress(detail.value) : detail.value}</span>
               <Button onClick={() => handleCopy(detail.value as string, detail.label as string)}>
                 <FaRegCopy size={12} className="cursor-pointer" />
               </Button>

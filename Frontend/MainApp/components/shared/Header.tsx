@@ -12,6 +12,9 @@ import { useAccountBalance, useWallet } from "@suiet/wallet-kit";
 import "@suiet/wallet-kit/style.css";
 import WalletModal from "../wallet/WalletModal";
 import { shortenAddress } from "@/utils/shortenAddress";
+import { SiSui } from "react-icons/si";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
@@ -19,6 +22,10 @@ export const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const { connected: walletConnected, address } = useWallet();
   const { balance, loading } = useAccountBalance();
+
+  const readableSui = (rawBalance: bigint | number) => {
+    return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);
+  };
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -76,10 +83,10 @@ export const Header = () => {
                 {/* Balance */}
                 <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-full">
                   <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
-                    <FaEthereum size={15} className="text-gray-700" />
+                    <SiSui size={15} className="text-gray-700" />
                   </div>
                   <p className="text-sm font-semibold whitespace-nowrap">
-                    {balance && balance}
+                    {balance && readableSui(balance)}
                     {loading && (
                       <div className="relative w-5 h-5">
                         <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
@@ -88,19 +95,30 @@ export const Header = () => {
                   </p>
                 </div>
 
-                <Button
-                  variant="default"
-                  className="rounded-full text-sm px-4 py-2"
-                >
-                  Secure image
-                </Button>
-                {address && (
+                <Link href={'/upload'}>
                   <Button
-                    variant="outline"
+                    variant="default"
                     className="rounded-full text-sm px-4 py-2"
                   >
-                    {shortenAddress(address)}
+                    Secure image
                   </Button>
+                </Link>
+                {address && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+
+                      className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                      {shortenAddress(address)}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <Link href={'/my-nfts/unlisted'}>
+                        <DropdownMenuItem>My Nft's</DropdownMenuItem>
+                      </Link>
+
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </>
             ) : (
@@ -141,13 +159,16 @@ export const Header = () => {
                 )}
               </div>
             ) : (
-              <Button
-                variant="default"
-                className="rounded-full text-sm px-4 py-2"
-                onClick={() => setShowWalletModal(true)}
-              >
-                Connect Wallet
-              </Button>
+              <Link href={'/upload'}>
+
+                <Button
+                  variant="default"
+                  className="rounded-full text-sm px-4 py-2"
+                  onClick={() => setShowWalletModal(true)}
+                >
+                  Connect Wallet
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -173,10 +194,10 @@ export const Header = () => {
           {/* Balance */}
           <div className="flex w-1/2 items-center gap-2 bg-background px-3 py-2 rounded-full">
             <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
-              <FaEthereum size={15} className="text-gray-700" />
+              <SiSui size={15} className="text-gray-700" />
             </div>
             <p className="text-sm font-semibold whitespace-nowrap">
-              {balance && balance}{" "}
+              {balance && readableSui(balance)}{" "}
               {loading && (
                 <div className="relative w-5 h-5">
                   <div className="absolute inset-0 border-2 border-t-[#1b263b] border-[#fff] rounded-full animate-spin"></div>
