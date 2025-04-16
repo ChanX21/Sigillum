@@ -1,9 +1,9 @@
 
-import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 
 // CONSTANTS
 import { Transaction } from '@mysten/sui/transactions';
-import { bcs } from '@mysten/sui/bcs';
+
+
 import { SuiClient } from "@mysten/sui/client";
 
 export const buildPlaceBidTx = (
@@ -440,6 +440,7 @@ export async function buildPlaceBidTxWithCoinSelection(
   }
 }
 
+
 export async function listNft(
   address: string,
   softListingId: string,
@@ -471,4 +472,5 @@ export async function listNft(
     };
   }
 }
+
 

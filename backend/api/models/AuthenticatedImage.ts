@@ -4,9 +4,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface IAuthentication {
   sha256Hash: string;
   pHash: string;
-  watermarkData?: string;
-  timestamp?: number;
-  authenticatedAt: Date;
 }
 
 interface IBlockchain {
@@ -47,9 +44,6 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
       type: String,
       required: true,
     },
-    watermarkData: String,
-    timestamp: Number,
-    authenticatedAt: Date
   },
   blockchain: {
     transactionHash: {

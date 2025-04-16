@@ -17,17 +17,21 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchMetadata(nft.blockchain.metadataURI || "");
+        const response = await fetchMetadata(
+          `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
+        );
+
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
       }
     };
 
-    if (nft?.blockchain?.metadataURI) {
+    if (nft?.metadataCID) {
       fetchData();
     }
   }, [nft]);
+
   return (
     <div className="col-span-1 bg-white rounded-4xl p-4 flex flex-col lg:flex-row gap-3 hover:shadow-lg transition-shadow h-auto lg:h-[400px]">
       {/* Image */}

@@ -93,16 +93,12 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       authentication: {
         sha256Hash: authenticationData.sha256Hash,
         pHash: authenticationData.pHash,
-        watermarkData: authenticationData.watermarkData,
-        timestamp: authenticationData.createdAt,
-        authenticatedAt: new Date(authenticationData.authenticatedAt)
       },
       blockchain: {
         creator: creatorAddress,
       },
       status: 'uploaded'
     });
-    
     const savedImage = await newAuthenticatedImage.save();
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'mint',
@@ -154,7 +150,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
     const result = await mintNFT(authenticatedImage.blockchain.creator, metadata);
     await AuthenticatedImage.findByIdAndUpdate(
       authenticatedImage._id,
-      { status: 'minted', blockchain: { transactionHash: result.transactionHash, tokenId: result.tokenId } }
+      { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
     );
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'soft-list',
@@ -255,7 +251,6 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
         sha256Hash: authenticatedImage.authentication.sha256Hash,
         pHash: authenticatedImage.authentication.pHash,
         creator,
-        authenticatedAt: authenticatedImage.authentication.authenticatedAt,
         blockchain: authenticatedImage.blockchain,
         originalIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.original}`,
         watermarkedIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.watermarked}`

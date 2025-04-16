@@ -14,7 +14,7 @@ import ListNFTButton from "./ListNFTButton";
 interface NFTCardBrowseProps {
   nft: MediaRecord;
   idx: number;
-  status?: string
+  status?: string;
 }
 
 export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
@@ -22,14 +22,17 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchMetadata(nft.blockchain.metadataURI || "");
+        const response = await fetchMetadata(
+          `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
+        );
+
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
       }
     };
 
-    if (nft?.blockchain?.metadataURI) {
+    if (nft?.metadataCID) {
       fetchData();
     }
   }, [nft]);
@@ -61,12 +64,13 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
         {idx % 2 == 0 && (
           <div className="h-full flex  justify-between">
             <p className="text-xs text-gray-400">Current bid</p>
-            <p className="text-xs font-semibold">{ } ETH</p>
+            <p className="text-xs font-semibold">{} ETH</p>
           </div>
         )}
       </div>
       <>
         {status === 'minted' || status === 'soft-listed' ? (
+
           <div className="flex justify-between">
             <Button
               variant="default"
