@@ -93,8 +93,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       authentication: {
         sha256Hash: authenticationData.sha256Hash,
         pHash: authenticationData.pHash,
-        timestamp: authenticationData.createdAt,
-        authenticatedAt: new Date(authenticationData.authenticatedAt)
       },
       blockchain: {
         creator: creatorAddress,
@@ -253,7 +251,6 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
         sha256Hash: authenticatedImage.authentication.sha256Hash,
         pHash: authenticatedImage.authentication.pHash,
         creator,
-        authenticatedAt: authenticatedImage.authentication.authenticatedAt,
         blockchain: authenticatedImage.blockchain,
         originalIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.original}`,
         watermarkedIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.watermarked}`
