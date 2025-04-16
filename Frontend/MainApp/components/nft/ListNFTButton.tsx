@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -17,6 +17,7 @@ import { useWallet } from '@suiet/wallet-kit';
 
 import { useListNft } from '@/hooks/useListNft';
 import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
+import { toast } from 'sonner';
 
 const ListNFTButton = ({ listingId }: { listingId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
@@ -40,6 +41,14 @@ const ListNFTButton = ({ listingId }: { listingId: string }) => {
         }
     }
 
+    useEffect(() => {
+        if (isSuccess) {
+            toast.success("Nft Listed SuccessFully")
+        }
+        if (isError) {
+            toast.error(error.message)
+        }
+    }, [isSuccess, isError])
     return (
         <Dialog>
             <DialogTrigger asChild>
