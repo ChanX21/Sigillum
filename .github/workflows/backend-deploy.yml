@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    environment: Production
+    environment: production
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
