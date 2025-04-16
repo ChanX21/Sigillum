@@ -102,7 +102,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       },
       status: 'uploaded'
     });
-    
     const savedImage = await newAuthenticatedImage.save();
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'mint',
@@ -154,7 +153,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
     const result = await mintNFT(authenticatedImage.blockchain.creator, metadata);
     await AuthenticatedImage.findByIdAndUpdate(
       authenticatedImage._id,
-      { status: 'minted', blockchain: { transactionHash: result.transactionHash, tokenId: result.tokenId } }
+      { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
     );
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'soft-list',
