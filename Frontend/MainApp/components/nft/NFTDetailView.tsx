@@ -1,10 +1,10 @@
 import { SiSui } from "react-icons/si";
 import { UserAvatar } from "../shared/UserAvatar";
-import { MediaRecord, NFTMetadata } from "@/types";
+import { ListingDataResponse, MediaRecord, NFTMetadata } from "@/types";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { BidForm } from "../shared/BidForm";
 import { useEffect, useState } from "react";
-import { getListingDetails } from "@/utils/blockchainServices";
+import { getObjectDetails } from "@/utils/blockchainServices";
 import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
@@ -16,24 +16,9 @@ interface NFTDetailViewProps {
   metadata: NFTMetadata | null;
 }
 
-interface ListingDetails {
-  owner: string;
-  nftId: string;
-  listPrice: number;
-  listingType: number;
-  minBid: number;
-  highestBid: number;
-  highestBidder: string;
-  active: boolean;
-  verificationScore: number;
-  startTime: number;
-  endTime: number;
-}
-
 export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
-  const [listingDetails, setListingDetails] = useState<ListingDetails | null>(
-    null
-  );
+  const [listingDetails, setListingDetails] =
+    useState<ListingDataResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const wallet = useWallet();
@@ -49,7 +34,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
 
         const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
 
-        const details = await getListingDetails(
+        const details = await getObjectDetails(
           provider,
           PACKAGE_ID,
           MODULE_NAME,
@@ -60,8 +45,8 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
 
         if (details) {
           // Cast the details to match our interface
-          setListingDetails(details as unknown as ListingDetails);
-          console.log("Listing details:", details);
+          setListingDetails(details as unknown as ListingDataResponse);
+          // console.log("Listing details:", details);
         }
       } catch (err) {
         console.error("Error fetching listing details:", err);
@@ -75,7 +60,9 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
   }, [nft.blockchain.listingId, address]);
 
   // Check if there's a highest bid
-  const hasHighestBid = listingDetails && listingDetails.highestBid > 0;
+  const hasHighestBid =
+    listingDetails &&
+    Number(listingDetails.content.fields.value.fields.highest_bid) > 0;
 
   return (
     <div className="space-y-8">
@@ -86,7 +73,9 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
           <div className=" text-primary px-3 py-1  text-sm">
-            {listingDetails?.active ? "Live Auction" : "Inactive"}
+            {listingDetails?.content.fields.value.fields.active
+              ? "Live Auction"
+              : "Inactive"}
           </div>
         </div>
       </div>
@@ -96,27 +85,40 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           <p className="text-sm text-gray-500">Current Bid</p>
           <div className="flex items-center gap-2">
             {loading ? (
-              <p className="text-2xl font-semibold">Loading...</p>
+              <p className="text-sm font-semibold">Loading...</p>
             ) : error ? (
               <p className="text-red-500 text-sm">{error}</p>
             ) : (
               <p className="text-2xl font-semibold">
                 {listingDetails
-                  ? `${formatSuiAmount(listingDetails.highestBid)} SUI`
+                  ? `${formatSuiAmount(
+                      Number(
+                        listingDetails.content.fields.value.fields.highest_bid
+                      )
+                    )} SUI`
                   : "0 SUI"}
               </p>
             )}
           </div>
-          {listingDetails && listingDetails.minBid > 0 && (
-            <p className="text-xs text-gray-500">
-              Min bid: {formatSuiAmount(listingDetails.minBid)} SUI
-            </p>
-          )}
+          {listingDetails &&
+            Number(listingDetails.content.fields.value.fields.min_bid) > 0 && (
+              <p className="text-xs text-gray-500">
+                Min bid:{" "}
+                {formatSuiAmount(
+                  Number(listingDetails.content.fields.value.fields.min_bid)
+                )}{" "}
+                SUI
+              </p>
+            )}
         </div>
         <div>
           <p className="text-sm text-gray-500">Ends in</p>
-          <p className="text-2xl font-semibold">
-            {loading ? "Loading..." : getTimeRemaining(listingDetails?.endTime)}
+          <p className="text-sm font-semibold">
+            {loading
+              ? "Loading..."
+              : getTimeRemaining(
+                  Number(listingDetails?.content.fields.value.fields.end_time)
+                )}
           </p>
         </div>
       </div>
@@ -136,12 +138,16 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           <div className="flex items-center justify-between py-4 border-t">
             <div className="flex items-center gap-3">
               <UserAvatar
-                walletAddress={listingDetails.highestBidder}
+                walletAddress={
+                  listingDetails.content.fields.value.fields.highest_bidder
+                }
                 alt="Highest bidder"
               />
               <div className="flex flex-col">
                 <span className="text-sm font-medium">
-                  {shortenAddress(listingDetails.highestBidder)}
+                  {shortenAddress(
+                    listingDetails.content.fields.value.fields.highest_bidder
+                  )}
                 </span>
                 <span className="text-xs bg-primary/10 w-fit text-primary px-2 py-0.5 rounded">
                   Highest bid
@@ -149,7 +155,10 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
               </div>
             </div>
             <p className="font-medium">
-              {formatSuiAmount(listingDetails.highestBid)} SUI
+              {formatSuiAmount(
+                Number(listingDetails.content.fields.value.fields.highest_bid)
+              )}{" "}
+              SUI
             </p>
           </div>
         )}
@@ -177,8 +186,8 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
             <span>
-              {listingDetails
-                ? shortenAddress(listingDetails.owner)
+              {nft.blockchain.creator
+                ? shortenAddress(nft.blockchain.creator)
                 : "Unknown"}
             </span>
           </div>
@@ -209,7 +218,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
             <div className="flex justify-between items-center py-2 border-t border-stone-300">
               <span className="text-gray-600">Listing Type</span>
               <span>
-                {listingDetails.listingType === 0
+                {listingDetails.content.fields.value.fields.listing_type === 0
                   ? "Soft Listing"
                   : "Real Listing"}
               </span>

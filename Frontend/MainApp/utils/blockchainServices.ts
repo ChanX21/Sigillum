@@ -1,34 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiClient } from "@mysten/sui/client";
 
-export const buildPlaceBidTx = (
-  marketplaceObjectId: string, // ID of the marketplace object
-  listingId: string, // listing_id
-  coinObjectId: string, // ID of the Coin<SUI> object to use for payment
-  packageId: string,
-  moduleName: string
-): Transaction => {
-  const tx = new Transaction();
-
-  // Mapping the arguments
-  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(listingId); // listing_id as address
-  const paymentArg = tx.object(coinObjectId); // Coin<SUI> object ID
-
-  // Building the move call
-  tx.moveCall({
-    target: `${packageId}::${moduleName}::place_bid`,
-    arguments: [
-      marketplaceArg,
-      listingIdArg,
-      paymentArg,
-      // ctx is handled automatically by the runtime
-    ],
-  });
-
-  return tx;
-};
-
 export const buildAcceptBidTx = (
   marketplaceObjectId: string, // ID of the marketplace object
   listingId: string, // listing_id
@@ -55,7 +27,7 @@ export const buildAcceptBidTx = (
 };
 
 // Function to get listing details
-export async function getListingDetails(
+export async function getObjectDetails(
   provider: SuiClient,
   packageId: string,
   moduleName: string,
@@ -71,61 +43,73 @@ export async function getListingDetails(
     const tx = new Transaction();
 
     // Call the function
-    tx.moveCall({
-      target: `${packageId}::${moduleName}::get_listing_details`,
-      arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
+    // tx.moveCall({
+    //   target: `${packageId}::${moduleName}::get_listing_details`,
+    //   arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
+    // });
+
+    // console.log("Inspecting transaction with:", {
+    //   packageId,
+    //   moduleName,
+    //   marketplaceObjectId,
+    //   listingId,
+    //   sender: senderAddress,
+    // });
+
+    const txn = await provider.getObject({
+      id: listingId,
+      // fetch the object content field
+      options: { showContent: true },
     });
 
-    console.log("Inspecting transaction with:", {
-      packageId,
-      moduleName,
-      marketplaceObjectId,
-      listingId,
-      sender: senderAddress,
-    });
+    // console.log("txn:", txn);
 
-    const result = await provider.devInspectTransactionBlock({
-      sender: senderAddress,
-      transactionBlock: tx,
-    });
+    if (txn.error) {
+      throw new Error(txn.error?.code);
+    }
+    return txn.data;
+    // const result = await provider.devInspectTransactionBlock({
+    //   sender: senderAddress,
+    //   transactionBlock: tx,
+    // });
 
     // Check for dynamic_field error
-    if (
-      result.error &&
-      (result.error.includes("dynamic_field") ||
-        result.error.includes("MoveAbort"))
-    ) {
-      console.log("Listing not found or not accessible.", result.error);
-      return null;
-    }
+    // if (
+    //   result.error &&
+    //   (result.error.includes("dynamic_field") ||
+    //     result.error.includes("MoveAbort"))
+    // ) {
+    //   console.log("Listing not found or not accessible.", result.error);
+    //   return null;
+    // }
 
-    if (
-      result &&
-      result.results &&
-      result.results[0] &&
-      result.results[0].returnValues &&
-      result.results[0].returnValues.length > 10
-    ) {
-      const returnValues = result.results[0].returnValues;
+    // if (
+    //   result &&
+    //   result.results &&
+    //   result.results[0] &&
+    //   result.results[0].returnValues &&
+    //   result.results[0].returnValues.length > 10
+    // ) {
+    //   const returnValues = result.results[0].returnValues;
 
-      // Parse the returned values
-      return {
-        owner: returnValues[0][0],
-        nftId: returnValues[1][0],
-        listPrice: Number(returnValues[2][0]),
-        listingType: Number(returnValues[3][0]),
-        minBid: Number(returnValues[4][0]),
-        highestBid: Number(returnValues[5][0]),
-        highestBidder: returnValues[6][0],
-        active: Boolean(returnValues[7][0]),
-        verificationScore: Number(returnValues[8][0]),
-        startTime: Number(returnValues[9][0]),
-        endTime: Number(returnValues[10][0]),
-      };
-    } else {
-      console.error("Invalid result structure:", result);
-      return null;
-    }
+    //   // Parse the returned values
+    //   return {
+    //     owner: returnValues[0][0],
+    //     nftId: returnValues[1][0],
+    //     listPrice: Number(returnValues[2][0]),
+    //     listingType: Number(returnValues[3][0]),
+    //     minBid: Number(returnValues[4][0]),
+    //     highestBid: Number(returnValues[5][0]),
+    //     highestBidder: returnValues[6][0],
+    //     active: Boolean(returnValues[7][0]),
+    //     verificationScore: Number(returnValues[8][0]),
+    //     startTime: Number(returnValues[9][0]),
+    //     endTime: Number(returnValues[10][0]),
+    //   };
+    // } else {
+    //   console.error("Invalid result structure:", result);
+    //   return null;
+    // }
   } catch (error) {
     console.error("Error in getListingDetails:", error);
     return null;
@@ -322,6 +306,42 @@ export async function getListingIds(
   throw new Error("Failed to get listing IDs");
 }
 
+export const buildPlaceBidTx = (
+  marketplaceObjectId: string, // ID of the marketplace object
+  listingId: string, // listing_id
+  coinObjectId: string, // ID of the Coin<SUI> object to use for payment
+  packageId: string,
+  moduleName: string,
+  bidAmountMist: bigint, // The amount to bid
+  address: string // User's address
+): Transaction => {
+  const tx = new Transaction();
+
+  // Set gas budget - important to avoid dry run errors
+  tx.setGasBudget(10000000); // 10M gas units
+
+  // Split the coin
+  const bidCoin = tx.splitCoins(tx.object(coinObjectId), [
+    tx.pure.u64(bidAmountMist.toString()),
+  ]);
+
+  // Mapping the arguments
+  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
+  const listingIdArg = tx.pure.address(listingId); // listing_id as address
+  const paymentArg = bidCoin[0]; // Coin<SUI> object ID
+
+  // Building the move call
+  tx.moveCall({
+    target: `${packageId}::${moduleName}::place_bid`,
+    arguments: [marketplaceArg, listingIdArg, paymentArg],
+  });
+
+  // Return remaining coin to the user
+  // tx.transferObjects([remainingCoin], tx.pure.address(address));
+
+  return tx;
+};
+
 // Function to build a transaction for placing a bid with automatic coin selection
 export async function buildPlaceBidTxWithCoinSelection(
   provider: SuiClient,
@@ -365,11 +385,10 @@ export async function buildPlaceBidTxWithCoinSelection(
         listingId,
         coinObjectId,
         packageId,
-        moduleName
+        moduleName,
+        bidAmountMist,
+        address
       );
-
-      // Set gas budget - important to avoid dry run errors
-      tx.setGasBudget(50000000); // 50M gas units
 
       return { transaction: tx, success: true };
     }
@@ -381,7 +400,7 @@ export async function buildPlaceBidTxWithCoinSelection(
     const tx = new Transaction();
 
     // Set gas budget - important to avoid dry run errors
-    tx.setGasBudget(50000000); // 50M gas units
+    tx.setGasBudget(10000000); // 10M gas units
 
     // Calculate total balance
     const totalBalance = coinData.reduce(

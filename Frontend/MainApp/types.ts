@@ -66,3 +66,38 @@ export type NFTMetadata = {
     watermarkData: string; // you can also parse this as an object if needed
   };
 };
+
+export type ListingDataResponse = {
+  objectId: string;
+  version: string;
+  digest: string;
+  content: {
+    dataType: "moveObject";
+    type: string;
+    hasPublicTransfer: boolean;
+    fields: {
+      id: {
+        id: string;
+      };
+      name: string;
+      value: {
+        type: string;
+        fields: {
+          active: boolean;
+          description: string;
+          end_time: string;
+          highest_bid: string;
+          highest_bidder: string;
+          list_price: string;
+          listing_type: number;
+          metadata: string;
+          min_bid: string;
+          nft_id: string;
+          owner: string;
+          start_time: string;
+          verification_score: string;
+        };
+      };
+    };
+  };
+};
