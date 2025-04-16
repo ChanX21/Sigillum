@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check } from 'lucide-react'
+import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check, Copy } from 'lucide-react'
 import Image from 'next/image'
 import React, { useEffect } from 'react'
 import { motion } from "framer-motion"
 import { VerificationResponse } from '@/store/useDataStore'
 import { format } from 'date-fns'
+import { shortenAddress } from '@/lib/shortenAddress'
+import { toast } from 'sonner'
 interface VerificationProps {
     image: string | null
     verificationError: string | null,
@@ -72,7 +74,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-medium">{verificationData?.verificationResult?.tokenDetails?.creator}</p>
+                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.databaseRecord?.creator?.id)}</p>
                                             <p className="text-xs text-[#616161]">Creator</p>
                                         </div>
 
@@ -141,8 +143,14 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
-                                                <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-xs text-[#616161] mt-1">{verificationData?.verificationResult?.tokenDetails?.creator}</p>
+                                                <div className="bg-[#f9f9f9] p-3 rounded-lg flex justify-between items-center">
+                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.databaseRecord?.creator?.id)}</p>
+                                                    <Button variant='ghost' onClick={async () => {
+                                                        await navigator.clipboard.writeText(verificationData?.databaseRecord?.creator?.id)
+                                                        toast.success("Copied to Clipboard")
+                                                    }}>
+                                                        <Copy />
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>

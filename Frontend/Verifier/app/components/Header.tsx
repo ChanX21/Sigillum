@@ -16,9 +16,11 @@ const Header = () => {
 
             <div className="flex items-center gap-4 bg-white p-1 rounded-full">
 
-                <button className="px-4 py-2 text-sm font-medium text-white rounded-full bg-[#1b263b] hover:bg-[#2d3748] transition-colors">
-                    Secure image
-                </button>
+                <Link href={`${process.env.NEXT_PUBLIC_MAIN_APP_URL}/upload`}>
+                    <button className="px-4 py-2 text-sm font-medium text-white rounded-full bg-[#1b263b] hover:bg-[#2d3748] transition-colors">
+                        Secure image
+                    </button>
+                </Link>
             </div>
         </header>
     )

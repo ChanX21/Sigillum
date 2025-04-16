@@ -20,7 +20,7 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
         const response = await fetchMetadata(
           `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
         );
-
+        console.log(response)
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);

@@ -29,7 +29,7 @@ const UnlistedNfts = () => {
                             </>
                         ) : (
                             <>
-                                <div className="">
+                                <div className="mx-10 mt-10 md:mt-0 md:mx-0">
                                     <h2 className='text-3xl font-semibold'>All Nft's</h2>
                                 </div>
                                 <div className="flex justify-center items-center mt-5">

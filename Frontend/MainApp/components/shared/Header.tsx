@@ -150,12 +150,21 @@ export const Header = () => {
             {walletConnected ? (
               <div className="relative">
                 {address && (
-                  <Button
-                    variant="outline"
-                    className="rounded-full text-sm px-4 py-2"
-                  >
-                    {shortenAddress(address)}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+
+                      className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                      {shortenAddress(address)}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <Link href={'/my-nfts/unlisted'}>
+                        <DropdownMenuItem>My Nft's</DropdownMenuItem>
+                      </Link>
+
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             ) : (

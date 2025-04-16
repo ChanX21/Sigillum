@@ -168,7 +168,7 @@ export default function Home() {
           </>
         ) : (
           <Verification
-          image={image}
+            image={image}
             verificationError={error}
             verificationData={data}
             isVerifying={isVerifying}

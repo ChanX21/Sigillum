@@ -16,7 +16,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
       { label: "NFT Id", value: result?.image?.id },
       {
         label: "IPFS URL",
-        value: `${process.env.NEXT_PUBLIC_PINATA_URL}/${result?.image.originalIpfsCid}`,
+        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.originalIpfsCid}`,
       },
       {
         label: "Status",
