@@ -1,4 +1,9 @@
-import { Transaction } from "@mysten/sui/transactions";
+
+
+// CONSTANTS
+import { Transaction } from '@mysten/sui/transactions';
+
+
 import { SuiClient } from "@mysten/sui/client";
 
 export const buildPlaceBidTx = (
@@ -434,3 +439,38 @@ export async function buildPlaceBidTxWithCoinSelection(
     };
   }
 }
+
+
+export async function listNft(
+  address: string,
+  softListingId: string,
+  listPrice: number,
+  packageId: string,
+  moduleName: string,
+  marketplaceObjectId: string
+): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
+  try {
+    const tx = new Transaction();
+    tx.setGasBudget(50000000); // 50M gas
+
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::convert_to_real_listing`,
+      arguments: [
+        tx.object(marketplaceObjectId),
+        tx.pure.address(softListingId),
+        tx.pure.u64(listPrice.toString()),
+      ],
+    });
+
+    return { transaction: tx, success: true };
+  } catch (error) {
+    console.error("Error building convert listing tx:", error);
+    return {
+      transaction: new Transaction(),
+      success: false,
+      error: "Failed to build convert_to_real_listing transaction",
+    };
+  }
+}
+
+

@@ -52,6 +52,7 @@ export type MediaRecord = {
   };
 };
 
+
 export type NFTMetadata = {
   name: string;
   description: string;

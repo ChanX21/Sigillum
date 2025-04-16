@@ -7,7 +7,7 @@ import React from "react";
 export function Provider({ children }: { children: React.ReactNode }) {
     return (
         <QueryProvider>
-            <WalletProvider autoConnect={false}>{children}</WalletProvider>
+            <WalletProvider autoConnect={true}>{children}</WalletProvider>
         </QueryProvider>
     )
 }
