@@ -5,22 +5,26 @@ import { client } from "@/lib/suiClient";
 
 // Define the types for the parameters
 type ListNftParams = {
+    address: string;
     softListingId: string;
     listPrice: number;
+    packageId: string;
+    moduleName: string;
+    marketplaceObjectId: string;
     signTransaction: ({ transaction }: { transaction: Transaction }) => Promise<any>;
 };
 
 export function useListNft() {
     return useMutation({
         mutationKey: ["list-nft"], // Unique key for the mutation
-        mutationFn: async ({ softListingId, listPrice, signTransaction }: ListNftParams) => {
+        mutationFn: async ({ address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId, signTransaction }: ListNftParams) => {
             try {
                 // Create a new transaction block for the listing
-                const tx = listNft({ softListingId, listPrice });
+                const { transaction } = await listNft(address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId);
 
                 // Sign the transaction block
                 const sign = await signTransaction({
-                    transaction: tx
+                    transaction
                 });
 
                 if (!sign) {

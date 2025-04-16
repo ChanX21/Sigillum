@@ -16,16 +16,21 @@ import { Button } from '@/components/ui/button';
 import { useWallet } from '@suiet/wallet-kit';
 
 import { useListNft } from '@/hooks/useListNft';
+import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 
 const ListNFTButton = ({ listingId }: { listingId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
-    const { signTransaction } = useWallet()
+    const { signTransaction, address } = useWallet()
     const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
 
     const handleListing = async () => {
         const price = parseFloat(listPrice)
-        if (!isNaN(price)) {
+        if (!isNaN(price) && address) {
             listNft?.({
+                address,
+                marketplaceObjectId: MARKETPLACE_ID,
+                moduleName: MODULE_NAME,
+                packageId: PACKAGE_ID,
                 softListingId: listingId,
                 listPrice: price,
                 signTransaction,
@@ -55,7 +60,7 @@ const ListNFTButton = ({ listingId }: { listingId: string }) => {
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="price" className="text-right">
-                            Price (ETH)
+                            Price (SUI)
                         </Label>
                         <Input
                             id="price"
