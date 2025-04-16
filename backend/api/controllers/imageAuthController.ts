@@ -93,7 +93,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       authentication: {
         sha256Hash: authenticationData.sha256Hash,
         pHash: authenticationData.pHash,
-        watermarkData: authenticationData.watermarkData,
         timestamp: authenticationData.createdAt,
         authenticatedAt: new Date(authenticationData.authenticatedAt)
       },
