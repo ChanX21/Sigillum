@@ -87,6 +87,8 @@ export const BidForm = ({ nft }: BIDFormProps) => {
           transaction,
         });
 
+        console.log(result);
+
         if (result) {
           toast.success("Bid placed successfully!");
         }
