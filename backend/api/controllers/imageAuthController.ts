@@ -259,7 +259,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
  */
 export const getAllImages = async (req: Request, res: Response): Promise<void> => {
   try {
-    const authenticatedImages = await AuthenticatedImage.find({status: 'soft-listed'});
+    const authenticatedImages = await AuthenticatedImage.find({$or: [{status: 'soft-listed'}, {status: 'verified'}]});
     res.status(200).json(authenticatedImages);
   } catch (error) {
     console.error('Error fetching all images:', error);
