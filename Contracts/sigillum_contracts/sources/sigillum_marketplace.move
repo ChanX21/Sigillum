@@ -1,8 +1,5 @@
 module sigillum_contracts::sigillum_marketplace {
     
-    // use sui::object::{Self, UID};
-    // use sui::transfer;
-    // use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::balance::{Self, Balance};
@@ -10,8 +7,7 @@ module sigillum_contracts::sigillum_marketplace {
     use sui::vec_map::{Self, VecMap};
     use sui::event;
     use std::string::{String};
-    // use std::vector;
-    // use sigillum_contracts::sigillum_nft::{Self, PhotoNFT};
+
 
     // Error constants
     const EInvalidListing: u64 = 1;
@@ -35,7 +31,6 @@ module sigillum_contracts::sigillum_marketplace {
     const SOFT_LISTING: u8 = 0;   // For valuation and authenticity only
     const REAL_LISTING: u8 = 1;   // For actual sale
 
-    // Structs for the marketplace
     
     // Represents a listing in the marketplace (both soft and real)
     public struct Listing has store, copy {
@@ -72,7 +67,7 @@ module sigillum_contracts::sigillum_marketplace {
         listings: Table<address, Listing>,
         // Maps listing ID to BidPool
         bid_pools: Table<address, BidPool>,
-        // Maps listing ID to escrow funds for REAL_LISTING
+        // Maps listing ID to escrow funds
         escrow: Table<address, Balance<SUI>>,
         // Platform fee percentage (in basis points, e.g., 250 = 2.5%)
         fee_percentage: u64,
@@ -166,13 +161,16 @@ module sigillum_contracts::sigillum_marketplace {
         _: &AdminCap,
         marketplace: &mut Marketplace,
         nft_id: address,
+        owner_soft: address,
         min_bid: u64,
         description: String,
         metadata: String,
         end_time: u64,
         ctx: &mut TxContext
     ) {
-        let owner = tx_context::sender(ctx);
+        // let owner = tx_context::sender(ctx);
+        let owner = owner_soft;
+
         let listing_id = object::new(ctx);
         let listing_id_address = object::uid_to_address(&listing_id);
         
@@ -225,22 +223,6 @@ module sigillum_contracts::sigillum_marketplace {
         object::delete(listing_id);
     }
 
-    // Create a real listing for selling the NFT - function signature kept for reference
-    // This original function is now commented out as we're replacing it with convert_to_real_listing
-    /* 
-    public entry fun create_real_listing(
-        marketplace: &mut Marketplace,
-        photo: &PhotoNFT,
-        list_price: u64,
-        min_bid: u64,
-        description: String,
-        metadata: String,
-        end_time: u64,
-        ctx: &mut TxContext
-    ) {
-        // Original implementation...
-    }
-    */
 
     // Convert a soft listing to a real listing for selling the NFT
     public entry fun convert_to_real_listing(
@@ -309,13 +291,9 @@ module sigillum_contracts::sigillum_marketplace {
         };
         
         let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
-        
-        // Handle based on listing type
-        if (listing.listing_type == REAL_LISTING) {
-            // For real listings, handle payment and escrow
-            
-            // Handle previous bid from this bidder if it exists
-            if (vec_map::contains(&bid_pool.bids, &bidder)) {
+  
+        // Handle previous bid from this bidder if it exists
+        if (vec_map::contains(&bid_pool.bids, &bidder)) {
                 let previous_bid = *vec_map::get(&bid_pool.bids, &bidder);
                 let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
                 
@@ -331,17 +309,6 @@ module sigillum_contracts::sigillum_marketplace {
             // Put new bid in escrow
             let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
             balance::join(escrow, coin::into_balance(payment));
-            
-        } else {
-            // For soft listings, just record the bid amount without payment
-            // Return the payment to the bidder as it's just an indicative bid
-            transfer::public_transfer(payment, bidder);
-            
-            // Update bid count if this is a new bidder
-            if (!vec_map::contains(&bid_pool.bids, &bidder)) {
-                bid_pool.bid_count = bid_pool.bid_count + 1;
-            };
-        };
         
         // Update bid in bid pool
         vec_map::insert(&mut bid_pool.bids, bidder, bid_amount);
@@ -353,10 +320,10 @@ module sigillum_contracts::sigillum_marketplace {
             listing.highest_bidder = bidder;
             is_highest = true;
             
-            // If bid matches or exceeds list price, auto-complete the listing (only for real listings)
-            if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
+            // If bid matches or exceeds list price, auto-complete the listing (only for real listings);
+        if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
                 complete_listing(marketplace, listing_id, ctx);
-            };
+        };
         };
         
         // Emit bid placed event
@@ -422,8 +389,6 @@ module sigillum_contracts::sigillum_marketplace {
             vector::remove(&mut marketplace.active_listing_ids, active_index);
         };
         
-        // For real listings, return all bids
-        if (listing.listing_type == REAL_LISTING) {
             let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
             let bidders = vec_map::keys(&bid_pool.bids);
             let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
@@ -444,7 +409,6 @@ module sigillum_contracts::sigillum_marketplace {
                 
                 i = i + 1;
             };
-        };
         
         // Emit listing completed event
         event::emit(ListingCompleted {
@@ -455,28 +419,6 @@ module sigillum_contracts::sigillum_marketplace {
             final_price: 0,
             listing_type: listing.listing_type,
             success: false,
-        });
-    }
-
-    // Update the verification score for a listing (admin or trusted verifier only)
-    public entry fun update_verification_score(
-        _: &MarketplaceCap,
-        marketplace: &mut Marketplace,
-        listing_id: address,
-        score: u64,
-        ctx: &mut TxContext
-    ) {
-        assert!(score <= 100, EInvalidListing); // Score must be 0-100
-        
-        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
-        listing.verification_score = score;
-        
-        // Emit verification updated event
-        event::emit(VerificationUpdated {
-            listing_id,
-            nft_id: listing.nft_id,
-            new_score: score,
-            verifier: tx_context::sender(ctx),
         });
     }
 
@@ -549,8 +491,8 @@ module sigillum_contracts::sigillum_marketplace {
         while (i < len) {
             let bidder = *vector::borrow(&bidders, i);
             
-            // Skip the winner, their payment is already handled
-            if (bidder != buyer) {
+        // Skip the winner, their payment is already handled
+        if (bidder != buyer) {
                 let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
                 
                 // Return bid to bidder if there's enough in escrow
@@ -598,84 +540,6 @@ module sigillum_contracts::sigillum_marketplace {
             listing.start_time,
             listing.end_time
         )
-    }
-
-    // Get listing IDs with pagination support
-    // Returns: Vector of listing IDs and a boolean indicating if there are more listings
-    public fun get_listing_ids(
-        marketplace: &Marketplace,
-        start_idx: u64,
-        limit: u64,
-        only_active: bool,
-        listing_type: u8
-    ): (vector<address>, bool) {
-        // Determine which vector to use
-        let ids_vector = if (only_active) {
-            &marketplace.active_listing_ids
-        } else {
-            &marketplace.listing_ids
-        };
-        
-        let total_ids = vector::length(ids_vector);
-        
-        // If there are no listings or start_idx is beyond the total count, return empty vector
-        if (total_ids == 0 || start_idx >= total_ids) {
-            return (vector::empty<address>(), false)
-        };
-        
-        // Adjust limit if it's too large
-        let mut adjusted_limit = limit;
-        let max_possible = total_ids - start_idx;
-        if (adjusted_limit > max_possible) {
-            adjusted_limit = max_possible;
-        };
-        
-        // Prepare result vector
-        let mut result = vector::empty<address>();
-        let mut added_count = 0;
-        
-        let mut i = start_idx;
-        let end_idx = start_idx + adjusted_limit;
-        
-        // Skip to start_idx and collect up to limit items
-        while (i < end_idx && i < total_ids) {
-            let listing_id = *vector::borrow(ids_vector, i);
-            
-            // If a listing type filter is specified (non-zero), check the listing type
-            if (listing_type == 0 || 
-                (table::contains(&marketplace.listings, listing_id) && 
-                 table::borrow(&marketplace.listings, listing_id).listing_type == listing_type)) {
-                vector::push_back(&mut result, listing_id);
-                added_count = added_count + 1;
-            };
-            
-            i = i + 1;
-        };
-        
-        let has_more = i < total_ids;
-        
-        (result, has_more)
-    }
-    
-    // Get details for multiple listings by their IDs
-    public fun get_multiple_listings(
-        marketplace: &Marketplace,
-        listing_ids: vector<address>
-    ): vector<Listing> {
-        let mut result = vector::empty<Listing>();
-        let mut i = 0;
-        let len = vector::length(&listing_ids);
-        
-        while (i < len) {
-            let listing_id = *vector::borrow(&listing_ids, i);
-            if (table::contains(&marketplace.listings, listing_id)) {
-                let listing = *table::borrow(&marketplace.listings, listing_id);
-                vector::push_back(&mut result, listing);
-            };
-            i = i + 1;
-        };
-        
-        result
     }
 
     // Get the number of bids on a listing
