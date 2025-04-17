@@ -57,12 +57,12 @@ export async function getObjectDetails(
     // });
 
     const txn = await provider.getObject({
-      id: listingId,
+      id: listingId, //"0xe7ba7336673ffa9bbd1c001820de70ebda35782d16ff093744a2312a8e6be5d5",
       // fetch the object content field
       options: { showContent: true },
     });
 
-    // console.log("txn:", txn);
+    console.log("txn:", txn);
 
     if (txn.error) {
       throw new Error(txn.error?.code);
@@ -318,7 +318,7 @@ export const buildPlaceBidTx = (
   const tx = new Transaction();
 
   // Set gas budget - important to avoid dry run errors
-  tx.setGasBudget(10000000); // 10M gas units
+  tx.setGasBudget(100000000); // 10M gas units
 
   // Split the coin
   const bidCoin = tx.splitCoins(tx.object(coinObjectId), [
@@ -327,7 +327,9 @@ export const buildPlaceBidTx = (
 
   // Mapping the arguments
   const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(listingId); // listing_id as address
+  const listingIdArg = tx.pure.address(
+    "0xe7ba7336673ffa9bbd1c001820de70ebda35782d16ff093744a2312a8e6be5d5"
+  ); // listing_id as address
   const paymentArg = bidCoin[0]; // Coin<SUI> object ID
 
   // Building the move call
