@@ -25,14 +25,6 @@ const MARKETPLACE_OBJECT_ID = process.env.MARKETPLACE_OBJECT_ID || '';
 const CREATE_SOFT_LISTING_FUNCTION = 'create_soft_listing';
 const MARKETPLACE_ADMIN_CAP = process.env.MARKETPLACE_ADMIN_CAP || '';
 
-export interface Metadata {
-  metadataCID: string;
-  image: string;
-  sha256Hash: string;
-  pHash: string;
-  dHash: string;
-  watermarkData: string;
-}
 
 export interface ListingOptions {
   minBid?: number;
@@ -64,17 +56,27 @@ export interface VerificationResult {
 /**
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
- * @param {Metadata} metadata - Image metadata
+ * @param {string} imageUrl - Image URL
+ * @param {string} sha256Hash - SHA256 hash of the image
+ * @param {string} pHash - Perceptual hash of the image
+ * @param {string} dHash - dHash of the image
+ * @param {string} watermarkCID - Watermark CID of the image
+ * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
  */
 export const mintNFT = async (
   creatorAddress: string, 
-  metadata: Metadata,
+  imageUrl: string,
+  sha256Hash: string,
+  pHash: string,
+  dHash: string,
+  watermarkCID: string,
+  metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !metadata) {
-      throw new Error('Creator address and metadata are required');
+    if (!creatorAddress || !imageUrl || !sha256Hash || !pHash || !dHash || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, SHA256 hash, perceptual hash, dHash, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -83,12 +85,8 @@ export const mintNFT = async (
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
     
-    // Extract required data from metadata
-    const imageUrl = metadata.image || '';
-    const sha256Hash = metadata.sha256Hash || '';
-    const pHash = metadata.pHash || '';
-    const dHash = metadata.pHash || ''; // Use pHash as dHash if not available
-    const watermarkId = metadata.watermarkData || '';
+    // Create keypair from private key
+    const watermarkId = watermarkCID || '';
     
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
@@ -101,7 +99,7 @@ export const mintNFT = async (
       pHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(pHash)),
       dHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(dHash)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
-      metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadata.metadataCID}`)
+      metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
     
     // Create the transaction
@@ -265,18 +263,19 @@ export const verifyImageByHash = async (
     // Convert stored fields to strings
     const storedSha256Hash = safeFieldToString(fields.sha256_hash, 'utf8');
     const storedPHash = safeFieldToString(fields.phash, 'utf8');
-    const storedImageUrl = safeFieldToString(fields.image_url, 'utf8');
-    
+    const storedImageUrl = safeFieldToString(fields.image_url, 'utf8')
     // 1. Exact hash match (verify_exact_match)
     const exactMatch = storedSha256Hash === sha256Hash;
     
     // 2. Calculate perceptual hash similarity (if we have valid hashes)
-    let similarityScore = 100; // Default to max difference
+    let similarityScore = 0; // Default to no similarity
     let perceptualMatch = false;
     
     if (storedPHash && pHash) {
-      similarityScore = calculateHammingDistance(storedPHash, pHash);
-      perceptualMatch = similarityScore < 10; // Threshold for similarity
+      const hammingDistance = calculateHammingDistance(storedPHash, pHash);
+      const maxDistance = Math.max(storedPHash.length, pHash.length);
+      similarityScore = Math.round(((maxDistance - hammingDistance) / maxDistance) * 100);
+      perceptualMatch = similarityScore > 90; // Threshold for similarity (>90% similar)
     }
     
     // 3. Simplified registry check (skipping the actual call to find_similar_nfts)
@@ -289,7 +288,7 @@ export const verifyImageByHash = async (
       similarityScore,
       tokenDetails: {
         tokenId,
-        creator: safeFieldToString(fields.creator, 'utf8', 'unknown'),
+        creator: fields.creator,
         timestamp: parseInt(safeFieldToString(fields.timestamp, 'utf8', '0'), 10),
         metadata: safeFieldToString(fields.metadata, 'utf8', ''),
         imageUrl: storedImageUrl

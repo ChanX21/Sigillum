@@ -4,7 +4,6 @@ import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsServic
 import { 
   mintNFT,
   verifyImageByHash,
-  Metadata,
   createSoftListing,
 } from '../services/blockchainService';
 import { AuthenticatedImage } from '../models/AuthenticatedImage';
@@ -75,7 +74,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     // Upload watermarked image to IPFS
     const watermarkedIpfsCid = await uploadToIPFS(authenticationData.watermarkedBuffer);
     
-    let metadata: Metadata = {
+    let metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: originalIpfsCid,
       sha256Hash: authenticationData.sha256Hash,
@@ -145,9 +144,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       return;
     }
     res.status(200).json({ message: 'Image will be minted' });
-    const response = await axios.get(`https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.metadataCID}`);
-    const metadata: Metadata = response.data;
-    const result = await mintNFT(authenticatedImage.blockchain.creator, metadata);
+    const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.authentication.sha256Hash, authenticatedImage.authentication.pHash, authenticatedImage.authentication.pHash, authenticatedImage.watermarked, authenticatedImage.metadataCID);
     await AuthenticatedImage.findByIdAndUpdate(
       authenticatedImage._id,
       { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
@@ -169,8 +166,8 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       }
       res.status(200).json({ message: 'Image will be soft listed' });
       const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
-        minBid: 0,
-        endTime: 900,
+        minBid: 100,
+        endTime: Date.now() + (60 * 60 * 24 * 2),
         description: 'Soft listing',
         metadataCID: authenticatedImage.metadataCID
       });
@@ -226,55 +223,26 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       pHash
     );
     
-    // Find image record in our database (if it exists)
-    const authenticatedImage = await AuthenticatedImage.findOne({
-      'authentication.sha256Hash': imageHash
-    });
-    
     // Prepare response data
     const isAuthentic = verificationResult.isAuthentic;
     
-    let databaseRecord = null;
-    if (authenticatedImage) {
-      // Construct creator object
-      const creator = {
-        id: typeof authenticatedImage.blockchain.creator === 'object' ? 
-          authenticatedImage.blockchain.creator : 
-          authenticatedImage.blockchain.creator,
-        username: typeof authenticatedImage.blockchain.creator === 'object' ? 
-          (authenticatedImage.blockchain.creator as any).username : 
-          'Unknown'
-      };
-      
-      databaseRecord = {
-        imageId: authenticatedImage._id,
-        sha256Hash: authenticatedImage.authentication.sha256Hash,
-        pHash: authenticatedImage.authentication.pHash,
-        creator,
-        blockchain: authenticatedImage.blockchain,
-        originalIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.original}`,
-        watermarkedIpfsUrl: `https://${process.env.PINATA_GATEWAY}/ipfs/${authenticatedImage.watermarked}`
-      };
-      
       // Update status to verified if verification was successful
-      if (isAuthentic && authenticatedImage.status !== 'verified') {
-        authenticatedImage.status = 'verified';
-        authenticatedImage.updatedAt = new Date();
-        await authenticatedImage.save();
+      if (isAuthentic && authenticationData.status !== 'verified') {
+        authenticationData.status = 'verified';
+        authenticationData.updatedAt = new Date();
+        await authenticationData.save();
       }
+    
+    if (isAuthentic) {
+      res.status(200).json({
+        message: 'Image verification successful',
+        verificationResult,
+        databaseRecord: authenticationData
+      });
     }
-    
-    // Status code - 200 if we found matches or have a DB record, 404 if nothing found
-    const statusCode = isAuthentic || databaseRecord ? 200 : 404;
-    
-    res.status(statusCode).json({
-      message: isAuthentic 
-        ? 'Image verification successful' 
-        : 'No matching NFTs found on blockchain for this hash',
-      verified: isAuthentic,
-      databaseRecord,
-      verificationResult
-    });
+    else {
+      res.status(404).json({ message: 'Image not authenticated' });
+    }
   } catch (error) {
     console.error('Error verifying image by hash:', error);
     res.status(500).json({ 
