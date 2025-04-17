@@ -58,7 +58,7 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
         <div className="flex flex-col gap-3">
           <div>
             <p className="text-gray-500 text-sm">Current Bid</p>
-            <p className="text-sm font-medium">{} ETH</p>
+            <p className="text-sm font-medium">{} SUI</p>
           </div>
 
           <div className="flex  space-x-1">
@@ -109,7 +109,7 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
           </div>
           <div className="flex flex-col justify-center">
             <p className="text-xs text-gray-400">Instant buy</p>
-            <p className="text-xs font-semibold">{0.06} ETH</p>
+            <p className="text-xs font-semibold">{0.06} SUI</p>
           </div>
         </div>
       </div>
