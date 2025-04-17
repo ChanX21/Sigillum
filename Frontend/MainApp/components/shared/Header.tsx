@@ -20,7 +20,7 @@ export const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const { connected: walletConnected, address } = useWallet();
+  const { connected: walletConnected, address, disconnect } = useWallet();
   const { balance, loading } = useAccountBalance();
 
   const readableSui = (rawBalance: bigint | number) => {
@@ -116,6 +116,7 @@ export const Header = () => {
                       <Link href={'/my-nfts/unlisted'}>
                         <DropdownMenuItem>My Nft's</DropdownMenuItem>
                       </Link>
+                      <DropdownMenuItem onClick={() => disconnect()}>Disconnect</DropdownMenuItem>
 
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -162,22 +163,20 @@ export const Header = () => {
                       <Link href={'/my-nfts/unlisted'}>
                         <DropdownMenuItem>My Nft's</DropdownMenuItem>
                       </Link>
+                      <DropdownMenuItem onClick={() => disconnect()}>Disconnect</DropdownMenuItem>
 
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
               </div>
             ) : (
-              <Link href={'/upload'}>
-
-                <Button
-                  variant="default"
-                  className="rounded-full text-sm px-4 py-2"
-                  onClick={() => setShowWalletModal(true)}
-                >
-                  Connect Wallet
-                </Button>
-              </Link>
+              <Button
+                variant="default"
+                className="rounded-full text-sm px-4 py-2"
+                onClick={() => setShowWalletModal(true)}
+              >
+                Connect Wallet
+              </Button>
             )}
           </div>
         </div>
@@ -214,13 +213,14 @@ export const Header = () => {
               )}
             </p>
           </div>
-
-          <Button
-            variant="default"
-            className="rounded-full text-sm px-4 py-2 w-1/2 h-10"
-          >
-            Secure image
-          </Button>
+          <Link href={'/upload'} className="w-1/2">
+            <Button
+              variant="default"
+              className="rounded-full text-sm px-4 py-2 w-full h-10"
+            >
+              Secure image
+            </Button>
+          </Link>
         </nav>
       )}
     </>

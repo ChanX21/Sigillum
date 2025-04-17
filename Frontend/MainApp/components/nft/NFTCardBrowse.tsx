@@ -64,7 +64,7 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
         {idx % 2 == 0 && (
           <div className="h-full flex  justify-between">
             <p className="text-xs text-gray-400">Current bid</p>
-            <p className="text-xs font-semibold">{} ETH</p>
+            <p className="text-xs font-semibold">{} SUI</p>
           </div>
         )}
       </div>
