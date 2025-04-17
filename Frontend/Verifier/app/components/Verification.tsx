@@ -74,7 +74,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.databaseRecord?.creator?.id)}</p>
+                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.databaseRecord?.blockchain.creator)}</p>
                                             <p className="text-xs text-[#616161]">Creator</p>
                                         </div>
 
@@ -82,7 +82,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
                                     <div className="text-right">
                                         <p className="text-xs text-[#616161]">Created</p>
-                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails?.timestamp * 1000), 'dd MMM yyyy, HH:mm') : null}</p>
+                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.databaseRecord?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                     </div>
 
                                 </div>
@@ -144,9 +144,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg flex justify-between items-center">
-                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.databaseRecord?.creator?.id)}</p>
+                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.databaseRecord?.blockchain?.creator)}</p>
                                                     <Button variant='ghost' onClick={async () => {
-                                                        await navigator.clipboard.writeText(verificationData?.databaseRecord?.creator?.id)
+                                                        await navigator.clipboard.writeText(verificationData?.databaseRecord?.blockchain?.creator)
                                                         toast.success("Copied to Clipboard")
                                                     }}>
                                                         <Copy />
@@ -162,7 +162,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verificationResult?.tokenDetails.timestamp * 1000), 'dd MMM yyyy, HH:mm') : null}</p>
+                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.databaseRecord?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                                 </div>
                                             </div>
                                         </div>

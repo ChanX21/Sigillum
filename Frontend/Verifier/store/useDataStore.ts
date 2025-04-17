@@ -35,6 +35,7 @@ export interface DatabaseRecord {
     originalIpfsUrl:string;
     pHash:string;
     sha256Hash:string;
+    createdAt:string;
     watermarkedIpfsUrl:string;
 }
 
@@ -57,7 +58,6 @@ export const useDataStore = create((set) => ({
     data: null,
     loading: false,
     error: null,
-
     fetchData: async (imageFile: File) => {
         set({ loading: true, error: null });
         try {
@@ -65,6 +65,7 @@ export const useDataStore = create((set) => ({
             set({ data, loading: false });
         } catch (error: any) {
             set({ error: error.message, loading: false });
+            console.log(error)
         }
     },
 }));
