@@ -26,7 +26,7 @@ export interface IAuthenticatedImage extends Document {
 }
 
 export interface IVerification extends Document {
-  imageId: string;
+  imageId: IAuthenticatedImage;
   verifier: string;
   createdAt: Date;
   updatedAt: Date;
@@ -34,7 +34,7 @@ export interface IVerification extends Document {
 
 const verificationSchema = new Schema<IVerification>({
   imageId: {
-    type: String,
+    type: Schema.Types.ObjectId,
     ref: 'AuthenticatedImage',
     required: true,
   },
