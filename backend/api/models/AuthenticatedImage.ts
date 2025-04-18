@@ -19,10 +19,38 @@ export interface IAuthenticatedImage extends Document {
   authentication: IAuthentication;
   blockchain: IBlockchain;
   metadataCID: string;
-  status: 'uploaded'  | 'minted' | 'soft-listed' | 'verified' | 'error';
+  status: 'uploaded' | 'minted' | 'soft-listed' | 'error';
+  verifications: IVerification[] | string[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IVerification extends Document {
+  imageId: string;
+  verifier: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const verificationSchema = new Schema<IVerification>({
+  imageId: {
+    type: String,
+    ref: 'AuthenticatedImage',
+    required: true,
+  },
+  verifier: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
 const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
   original: {
@@ -60,13 +88,17 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
       type: String,
     },
   },
+  verifications: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Verification'
+  }],
   metadataCID: {
     type: String,
     required: true,
   },
   status: {
     type: String,
-    enum: ['uploaded', 'minted', 'soft-listed', 'verified', 'error'],
+    enum: ['uploaded', 'minted', 'soft-listed', 'error'],
     default: 'uploaded'
   },
   createdAt: {
@@ -84,5 +116,6 @@ authenticatedImageSchema.index({ 'authentication.sha256Hash': 1 });
 authenticatedImageSchema.index({ 'authentication.pHash': 1 });
 
 const AuthenticatedImage = mongoose.model<IAuthenticatedImage>('AuthenticatedImage', authenticatedImageSchema);
+const Verification = mongoose.model<IVerification>('Verification', verificationSchema);
 
-export { AuthenticatedImage};
+export { AuthenticatedImage, Verification };

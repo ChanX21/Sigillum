@@ -6,7 +6,7 @@ import {
   verifyImageByHash,
   createSoftListing,
 } from '../services/blockchainService';
-import { AuthenticatedImage } from '../models/AuthenticatedImage';
+import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage';
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import axios from 'axios';
 
@@ -60,7 +60,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     const existingImage = await AuthenticatedImage.findOne({
       $or: [
         { 'authentication.sha256Hash': authenticationData.sha256Hash },
-        { 'authentication.pHash': authenticationData.pHash },
+        { 'authentication.pHash': authenticationData.pHash },   
       ]
     });
     if (existingImage) {
@@ -203,41 +203,60 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'No image file uploaded' });
       return;
     }
-    const imageHash = generateSHA256(req.file.buffer);
-    const authenticationData = await AuthenticatedImage.findOne({
-      'authentication.sha256Hash': imageHash
+    const authenticationData = await processImageForAuthentication(req.file.buffer, {
+      creatorId: req.params.verifier
     });
+    const image = await AuthenticatedImage.findOne({
+        $or: [
+          { 'authentication.sha256Hash': authenticationData.sha256Hash },
+          { 'authentication.pHash': authenticationData.pHash }
+        ]
+      });
     
-    if (!authenticationData) {
+    if (!image) {
       res.status(400).json({ message: 'Image not authenticated' });
       return;
     }
     
     // Get pHash from database
-    const pHash = authenticationData.authentication.pHash || '';
+    const pHash = authenticationData.pHash || '';
     
     // Verify using tokenId, hash and pHash
     const verificationResult = await verifyImageByHash(
-      authenticationData.blockchain.tokenId, 
-      imageHash,
+      image.blockchain.tokenId, 
+      image.authentication.sha256Hash,
       pHash
     );
     
     // Prepare response data
     const isAuthentic = verificationResult.isAuthentic;
     
-      // Update status to verified if verification was successful
-      if (isAuthentic && authenticationData.status !== 'verified') {
-        authenticationData.status = 'verified';
-        authenticationData.updatedAt = new Date();
-        await authenticationData.save();
-      }
+    // Update status to verified if verification was successful
+    if (isAuthentic) {
+      // Create a new verification record
+      const verification = new Verification({
+        imageId: image._id,
+        verifier: req.params.verifier,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      const savedVerification = await verification.save();
+      
+      // Add the verification ID to the image's verifications array
+      await AuthenticatedImage.findByIdAndUpdate(
+        image._id,
+        { $addToSet: { verifications: savedVerification._id } }
+      );
+    }
     
     if (isAuthentic) {
+      // Get updated image with populated verifications
+      const updatedImage = await AuthenticatedImage.findById(image._id).populate('verifications');
+      
       res.status(200).json({
         message: 'Image verification successful',
         verificationResult,
-        databaseRecord: authenticationData
+        databaseRecord: updatedImage
       });
     }
     else {
@@ -259,7 +278,12 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
  */
 export const getAllImages = async (req: Request, res: Response): Promise<void> => {
   try {
-    const authenticatedImages = await AuthenticatedImage.find({$or: [{status: 'soft-listed'}, {status: 'verified'}]});
+    await AuthenticatedImage.updateMany({},{status: 'soft-listed'});
+    const authenticatedImages = await AuthenticatedImage.find({status: 'soft-listed'})
+      .populate({
+        path: 'verifications',
+        model: 'Verification'
+      });
     res.status(200).json(authenticatedImages);
   } catch (error) {
     console.error('Error fetching all images:', error);
@@ -275,7 +299,11 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
 export const getImageById = async (req: Request, res: Response): Promise<void> => {
   try {
     const imageId = req.params.id;
-    const authenticatedImage = await AuthenticatedImage.findById(imageId);
+    const authenticatedImage = await AuthenticatedImage.findById(imageId)
+      .populate({
+        path: 'verifications',
+        model: 'Verification'
+      });
     res.status(200).json(authenticatedImage);
   } catch (error) {
     console.error('Error fetching image by ID:', error);

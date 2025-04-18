@@ -11,7 +11,7 @@ router.post('/authenticate/:address', upload.single('image'), imageAuthControlle
 router.post('/blockchain', imageAuthController.blockchain);
 
 // POST /verify - Verify an image using the uploaded file
-router.post('/verify', upload.single('image'), imageAuthController.verify);
+router.post('/verify/:verifier', upload.single('image'), imageAuthController.verify);
 
 // GET /all - Get all authenticated images
 router.get('/all', imageAuthController.getAllImages);
