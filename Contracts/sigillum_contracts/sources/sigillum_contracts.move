@@ -39,7 +39,7 @@ module sigillum_contracts::sigillum_nft {
     public struct Registry has key {
         id: UID,
         // Maps phash to a set of NFT IDs (since multiple similar images may have the same phash)
-        phash_to_nfts: Table<vector<u8>, VecSet<address>>,
+        vector_url_to_nfts: Table<vector<u8>, VecSet<address>>,
     }
 
     // Events
@@ -54,7 +54,7 @@ module sigillum_contracts::sigillum_nft {
         // Create and share the Registry
         let registry = Registry {
             id: object::new(ctx),
-            phash_to_nfts: table::new(ctx),
+            vector_url_to_nfts: table::new(ctx),
         };
 
         transfer::transfer(
@@ -104,11 +104,11 @@ module sigillum_contracts::sigillum_nft {
         let photo_id = object::uid_to_address(&photo_nft.id);
         
         // Register the NFT in the registry by pHash
-        if (!table::contains(&registry.phash_to_nfts, phash)) {
-            table::add(&mut registry.phash_to_nfts, phash, vec_set::empty<address>());
+        if (!table::contains(&registry.vector_url_to_nfts, vector_url)) {
+            table::add(&mut registry.vector_url_to_nfts, vector_url, vec_set::empty<address>());
         };
         
-        let nft_set = table::borrow_mut(&mut registry.phash_to_nfts, phash);
+        let nft_set = table::borrow_mut(&mut registry.vector_url_to_nfts, vector_url);
         vec_set::insert(nft_set, photo_id);
         
         event::emit(PhotoRegistered {
@@ -131,28 +131,28 @@ module sigillum_contracts::sigillum_nft {
     // === Lookup Functions ===
     
     // Get all NFT IDs matching a pHash
-    public fun get_nfts_by_phash(
+    public fun get_nfts_by_vector_url(
         registry: &Registry,
-        phash: vector<u8>
+        vector_url: vector<u8>
     ): vector<address> {
-        if (!table::contains(&registry.phash_to_nfts, phash)) {
+        if (!table::contains(&registry.vector_url_to_nfts, vector_url)) {
             return vector::empty<address>()
         };
         
-        let nft_set = table::borrow(&registry.phash_to_nfts, phash);
+        let nft_set = table::borrow(&registry.vector_url_to_nfts, vector_url);
         vec_set::into_keys(*nft_set)
     }
     
     // Get a single NFT ID matching a pHash (returns the first match if multiple exist)
-    public fun get_first_nft_by_phash(
+    public fun get_first_nft_by_vector_url(
         registry: &Registry,
-        phash: vector<u8>
+        vector_url: vector<u8>
     ): (bool, address) {
-        if (!table::contains(&registry.phash_to_nfts, phash)) {
+        if (!table::contains(&registry.vector_url_to_nfts, vector_url)) {
             return (false, @0x0)
         };
         
-        let nft_set = table::borrow(&registry.phash_to_nfts, phash);
+        let nft_set = table::borrow(&registry.vector_url_to_nfts, vector_url);
         let nft_ids = vec_set::into_keys(*nft_set);
         
         if (vector::is_empty(&nft_ids)) {
@@ -164,11 +164,11 @@ module sigillum_contracts::sigillum_nft {
     
     
     // Helper function to directly check if an NFT exists with the given pHash
-    public fun exists_by_phash(
+    public fun exists_by_vector_url(
         registry: &Registry,
-        phash: vector<u8>
+        vector_url: vector<u8>
     ): bool {
-        table::contains(&registry.phash_to_nfts, phash)
+        table::contains(&registry.vector_url_to_nfts, vector_url)
     }
 
     // === View Functions ===

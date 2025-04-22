@@ -17,6 +17,9 @@ module sigillum_contracts::sigillum_marketplace {
     use sui::vec_map::{Self, VecMap};
     use sui::event;
     use std::string::{String};
+    use sui::object::{Self, UID};
+    use sui::tx_context::{Self, TxContext};
+    use sui::transfer;
 
 
     // Error constants
@@ -26,8 +29,8 @@ module sigillum_contracts::sigillum_marketplace {
     const EListingNotActive: u64 = 4;
     const ENotOwner: u64 = 5;
     const EInvalidPrice: u64 = 6;
-    const ENotListed: u64 = 7;
-    const EInvalidListingNotRealListing: u64 = 8;
+    const ENotListed: u64 = 8;
+    const EInvalidListingNotRealListing: u64 = 10;
 
 
     // MarketplaceCap for admin operations
@@ -123,7 +126,14 @@ module sigillum_contracts::sigillum_marketplace {
         listing_type: u8,
         success: bool,
     }
-    
+
+    public struct VerificationUpdated has copy, drop {
+        listing_id: address,
+        nft_id: address,
+        new_score: u64,
+        verifier: address,
+    }
+
     // === Initialization ===
     fun init(ctx: &mut TxContext) {
         // Create admin capability
@@ -154,6 +164,12 @@ module sigillum_contracts::sigillum_marketplace {
         transfer::share_object(marketplace);
     }
 
+    // Test-only initialization function
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(ctx)
+    }
+
     // === Core Functions ===
 
     // Create a soft listing for valuation and authenticity verification
@@ -168,7 +184,6 @@ module sigillum_contracts::sigillum_marketplace {
         end_time: u64,
         ctx: &mut TxContext
     ) {
-        // let owner = tx_context::sender(ctx);
         let owner = owner_soft;
 
         let listing_id = object::new(ctx);
@@ -201,6 +216,10 @@ module sigillum_contracts::sigillum_marketplace {
         table::add(&mut marketplace.listings, listing_id_address, listing);
         table::add(&mut marketplace.bid_pools, listing_id_address, bid_pool);
         
+        // Create an empty escrow for this listing
+        let empty_balance = balance::zero<SUI>();
+        table::add(&mut marketplace.escrow, listing_id_address, empty_balance);
+        
         // Add the listing ID to the vectors for pagination
         vector::push_back(&mut marketplace.listing_ids, listing_id_address);
         vector::push_back(&mut marketplace.active_listing_ids, listing_id_address);
@@ -225,39 +244,38 @@ module sigillum_contracts::sigillum_marketplace {
 
 
     // Convert a soft listing to a real listing for selling the NFT
-    public entry fun convert_to_real_listing(
+    public entry fun convert_to_real_listing<T: key + store>(
         marketplace: &mut Marketplace,
         soft_listing_id: address,
         list_price: u64,
+        nft: T,
         ctx: &mut TxContext
     ) {
         let sender = tx_context::sender(ctx);
         
-        // Verify the soft listing exists and is active
         assert!(table::contains(&marketplace.listings, soft_listing_id), ENotListed);
         let listing = table::borrow_mut(&mut marketplace.listings, soft_listing_id);
         
-        // Verify it's a soft listing
         assert!(listing.listing_type == SOFT_LISTING, EInvalidListing);
-        
-        // Verify sender is the owner
         assert!(listing.owner == sender, ENotOwner);
-        
-        // Verify the listing is active
         assert!(listing.active, EListingNotActive);
-        
-        // Ensure the price is valid
         assert!(list_price > 0, EInvalidPrice);
         
-        // Convert the listing to a real listing
         listing.listing_type = REAL_LISTING;
         listing.list_price = list_price;
         
-        // Create an empty escrow balance for the listing
-        let empty_balance = balance::zero<SUI>();
-        table::add(&mut marketplace.escrow, soft_listing_id, empty_balance);
+        // Only add an escrow entry if one doesn't already exist
+        if (!table::contains(&marketplace.escrow, soft_listing_id)) {
+            let empty_balance = balance::zero<SUI>();
+            table::add(&mut marketplace.escrow, soft_listing_id, empty_balance);
+        };
         
-        // Emit listing converted event
+        // Update the nft_id in the listing to be the actual NFT ID
+        listing.nft_id = object::id_address(&nft);
+        
+        // Transfer the NFT directly to the marketplace
+        transfer::public_transfer(nft, object::uid_to_address(&marketplace.id));
+        
         event::emit(ListingCreated {
             listing_id: soft_listing_id,
             nft_id: listing.nft_id,
@@ -265,7 +283,7 @@ module sigillum_contracts::sigillum_marketplace {
             listing_type: REAL_LISTING,
             price: list_price,
             min_bid: listing.min_bid,
-            start_time: tx_context::epoch(ctx), // Reset start time to conversion time
+            start_time: tx_context::epoch(ctx),
             end_time: listing.end_time,
         });
     }
@@ -301,6 +319,9 @@ module sigillum_contracts::sigillum_marketplace {
                 let prev_balance = balance::split(escrow, previous_bid);
                 let prev_payment = coin::from_balance(prev_balance, ctx);
                 transfer::public_transfer(prev_payment, bidder);
+                
+                // Remove the old bid entry before inserting the new one
+                vec_map::remove(&mut bid_pool.bids, &bidder);
             } else {
                 // Increment bid count for new bidder
                 bid_pool.bid_count = bid_pool.bid_count + 1;
@@ -420,6 +441,57 @@ module sigillum_contracts::sigillum_marketplace {
             listing_type: listing.listing_type,
             success: false,
         });
+    }
+
+    // Directly buy a real listing at the list price
+    public entry fun buy_now(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let buyer = tx_context::sender(ctx);
+        let bid_amount = coin::value(&payment);
+        
+        // Get the listing
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        
+        // Validate listing
+        assert!(listing.active, EListingNotActive);
+        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
+        assert!(listing.list_price > 0, EInvalidPrice);
+        assert!(bid_amount >= listing.list_price, EInsufficientBid);
+        
+        // Update bid pool and escrow
+        let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        
+        // Handle previous bid from this buyer if it exists
+        if (vec_map::contains(&bid_pool.bids, &buyer)) {
+            let previous_bid = *vec_map::get(&bid_pool.bids, &buyer);
+            
+            // Return previous bid to buyer
+            let prev_balance = balance::split(escrow, previous_bid);
+            let prev_payment = coin::from_balance(prev_balance, ctx);
+            transfer::public_transfer(prev_payment, buyer);
+            
+            // Remove the old bid
+            vec_map::remove(&mut bid_pool.bids, &buyer);
+        } else {
+            // Increment bid count for new bidder
+            bid_pool.bid_count = bid_pool.bid_count + 1;
+        };
+            
+        // Put new bid in escrow
+        balance::join(escrow, coin::into_balance(payment));
+        
+        // Update as highest bidder
+        vec_map::insert(&mut bid_pool.bids, buyer, bid_amount);
+        listing.highest_bid = bid_amount;
+        listing.highest_bidder = buyer;
+        
+        // Complete the listing
+        complete_listing(marketplace, listing_id, ctx);
     }
 
     // === Helper Functions ===
@@ -591,5 +663,120 @@ module sigillum_contracts::sigillum_marketplace {
         let fee_balance = balance::split(&mut marketplace.treasury, amount);
         let payment = coin::from_balance(fee_balance, ctx);
         transfer::public_transfer(payment, recipient);
+    }
+
+    // Update the verification score of a listing
+    public entry fun update_verification_score(
+        _: &MarketplaceCap,
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        score: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(score <= 100, EInvalidListing);
+        
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        listing.verification_score = score;
+        
+        event::emit(VerificationUpdated {
+            listing_id,
+            nft_id: listing.nft_id,
+            new_score: score,
+            verifier: tx_context::sender(ctx),
+        });
+    }
+
+    // === Test Helper Functions ===
+    
+    // Get listing type constants
+    #[test_only]
+    public fun get_soft_listing_type(): u8 {
+        SOFT_LISTING
+    }
+    
+    #[test_only]
+    public fun get_real_listing_type(): u8 {
+        REAL_LISTING
+    }
+    
+    // Check if a listing is active
+    #[test_only]
+    public fun is_listing_active(marketplace: &Marketplace, listing_id: address): bool {
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        listing.active
+    }
+    
+    // Get listing type
+    #[test_only]
+    public fun get_listing_type(marketplace: &Marketplace, listing_id: address): u8 {
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        listing.listing_type
+    }
+    
+    // Get listing IDs with pagination and filtering
+    #[test_only]
+    public fun get_listing_ids(
+        marketplace: &Marketplace,
+        offset: u64,
+        limit: u64,
+        active_only: bool,
+        listing_type: u8
+    ): (vector<address>, u64) {
+        let mut result = vector::empty<address>();
+        let mut count = 0;
+        
+        let ids = if (active_only) {
+            &marketplace.active_listing_ids
+        } else {
+            &marketplace.listing_ids
+        };
+        
+        let total_items = vector::length(ids);
+        if (offset >= total_items) {
+            return (result, 0)
+        };
+        
+        let mut i = offset;
+        let end = if (offset + limit > total_items) {
+            total_items
+        } else {
+            offset + limit
+        };
+        
+        while (i < end) {
+            let id = *vector::borrow(ids, i);
+            let listing = table::borrow(&marketplace.listings, id);
+            
+            // Filter by listing type
+            if (listing.listing_type == listing_type) {
+                vector::push_back(&mut result, id);
+                count = count + 1;
+            };
+            i = i + 1;
+        };
+        
+        (result, count)
+    }
+    
+    // Get multiple listings details by IDs
+    #[test_only]
+    public fun get_multiple_listings(
+        marketplace: &Marketplace,
+        listing_ids: vector<address>
+    ): vector<Listing> {
+        let mut result = vector::empty<Listing>();
+        let len = vector::length(&listing_ids);
+        let mut i = 0;
+        
+        while (i < len) {
+            let id = *vector::borrow(&listing_ids, i);
+            if (table::contains(&marketplace.listings, id)) {
+                let listing = *table::borrow(&marketplace.listings, id);
+                vector::push_back(&mut result, listing);
+            };
+            i = i + 1;
+        };
+        
+        result
     }
 }
