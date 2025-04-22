@@ -27,7 +27,10 @@ module sigillum_contracts::marketplace_tests {
         get_bid_count,
         get_fee_percentage,
         get_total_volume,
-        get_total_listings
+        get_total_listings,
+        transfer_nft,
+        complete_transaction,
+        buy_now_with_nft
     };
 
     // Test addresses
@@ -501,12 +504,13 @@ module sigillum_contracts::marketplace_tests {
             ts::return_shared(marketplace_obj);
         };
         
-        // Seller accepts the bid
+        // Seller accepts the bid and completes the transaction with NFT transfer
         {
             ts::next_tx(&mut scenario, SELLER);
             let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
             
-            marketplace::accept_bid(
+            // Use complete_transaction to handle both payment and NFT transfer
+            marketplace::complete_transaction<MockNFT>(
                 &mut marketplace_obj,
                 listing_id,
                 ts::ctx(&mut scenario)
@@ -525,6 +529,12 @@ module sigillum_contracts::marketplace_tests {
         {
             ts::next_tx(&mut scenario, SELLER);
             assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+        };
+        
+        // Verify buyer received the NFT
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<MockNFT>(&scenario), 0);
         };
         
         ts::end(scenario);
@@ -594,6 +604,148 @@ module sigillum_contracts::marketplace_tests {
         {
             ts::next_tx(&mut scenario, SELLER);
             assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test buy_now_with_nft functionality that includes NFT transfer
+    #[test]
+    public fun test_buy_now_with_nft() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create and get a mock NFT ID
+        let nft_id: address;
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let ctx = ts::ctx(&mut scenario);
+            let mock_nft = mock_nft::create(ctx);
+            nft_id = object::id_address(&mock_nft);
+            transfer::public_transfer(mock_nft, SELLER);
+        };
+        
+        // Create soft listing
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // Convert to real listing
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let mock_nft = ts::take_from_sender<MockNFT>(&scenario);
+            
+            marketplace::convert_to_real_listing(
+                &mut marketplace_obj,
+                listing_id,
+                LIST_PRICE,
+                mock_nft,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Buyer buys it now with the list price and completes the NFT transfer
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let payment = mint_test_coin(LIST_PRICE, ts::ctx(&mut scenario));
+            
+            marketplace::buy_now_with_nft<MockNFT>(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify listing is no longer active
+            assert!(!is_listing_active(&marketplace_obj, listing_id), 0);
+            
+            // Verify volume has increased
+            assert!(get_total_volume(&marketplace_obj) == LIST_PRICE, 0);
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify seller received payment
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+        };
+        
+        // Verify buyer received the NFT
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<MockNFT>(&scenario), 0);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test direct NFT transfer
+    #[test]
+    public fun test_nft_transfer() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT
+        let nft_id: address;
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let ctx = ts::ctx(&mut scenario);
+            let mock_nft = mock_nft::create(ctx);
+            nft_id = object::id_address(&mock_nft);
+            transfer::public_transfer(mock_nft, SELLER);
+        };
+        
+        // Create soft listing
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // Convert to real listing (which stores the NFT in the marketplace)
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let mock_nft = ts::take_from_sender<MockNFT>(&scenario);
+            
+            marketplace::convert_to_real_listing(
+                &mut marketplace_obj,
+                listing_id,
+                LIST_PRICE,
+                mock_nft,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Directly transfer the NFT to a recipient using transfer_nft
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            // Get the listing details to get the NFT ID
+            let (_, nft_id, _, _, _, _, _, _, _, _, _) = 
+                get_listing_details(&marketplace_obj, listing_id);
+                
+            // Transfer the NFT to BUYER2
+            marketplace::transfer_nft<MockNFT>(
+                &mut marketplace_obj,
+                nft_id,
+                BUYER2,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify BUYER2 received the NFT
+        {
+            ts::next_tx(&mut scenario, BUYER2);
+            assert!(ts::has_most_recent_for_sender<MockNFT>(&scenario), 0);
         };
         
         ts::end(scenario);

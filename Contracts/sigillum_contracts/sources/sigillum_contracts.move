@@ -46,6 +46,7 @@ module sigillum_contracts::sigillum_nft {
     public struct PhotoRegistered has copy, drop {
         photo_id: address,
         creator: address,
+        nft_owner: address,
         timestamp: u64,
     }
 
@@ -78,6 +79,7 @@ module sigillum_contracts::sigillum_nft {
         _: &AdminCap,
         registry: &mut Registry,
         image_url: vector<u8>,
+        owner: address,
         // sha256_hash: vector<u8>,
         // phash: vector<u8>,
         // dhash: vector<u8>,
@@ -89,7 +91,7 @@ module sigillum_contracts::sigillum_nft {
     ) {
         let photo_nft = PhotoNFT {
             id: object::new(ctx),
-            creator: tx_context::sender(ctx),
+            creator: owner,
             image_url,
             // sha256_hash,
             // phash,
@@ -114,10 +116,11 @@ module sigillum_contracts::sigillum_nft {
         event::emit(PhotoRegistered {
             photo_id,
             creator: tx_context::sender(ctx),
+            nft_owner: owner,
             timestamp: tx_context::epoch(ctx),
         });
         
-        transfer::transfer(photo_nft, tx_context::sender(ctx));
+        transfer::transfer(photo_nft, owner);
     }
 
     // Transfer ownership of a photo NFT
