@@ -1,3 +1,13 @@
+// ███████╗██╗ ██████╗ ██╗██╗     ██╗     ██╗   ██╗███╗   ███╗    ███╗   ███╗ █████╗ ██████╗ ██╗  ██╗███████╗████████╗██████╗ ██╗      █████╗  ██████╗███████╗
+// ██╔════╝██║██╔════╝ ██║██║     ██║     ██║   ██║████╗ ████║    ████╗ ████║██╔══██╗██╔══██╗██║ ██╔╝██╔════╝╚══██╔══╝██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝
+// ███████╗██║██║  ███╗██║██║     ██║     ██║   ██║██╔████╔██║    ██╔████╔██║███████║██████╔╝█████╔╝ █████╗     ██║   ██████╔╝██║     ███████║██║     █████╗  
+// ╚════██║██║██║   ██║██║██║     ██║     ██║   ██║██║╚██╔╝██║    ██║╚██╔╝██║██╔══██║██╔══██╗██╔═██╗ ██╔══╝     ██║   ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝  
+// ███████║██║╚██████╔╝██║███████╗███████╗╚██████╔╝██║ ╚═╝ ██║    ██║ ╚═╝ ██║██║  ██║██║  ██║██║  ██╗███████╗   ██║   ██║     ███████╗██║  ██║╚██████╗███████╗
+// ╚══════╝╚═╝ ╚═════╝ ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝
+                                                                                                                                                           
+
+
+
 module sigillum_contracts::sigillum_marketplace {
     
     use sui::coin::{Self, Coin};
@@ -16,10 +26,8 @@ module sigillum_contracts::sigillum_marketplace {
     const EListingNotActive: u64 = 4;
     const ENotOwner: u64 = 5;
     const EInvalidPrice: u64 = 6;
-    // const EAlreadyListed: u64 = 7;
-    const ENotListed: u64 = 8;
-    // const EInvalidAuth: u64 = 9;
-    const EInvalidListingNotRealListing: u64 = 10;
+    const ENotListed: u64 = 7;
+    const EInvalidListingNotRealListing: u64 = 8;
 
 
     // MarketplaceCap for admin operations
@@ -115,15 +123,7 @@ module sigillum_contracts::sigillum_marketplace {
         listing_type: u8,
         success: bool,
     }
-
-    // Emitted when an authenticity verification score is updated
-    public struct VerificationUpdated has copy, drop {
-        listing_id: address,
-        nft_id: address,
-        new_score: u64,
-        verifier: address,
-    }
-
+    
     // === Initialization ===
     fun init(ctx: &mut TxContext) {
         // Create admin capability
@@ -572,7 +572,7 @@ module sigillum_contracts::sigillum_marketplace {
     public entry fun update_fee_percentage(
         _: &MarketplaceCap,
         marketplace: &mut Marketplace, 
-        new_percentage: u64
+        new_percentage: u64 
     ) {
         assert!(new_percentage <= 1000, EInvalidListing); // Max 10%
         marketplace.fee_percentage = new_percentage;

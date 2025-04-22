@@ -1,24 +1,19 @@
-/*
-/// Module: sigillum_contracts
-module sigillum_contracts::sigillum_contracts;
-*/
+// ███████ ██  ██████  ██ ██      ██      ██    ██ ███    ███     ███    ██ ███████ ████████ ███████ 
+// ██      ██ ██       ██ ██      ██      ██    ██ ████  ████     ████   ██ ██         ██    ██      
+// ███████ ██ ██   ███ ██ ██      ██      ██    ██ ██ ████ ██     ██ ██  ██ █████      ██    ███████ 
+//      ██ ██ ██    ██ ██ ██      ██      ██    ██ ██  ██  ██     ██  ██ ██ ██         ██         ██ 
+// ███████ ██  ██████  ██ ███████ ███████  ██████  ██      ██     ██   ████ ██         ██    ███████ 
+                                                                                                  
+                                                                                                  
 
-// For Move coding conventions, see
-// https://docs.sui.io/concepts/sui-move-concepts/conventions
-
-// contract cleanup required 
 
 
 module sigillum_contracts::sigillum_nft {
-    // use sui::object::{Self, UID};
-    // use sui::transfer;
-    // use sui::tx_context::{Self, TxContext};
     use std::string::{String};
     use sui::event;
     use sui::table::{Self, Table};
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
-    // use sui::test_utils::{Self};
 
      // Capability for NFT stamping 
     public struct AdminCap has key, store {
@@ -31,9 +26,10 @@ module sigillum_contracts::sigillum_nft {
         id: UID,
         creator: address,
         image_url: vector<u8>,       // IPFS/Arweave URL
-        sha256_hash: vector<u8>,     // Exact binary hash
-        phash: vector<u8>,           // Perceptual hash
-        dhash: vector<u8>,           // Difference hash (another perceptual hash variant)
+        // sha256_hash: vector<u8>,     // Exact binary hash
+        // phash: vector<u8>,           // Perceptual hash
+        // dhash: vector<u8>,           // Difference hash (another perceptual hash variant)
+        vector_url: vector<u8>,      // Vector url of the image
         watermark_id: vector<u8>,    // ID embedded in steganographic watermark
         timestamp: u64,              // Creation timestamp
         metadata: String,            // Additional photo metadata (JSON string)
@@ -82,9 +78,11 @@ module sigillum_contracts::sigillum_nft {
         _: &AdminCap,
         registry: &mut Registry,
         image_url: vector<u8>,
-        sha256_hash: vector<u8>,
-        phash: vector<u8>,
-        dhash: vector<u8>,
+        // sha256_hash: vector<u8>,
+        // phash: vector<u8>,
+        // dhash: vector<u8>,
+        vector_url:vector<u8>,
+        // asset_id: vector<u8>,
         watermark_id: vector<u8>,
         metadata: String,
         ctx: &mut TxContext
@@ -93,9 +91,11 @@ module sigillum_contracts::sigillum_nft {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),
             image_url,
-            sha256_hash,
-            phash,
-            dhash,
+            // sha256_hash,
+            // phash,
+            // dhash,
+            vector_url,
+            // asset_id,
             watermark_id,
             timestamp: tx_context::epoch(ctx),
             metadata,
@@ -162,35 +162,6 @@ module sigillum_contracts::sigillum_nft {
         }
     }
     
-    // Find similar NFTs using perceptual hash (for exact phash match only)
-    // For a real implementation, you would need an off-chain indexer to find similar hashes
-    public fun find_similar_nfts(
-        registry: &Registry,
-        phash: vector<u8>,
-        similarity_threshold: u64
-    ): VecMap<address, u64> {
-        let mut result = vec_map::empty<address, u64>();
-        
-        // In a real implementation, finding similar hashes requires
-        // either a specialized index or an off-chain service
-        //
-        // Here we only check for exact phash matches
-        if (table::contains(&registry.phash_to_nfts, phash)) {
-            let nft_set = table::borrow(&registry.phash_to_nfts, phash);
-            let nft_ids = vec_set::into_keys(*nft_set);
-            
-            let mut j = 0;
-            let nfts_len = vector::length(&nft_ids);
-            
-            while (j < nfts_len) {
-                let nft_id = *vector::borrow(&nft_ids, j);
-                vec_map::insert(&mut result, nft_id, 0); // Exact match = 0 distance
-                j = j + 1;
-            };
-        };
-        
-        result
-    }
     
     // Helper function to directly check if an NFT exists with the given pHash
     public fun exists_by_phash(
@@ -202,45 +173,6 @@ module sigillum_contracts::sigillum_nft {
 
     // === View Functions ===
 
-    // Check if an image hash matches a registered photo
-    public fun verify_exact_match(
-        photo: &PhotoNFT,
-        hash_to_check: vector<u8>
-    ): bool {
-        photo.sha256_hash == hash_to_check
-    }
-
-    // Calculate hamming distance between two hashes (for perceptual matching)
-    public fun calculate_hash_similarity(
-        hash1: vector<u8>,
-        hash2: vector<u8>
-    ): u64 {
-        let len = vector::length(&hash1);
-        assert!(len == vector::length(&hash2), 0);
-        
-        let mut distance = 0u64;
-        let mut i = 0;
-        
-        while (i < len) {
-            let byte1 = *vector::borrow(&hash1, i);
-            let byte2 = *vector::borrow(&hash2, i);
-            let xor_result = byte1 ^ byte2;
-            
-            // Count set bits in XOR result (Hamming weight)
-            let mut count = 0u8;
-            let mut temp = xor_result;
-            
-            while (temp > 0) {
-                count = count + (temp & 1);
-                temp = temp >> 1;
-            };
-            
-            distance = distance + (count as u64);
-            i = i + 1;
-        };
-        
-        distance
-    }
 
     // Get photo creator
     public fun get_creator(photo: &PhotoNFT): address {
@@ -252,8 +184,7 @@ module sigillum_contracts::sigillum_nft {
         photo.timestamp
     }
     
-    // Get pHash from a photo
-    public fun get_phash(photo: &PhotoNFT): vector<u8> {
-        photo.phash
+    public fun get_vector_url(photo: &PhotoNFT): vector<u8>{
+        photo.vector_url
     }
 }
