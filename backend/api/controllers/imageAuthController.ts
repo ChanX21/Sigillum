@@ -98,6 +98,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       status: 'uploaded'
     });
     const savedImage = await newAuthenticatedImage.save();
+   
     await qdrantClient.upsert('images', {
       wait: true,
       points: [{
@@ -251,7 +252,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
           authenticatedImage._id,
           { $addToSet: { verifications: savedVerification._id } }
         );
-        verifications.push(authenticatedImage.id);
+        verifications.push({id: authenticatedImage.id, score: image.score});
       }
     }
         res.status(200).json({
