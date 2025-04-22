@@ -57,9 +57,6 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
- * @param {string} sha256Hash - SHA256 hash of the image
- * @param {string} pHash - Perceptual hash of the image
- * @param {string} dHash - dHash of the image
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
@@ -67,16 +64,13 @@ export interface VerificationResult {
 export const mintNFT = async (
   creatorAddress: string, 
   imageUrl: string,
-  sha256Hash: string,
-  pHash: string,
-  dHash: string,
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !imageUrl || !sha256Hash || !pHash || !dHash || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, SHA256 hash, perceptual hash, dHash, watermark CID, and metadata CID are required');
+      if (!creatorAddress || !imageUrl || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -95,9 +89,9 @@ export const mintNFT = async (
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
-      sha256Hash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(sha256Hash)),
-      pHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(pHash)),
-      dHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(dHash)),
+      sha256Hash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+      pHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+      dHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
       metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
@@ -198,132 +192,3 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
     throw error;
   }
 };
-
-/**
- * Safely convert a field value to string, handling both base64 and byte arrays
- * @param fieldValue - The field value from the blockchain (may be byte array or base64 string)
- * @param encoding - The encoding to use for the output ('hex', 'utf8', etc)
- * @param defaultValue - Default value to return if conversion fails
- * @returns The converted string or default value
- */
-function safeFieldToString(fieldValue: any, encoding: BufferEncoding = 'utf8', defaultValue: string = ''): string {
-  if (!fieldValue) {
-    return defaultValue;
-  }
-
-  try {
-    // If it's already an array of numbers (bytes), convert directly
-    if (Array.isArray(fieldValue)) {
-      return Buffer.from(fieldValue).toString(encoding);
-    }
-    
-    // If it's a base64 string, try to decode it
-    if (typeof fieldValue === 'string') {
-      try {
-        return Buffer.from(fromBase64(fieldValue)).toString(encoding);
-      } catch (error) {
-        // If base64 decoding fails, just return the string as is
-        return fieldValue;
-      }
-    }
-    
-    // For other types, stringify
-    return String(fieldValue);
-  } catch (error) {
-    console.error('Error converting field to string:', error, 'Original value:', fieldValue);
-    return defaultValue;
-  }
-}
-
-/**
- * Comprehensive verification of an image using the Sui contract
- * @param {string} tokenId - NFT token ID
- * @param {string} sha256Hash - Image hash for verification
- * @param {string} pHash - Perceptual hash for verification
- * @returns {Promise<VerificationResult>} - Detailed verification result
- */
-export const verifyImageByHash = async (
-  tokenId: string, 
-  sha256Hash: string,
-  pHash: string,
-): Promise<VerificationResult> => {
-  try {
-    // Get object data from Sui
-    const objectData = await client.getObject({
-      id: tokenId,
-      options: { showContent: true }
-    });
-    
-    if (!objectData.data?.content) {
-      throw new Error('NFT data not found');
-    }
-    
-    const content = objectData.data.content as any;
-    const fields = content.fields;
-    // Convert stored fields to strings
-    const storedSha256Hash = safeFieldToString(fields.sha256_hash, 'utf8');
-    const storedPHash = safeFieldToString(fields.phash, 'utf8');
-    const storedImageUrl = safeFieldToString(fields.image_url, 'utf8')
-    // 1. Exact hash match (verify_exact_match)
-    const exactMatch = storedSha256Hash === sha256Hash;
-    
-    // 2. Calculate perceptual hash similarity (if we have valid hashes)
-    let similarityScore = 0; // Default to no similarity
-    let perceptualMatch = false;
-    
-    if (storedPHash && pHash) {
-      const hammingDistance = calculateHammingDistance(storedPHash, pHash);
-      const maxDistance = Math.max(storedPHash.length, pHash.length);
-      similarityScore = Math.round(((maxDistance - hammingDistance) / maxDistance) * 100);
-      perceptualMatch = similarityScore > 90; // Threshold for similarity (>90% similar)
-    }
-    
-    // 3. Simplified registry check (skipping the actual call to find_similar_nfts)
-    const similarNFTs: Array<{id: string, distance: number}> = [];
-    
-    return {
-      isAuthentic: exactMatch,
-      exactMatch,
-      perceptualMatch,
-      similarityScore,
-      tokenDetails: {
-        tokenId,
-        creator: fields.creator,
-        timestamp: parseInt(safeFieldToString(fields.timestamp, 'utf8', '0'), 10),
-        metadata: safeFieldToString(fields.metadata, 'utf8', ''),
-        imageUrl: storedImageUrl
-      },
-      registryResults: {
-        similarNFTs
-      }
-    };
-  } catch (error) {
-    console.error('Error verifying image with Sui contract:', error);
-    throw error;
-  }
-};
-
-
-/**
- * Calculate Hamming distance between two hash strings
- * Simulates the contract's calculate_hash_similarity function
- * @param {string} hash1 - First hash string
- * @param {string} hash2 - Second hash string
- * @returns {number} - Hamming distance
- */
-function calculateHammingDistance(hash1: string, hash2: string): number {
-  // Ensure hashes are of same length
-  const minLength = Math.min(hash1.length, hash2.length);
-  let distance = 0;
-  
-  for (let i = 0; i < minLength; i++) {
-    if (hash1[i] !== hash2[i]) {
-      distance++;
-    }
-  }
-  
-  // Add remaining length difference to distance
-  distance += Math.abs(hash1.length - hash2.length);
-  
-  return distance;
-}

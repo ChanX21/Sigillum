@@ -1,6 +1,6 @@
 import express from 'express';
-import * as imageAuthController from '../controllers/imageAuthController';
-import upload from '../middleware/upload';
+import * as imageAuthController from '../controllers/imageAuthController.js';
+import upload from '../middleware/upload.js';
 
 const router = express.Router();
 

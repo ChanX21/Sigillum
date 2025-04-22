@@ -1,4 +1,4 @@
-import { pinata } from '../clients/pinata';
+import { pinata } from '../clients/pinata.js';
 
 
 /**

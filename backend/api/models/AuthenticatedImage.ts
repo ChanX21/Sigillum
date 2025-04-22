@@ -1,10 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 // Define interfaces
-interface IAuthentication {
-  sha256Hash: string;
-  pHash: string;
-}
 
 interface IBlockchain {
   transactionHash: string;
@@ -16,7 +12,7 @@ interface IBlockchain {
 export interface IAuthenticatedImage extends Document {
   original: string;
   watermarked: string;
-  authentication: IAuthentication;
+  vectorId: string;
   blockchain: IBlockchain;
   metadataCID: string;
   status: 'uploaded' | 'minted' | 'soft-listed' | 'error';
@@ -63,15 +59,9 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
     type: String,
     required: true,
   },
-  authentication: {
-    sha256Hash: {
-      type: String,
-      required: true,
-    },
-    pHash: {
-      type: String,
-      required: true,
-    },
+  vectorId: {
+    type: String,
+    required: true,
   },
   blockchain: {
     transactionHash: {
@@ -112,8 +102,7 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
 });
 
 // Add indexes for faster queries
-authenticatedImageSchema.index({ 'authentication.sha256Hash': 1 });
-authenticatedImageSchema.index({ 'authentication.pHash': 1 });
+authenticatedImageSchema.index({ vectorId: 1 });
 
 const AuthenticatedImage = mongoose.model<IAuthenticatedImage>('AuthenticatedImage', authenticatedImageSchema);
 const Verification = mongoose.model<IVerification>('Verification', verificationSchema);

@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
-import { generateSHA256, processImageForAuthentication } from '../utils/imageUtils';
-import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService';
-import { 
+import { processImageForAuthentication } from '../utils/imageUtils.js';
+import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService.js';
+import {
   mintNFT,
-  verifyImageByHash,
   createSoftListing,
-} from '../services/blockchainService';
-import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage';
-import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
+} from '../services/blockchainService.js';
+import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage.js';
 import axios from 'axios';
+import qdrantClient from '../clients/qdrant.js';
+import { v4 } from 'uuid';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
@@ -23,7 +23,7 @@ interface FileRequest extends Request {
 export const uploadImage = async (req: FileRequest, res: Response): Promise<void> => {
   try {
     if (!req.file) {
-      res.status(400).json({ 
+      res.status(400).json({
         message: 'No image file uploaded',
         hint: 'Make sure you are sending a multipart/form-data request with an image field'
       });
@@ -33,87 +33,97 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     // Get signature data from form fields
     const { signature, message } = req.body;
     const creatorAddress = req.params.address;
-    
-   /* if (!signature || !message) {
-      res.status(400).json({ 
-        message: 'Signature and message are required for authentication',
-        hint: 'Send these as form fields in the same multipart/form-data request as the image'
-      });
-      return;
-    }
 
-    // Verify the signature
-    const publicKey = await verifyPersonalMessageSignature(message, signature);
-    if (!publicKey.verifyAddress(creatorAddress)) {
-      res.status(400).json({ 
-        message: 'Signature verification failed',
-        hint: 'Please check your signature and message'
-      });
-      return;
-    }*/
+    /* if (!signature || !message) {
+       res.status(400).json({ 
+         message: 'Signature and message are required for authentication',
+         hint: 'Send these as form fields in the same multipart/form-data request as the image'
+       });
+       return;
+     }
+ 
+     // Verify the signature
+     const publicKey = await verifyPersonalMessageSignature(message, signature);
+     if (!publicKey.verifyAddress(creatorAddress)) {
+       res.status(400).json({ 
+         message: 'Signature verification failed',
+         hint: 'Please check your signature and message'
+       });
+       return;
+     }*/
 
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer, {
       creatorId: creatorAddress
     });
-    
-    const existingImage = await AuthenticatedImage.findOne({
-      $or: [
-        { 'authentication.sha256Hash': authenticationData.sha256Hash },
-        { 'authentication.pHash': authenticationData.pHash },   
-      ]
+
+    // find similar images in qdrant
+    const similarImages = await qdrantClient.query("images", {
+      query: authenticationData.vector,
+      params: {
+        hnsw_ef: 128,
+        exact: false,
+      },
+      limit: 5,
     });
-    if (existingImage) {
+    if(similarImages.points.filter((image: any) => image.score > 0.97).length > 0) {
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
-    
+
     // Upload original image to IPFS
     const originalIpfsCid = await uploadToIPFS(req.file.buffer);
-    
+
     // Upload watermarked image to IPFS
     const watermarkedIpfsCid = await uploadToIPFS(authenticationData.watermarkedBuffer);
-    
+
     let metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: originalIpfsCid,
-      sha256Hash: authenticationData.sha256Hash,
-      pHash: authenticationData.pHash,
-      dHash: authenticationData.pHash,
+      vector: authenticationData.vector,
       watermarkData: authenticationData.watermarkData
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
-    
+
     // Create new authenticated image record
+    const vectorId = v4();
     const newAuthenticatedImage = new AuthenticatedImage({
       original: originalIpfsCid,
       watermarked: watermarkedIpfsCid,
       metadataCID: metadataIpfsCid,
-      authentication: {
-        sha256Hash: authenticationData.sha256Hash,
-        pHash: authenticationData.pHash,
-      },
+      vectorId: vectorId,
       blockchain: {
         creator: creatorAddress,
       },
       status: 'uploaded'
     });
     const savedImage = await newAuthenticatedImage.save();
+    await qdrantClient.upsert('images', {
+      wait: true,
+      points: [{
+        id: vectorId,
+        vector: authenticationData.vector,
+        payload: {
+          original: originalIpfsCid,
+          watermarked: watermarkedIpfsCid,
+        }
+      }]
+    });
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'mint',
       id: savedImage.id
     },
-  {headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${process.env.BE_KEY}`
-  }});
-    
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.BE_KEY}`
+        }
+      });
+
     res.status(201).json({
       message: 'Image authenticated successfully',
       image: {
         id: newAuthenticatedImage._id,
-        sha256Hash: authenticationData.sha256Hash,
-        pHash: authenticationData.pHash,
         originalIpfsCid,
         watermarkedIpfsCid,
         status: 'uploaded'
@@ -132,32 +142,34 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
 export const blockchain = async (req: Request, res: Response): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
+    /*   if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
+         res.status(401).json({ message: 'Unauthorized' });
+         return;
+       }*/
     const { action, id } = req.body;
     if (action === 'mint') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
-    if (!authenticatedImage || authenticatedImage.status !== 'uploaded') {
-      res.status(400).json({ message: 'Image not uploaded' });
-      return;
+      if (!authenticatedImage || authenticatedImage.status !== 'uploaded') {
+        res.status(400).json({ message: 'Image not uploaded' });
+        return;
+      }
+      res.status(200).json({ message: 'Image will be minted' });
+      const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.watermarked, authenticatedImage.metadataCID);
+      await AuthenticatedImage.findByIdAndUpdate(
+        authenticatedImage._id,
+        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
+      );
+      await axios.post(`${process.env.BASE_URL}/blockchain`, {
+        action: 'soft-list',
+        id: authenticatedImage.id
+      },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.BE_KEY}`
+          }
+        });
     }
-    res.status(200).json({ message: 'Image will be minted' });
-    const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.authentication.sha256Hash, authenticatedImage.authentication.pHash, authenticatedImage.authentication.pHash, authenticatedImage.watermarked, authenticatedImage.metadataCID);
-    await AuthenticatedImage.findByIdAndUpdate(
-      authenticatedImage._id,
-      { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
-    );
-    await axios.post(`${process.env.BASE_URL}/blockchain`, {
-      action: 'soft-list',
-      id: authenticatedImage.id
-    },
-  {headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${process.env.BE_KEY}`
-  }});
-  }
     else if (action === 'soft-list') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
       if (!authenticatedImage || authenticatedImage.status !== 'minted') {
@@ -190,7 +202,7 @@ interface VerifyRequest extends Request {
     sha256Hash?: string;
     tokenId?: string;
   }
-} 
+}
 
 /**
  * Verify an image directly by its hash against the blockchain
@@ -206,67 +218,51 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
     const authenticationData = await processImageForAuthentication(req.file.buffer, {
       creatorId: req.params.verifier
     });
-    const image = await AuthenticatedImage.findOne({
-        $or: [
-          { 'authentication.sha256Hash': authenticationData.sha256Hash },
-          { 'authentication.pHash': authenticationData.pHash }
-        ]
-      });
-    
-    if (!image) {
-      res.status(400).json({ message: 'Image not authenticated' });
+
+    // find similar images in qdrant
+    const similarImages = await qdrantClient.query("images", {
+      query: authenticationData.vector,
+      params: {
+        hnsw_ef: 128,
+        exact: false,
+      },
+      limit: 5,
+    });
+    const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.97);
+    if(filteredSimilarImages.length === 0) {
+      res.status(400).json({ message: 'No similar images found' });
       return;
     }
-    
-    // Get pHash from database
-    const pHash = authenticationData.pHash || '';
-    
-    // Verify using tokenId, hash and pHash
-    const verificationResult = await verifyImageByHash(
-      image.blockchain.tokenId, 
-      image.authentication.sha256Hash,
-      pHash
-    );
-    
-    // Prepare response data
-    const isAuthentic = verificationResult.isAuthentic;
-    
-    // Update status to verified if verification was successful
-    if (isAuthentic) {
-      // Create a new verification record
-      const verification = new Verification({
-        imageId: image._id,
-        verifier: req.params.verifier,
-        createdAt: new Date(),
-        updatedAt: new Date()
+    const verifications = [];
+    for(const image of filteredSimilarImages) {
+      const authenticatedImage = await AuthenticatedImage.findOne({vectorId: image.id});
+      if(authenticatedImage) {
+        // Create a new verification record
+        const verification = new Verification({
+            imageId: authenticatedImage._id,
+          verifier: req.params.verifier,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        const savedVerification = await verification.save();
+        
+        // Add the verification ID to the image's verifications array
+        await AuthenticatedImage.findByIdAndUpdate(
+          authenticatedImage._id,
+          { $addToSet: { verifications: savedVerification._id } }
+        );
+        verifications.push(authenticatedImage.id);
+      }
+    }
+        res.status(200).json({
+          message: 'Image verification successful',
+        verifications: verifications
       });
-      const savedVerification = await verification.save();
-      
-      // Add the verification ID to the image's verifications array
-      await AuthenticatedImage.findByIdAndUpdate(
-        image._id,
-        { $addToSet: { verifications: savedVerification._id } }
-      );
-    }
-    
-    if (isAuthentic) {
-      // Get updated image with populated verifications
-      const updatedImage = await AuthenticatedImage.findById(image._id).populate('verifications');
-      
-      res.status(200).json({
-        message: 'Image verification successful',
-        verificationResult,
-        databaseRecord: updatedImage
-      });
-    }
-    else {
-      res.status(404).json({ message: 'Image not authenticated' });
-    }
   } catch (error) {
     console.error('Error verifying image by hash:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to verify image by hash',
-      error: (error as Error).message 
+      error: (error as Error).message
     });
   }
 };
@@ -278,8 +274,8 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
  */
 export const getAllImages = async (req: Request, res: Response): Promise<void> => {
   try {
-    await AuthenticatedImage.updateMany({},{status: 'soft-listed'});
-    const authenticatedImages = await AuthenticatedImage.find({status: 'soft-listed'})
+    await AuthenticatedImage.updateMany({}, { status: 'soft-listed' });
+    const authenticatedImages = await AuthenticatedImage.find({ status: 'soft-listed' })
       .populate({
         path: 'verifications',
         model: 'Verification'

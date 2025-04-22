@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction, Application } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import apiRoutes from './routes';
+import apiRoutes from './routes/index.js';
 
 // Initialize Express app
 const app: Application = express();
