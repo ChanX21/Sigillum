@@ -78,7 +78,7 @@ export const NFTCardBrowse = ({ nft, idx, status }: NFTCardBrowseProps) => {
             >
               View
             </Button>
-            <ListNFTButton listingId={nft.blockchain.listingId}/>
+            <ListNFTButton listingId={nft.blockchain.listingId} nftId={nft.blockchain.tokenId}/>
           </div>
         ) : (
           <>

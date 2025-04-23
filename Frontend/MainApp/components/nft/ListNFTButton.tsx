@@ -19,7 +19,7 @@ import { useListNft } from '@/hooks/useListNft';
 import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 import { toast } from 'sonner';
 
-const ListNFTButton = ({ listingId }: { listingId: string }) => {
+const ListNFTButton = ({ listingId, nftId }: { listingId: string, nftId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
     const { signTransaction, address } = useWallet()
     const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
@@ -34,6 +34,7 @@ const ListNFTButton = ({ listingId }: { listingId: string }) => {
                 packageId: PACKAGE_ID,
                 softListingId: listingId,
                 listPrice: price,
+                nftId:nftId,
                 signTransaction,
             });
         } else {

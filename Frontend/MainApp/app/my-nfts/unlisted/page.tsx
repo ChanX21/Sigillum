@@ -7,13 +7,16 @@ import { useGetMyNfts } from '@/hooks/useGetMyNfts';
 import { MediaRecord } from '@/types';
 import { useWallet } from '@suiet/wallet-kit';
 import { Wallet } from 'lucide-react';
-import React from 'react'
+import React, { useEffect } from 'react'
 
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()
     const { data, isLoading } = useGetMyNfts(address ?? "", {
         enabled: !!address
     });
+    useEffect(() => {
+        console.log(data)
+    },[data])
 
     return (
         <div>

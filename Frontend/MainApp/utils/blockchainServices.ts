@@ -468,18 +468,21 @@ export async function listNft(
   listPrice: number,
   packageId: string,
   moduleName: string,
-  marketplaceObjectId: string
+  marketplaceObjectId: string,
+  nftId:string
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
     tx.setGasBudget(50000000); // 50M gas
 
+    console.log(marketplaceObjectId,softListingId,listPrice,nftId)
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(softListingId),
         tx.pure.u64(listPrice.toString()),
+        tx.object(nftId),
       ],
     });
 
