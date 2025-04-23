@@ -363,16 +363,110 @@ module sigillum_contracts::sigillum_marketplace {
         listing_id: address,
         ctx: &mut TxContext
     ) {
-       { let sender = tx_context::sender(ctx);
+        let sender = tx_context::sender(ctx);
         let listing = table::borrow(&marketplace.listings, listing_id);
         
         // Only owner can accept a bid
         assert!(listing.owner == sender, ENotOwner);
         assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
         assert!(listing.active, EListingNotActive);
-        assert!(listing.highest_bid > 0, EInvalidBid);};
+        assert!(listing.highest_bid > 0, EInvalidBid);
+
+        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        assert!(listing.active, EListingNotActive);
+        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
+        assert!(listing.highest_bid > 0, EInvalidBid);
         
-        complete_listing<T>(marketplace, listing_id, ctx);
+        // Mark listing as inactive
+        listing.active = false;
+        let nftId = listing.nft_id;
+        // Remove from active listing IDs
+        let mut i = 0;
+        let mut active_index = 0;
+        let len = vector::length(&marketplace.active_listing_ids);
+        let mut found = false;
+        
+        while (i < len) {
+            let id = *vector::borrow(&marketplace.active_listing_ids, i);
+            if (id == listing_id) {
+                active_index = i;
+                found = true;
+                break
+            };
+            i = i + 1;
+        };
+        
+        if (found) {
+            vector::remove(&mut marketplace.active_listing_ids, active_index);
+        };
+        
+        let final_price = listing.highest_bid;
+        let buyer = listing.highest_bidder;
+        let seller = listing.owner;
+        
+        // Update marketplace statistics
+        marketplace.total_volume = marketplace.total_volume + final_price;
+        
+        // Calculate and deduct platform fee
+        let fee_amount = (final_price * marketplace.fee_percentage) / 10000;
+        let seller_amount = final_price - fee_amount;
+        
+        // Transfer funds from escrow
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        
+        // Add fee to treasury
+        let fee_balance = balance::split(escrow, fee_amount);
+        balance::join(&mut marketplace.treasury, fee_balance);
+        
+        // Send payment to seller
+        let seller_balance = balance::split(escrow, seller_amount);
+        let seller_payment = coin::from_balance(seller_balance, ctx);
+        transfer::public_transfer(seller_payment, seller);
+        
+        // For any remaining bids, return them to their bidders
+        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+        let bidders = vec_map::keys(&bid_pool.bids);
+        
+        let mut i = 0;
+        let len = vector::length(&bidders);
+        
+        while (i < len) {
+            let bidder = *vector::borrow(&bidders, i);
+            
+        // Skip the winner, their payment is already handled
+        if (bidder != buyer) {
+                let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
+                
+                // Return bid to bidder if there's enough in escrow
+                if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
+                    let bid_balance = balance::split(escrow, bid_amount);
+                    let payment = coin::from_balance(bid_balance, ctx);
+                    transfer::public_transfer(payment, bidder);
+                };
+            };
+            
+            i = i + 1;
+        };
+        
+        // Transfer the NFT from the marketplace to the buyer
+        // Use dynamic field to retrieve the NFT and transfer it to the buyer
+        // transfer_nft<T>(marketplace, nftId, buyer, ctx);
+
+        let nft = dof::remove<address, T>(&mut marketplace.id, nftId);
+        transfer::public_transfer(nft, buyer);
+        
+        // Emit listing completed event
+        event::emit(ListingCompleted {
+            listing_id,
+            nft_id: nftId,
+            seller,
+            buyer,
+            final_price,
+            listing_type: REAL_LISTING,
+            success: true,
+        });
+        
+        // complete_listing<T>(marketplace, listing_id, ctx);
     }
 
     // Cancel a listing
@@ -454,103 +548,12 @@ module sigillum_contracts::sigillum_marketplace {
         listing_id: address,
         ctx: &mut TxContext
     ) {
-        let mut nftId:address = @0x0;
-        let mut listing_id:address = @0x0;
-        let mut buyer:address = @0x0;
-        let mut seller:address = @0x0;
-        let mut final_price:u64 = 0;
-       { let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
-        assert!(listing.active, EListingNotActive);
-        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
-        assert!(listing.highest_bid > 0, EInvalidBid);
-        
-        // Mark listing as inactive
-        listing.active = false;
-        nftId = listing.nft_id;
-        // Remove from active listing IDs
-        let mut i = 0;
-        let mut active_index = 0;
-        let len = vector::length(&marketplace.active_listing_ids);
-        let mut found = false;
-        
-        while (i < len) {
-            let id = *vector::borrow(&marketplace.active_listing_ids, i);
-            if (id == listing_id) {
-                active_index = i;
-                found = true;
-                break
-            };
-            i = i + 1;
-        };
-        
-        if (found) {
-            vector::remove(&mut marketplace.active_listing_ids, active_index);
-        };
-        
-         final_price = listing.highest_bid;
-         buyer = listing.highest_bidder;
-         seller = listing.owner;
-        
-        // Update marketplace statistics
-        marketplace.total_volume = marketplace.total_volume + final_price;
-        
-        // Calculate and deduct platform fee
-        let fee_amount = (final_price * marketplace.fee_percentage) / 10000;
-        let seller_amount = final_price - fee_amount;
-        
-        // Transfer funds from escrow
-        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
-        
-        // Add fee to treasury
-        let fee_balance = balance::split(escrow, fee_amount);
-        balance::join(&mut marketplace.treasury, fee_balance);
-        
-        // Send payment to seller
-        let seller_balance = balance::split(escrow, seller_amount);
-        let seller_payment = coin::from_balance(seller_balance, ctx);
-        transfer::public_transfer(seller_payment, seller);
-        
-        // For any remaining bids, return them to their bidders
-        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
-        let bidders = vec_map::keys(&bid_pool.bids);
-        
-        let mut i = 0;
-        let len = vector::length(&bidders);
-        
-        while (i < len) {
-            let bidder = *vector::borrow(&bidders, i);
-            
-        // Skip the winner, their payment is already handled
-        if (bidder != buyer) {
-                let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
-                
-                // Return bid to bidder if there's enough in escrow
-                if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
-                    let bid_balance = balance::split(escrow, bid_amount);
-                    let payment = coin::from_balance(bid_balance, ctx);
-                    transfer::public_transfer(payment, bidder);
-                };
-            };
-            
-            i = i + 1;
-        };}
-        
-        // Transfer the NFT from the marketplace to the buyer
-        ;
-        // Use dynamic field to retrieve the NFT and transfer it to the buyer
-
-        transfer_nft<T>(marketplace, nftId, buyer, ctx);
-        
-        // Emit listing completed event
-        event::emit(ListingCompleted {
-            listing_id,
-            nft_id: nftId,
-            seller,
-            buyer,
-            final_price,
-            listing_type: REAL_LISTING,
-            success: true,
-        });
+        // let mut nftId:address = @0x0;
+        // let mut listing_id:address = @0x0;
+        // let mut buyer:address = @0x0;
+        // let mut seller:address = @0x0;
+        // let mut final_price:u64 = 0;
+       
     }
 
     // Transfer an NFT from marketplace to a recipient

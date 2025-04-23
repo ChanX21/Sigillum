@@ -28,8 +28,11 @@ module sigillum_contracts::marketplace_tests {
         get_fee_percentage,
         get_total_volume,
         get_total_listings,
+        place_bid,
+        accept_bid,
         transfer_nft
     };
+    use sui::object::uid_to_address;
 
     // Test addresses
     const ADMIN: address = @0xAD;
@@ -384,6 +387,143 @@ module sigillum_contracts::marketplace_tests {
             // Bid count should still be 2 as BUYER1 updated their bid
             assert!(get_bid_count(&marketplace_obj, listing_id) == 2, 0);
             
+            ts::return_shared(marketplace_obj);
+        };
+        
+        ts::end(scenario);
+    }
+
+     // Test accepting bid functionality
+    #[test]
+    public fun test_accepting_bid() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        
+        // Create a mock NFT
+        let nft_id: address;
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let ctx = ts::ctx(&mut scenario);
+            let mock_nft = mock_nft::create(ctx);
+            nft_id = object::id_address(&mock_nft);
+            transfer::public_transfer(mock_nft, SELLER);
+        };
+
+        
+        
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let mock_nft = ts::take_from_sender<MockNFT>(&scenario);
+            
+            marketplace::convert_to_real_listing(
+                &mut marketplace_obj,
+                listing_id,
+                LIST_PRICE,
+                mock_nft,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // First buyer places a bid
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let bid_amount = 200;
+            let payment = mint_test_coin(bid_amount, ts::ctx(&mut scenario));
+            
+            marketplace::place_bid(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify bid was recorded
+            let (_, _, _, _, _, highest_bid, highest_bidder, _, _, _, _) = 
+                get_listing_details(&marketplace_obj, listing_id);
+                
+            assert!(highest_bid == bid_amount, 0);
+            assert!(highest_bidder == BUYER1, 0);
+            assert!(get_bid_count(&marketplace_obj, listing_id) == 1, 0);
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Second buyer places a higher bid
+        {
+            ts::next_tx(&mut scenario, BUYER2);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let bid_amount = 300;
+            let payment = mint_test_coin(bid_amount, ts::ctx(&mut scenario));
+            
+            marketplace::place_bid(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify new high bid
+            let (_, _, _, _, _, highest_bid, highest_bidder, _, _, _, _) = 
+                get_listing_details(&marketplace_obj, listing_id);
+                
+            assert!(highest_bid == bid_amount, 0);
+            assert!(highest_bidder == BUYER2, 0);
+            assert!(get_bid_count(&marketplace_obj, listing_id) == 2, 0);
+            
+            ts::return_shared(marketplace_obj);
+            
+            
+        };
+        
+        // First buyer updates their bid to be higher
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let bid_amount = 400;
+            let payment = mint_test_coin(bid_amount, ts::ctx(&mut scenario));
+            
+            marketplace::place_bid(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify updated high bid
+            let (_, _, _, _, _, highest_bid, highest_bidder, _, _, _, _) = 
+                get_listing_details(&marketplace_obj, listing_id);
+                
+            assert!(highest_bid == bid_amount, 0);
+            assert!(highest_bidder == BUYER1, 0);
+            // Bid count should still be 2 as BUYER1 updated their bid
+            assert!(get_bid_count(&marketplace_obj, listing_id) == 2, 0);
+            
+            ts::return_shared(marketplace_obj);
+        };
+
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+             
+            marketplace::accept_bid<MockNFT>(
+                &mut marketplace_obj,
+                listing_id,
+                ts::ctx(&mut scenario)
+            );
+            
+            assert!(!is_listing_active(&marketplace_obj, listing_id), 0);
             ts::return_shared(marketplace_obj);
         };
         
