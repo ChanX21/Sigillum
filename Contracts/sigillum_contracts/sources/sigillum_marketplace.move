@@ -343,9 +343,9 @@ module sigillum_contracts::sigillum_marketplace {
             is_highest = true;
             
             // If bid matches or exceeds list price, auto-complete the listing (only for real listings);
-        if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
-                complete_listing(marketplace, listing_id, ctx);
-        };
+        // if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
+        //         complete_listing<T>(marketplace, listing_id, ctx);
+        // };
         };
         
         // Emit bid placed event
@@ -358,21 +358,21 @@ module sigillum_contracts::sigillum_marketplace {
     }
 
     // Accept a bid and complete a real listing
-    public entry fun accept_bid(
+    public entry fun accept_bid<T: key + store>(
         marketplace: &mut Marketplace,
         listing_id: address,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender(ctx);
+       { let sender = tx_context::sender(ctx);
         let listing = table::borrow(&marketplace.listings, listing_id);
         
         // Only owner can accept a bid
         assert!(listing.owner == sender, ENotOwner);
         assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
         assert!(listing.active, EListingNotActive);
-        assert!(listing.highest_bid > 0, EInvalidBid);
+        assert!(listing.highest_bid > 0, EInvalidBid);};
         
-        complete_listing(marketplace, listing_id, ctx);
+        complete_listing<T>(marketplace, listing_id, ctx);
     }
 
     // Cancel a listing
@@ -444,73 +444,29 @@ module sigillum_contracts::sigillum_marketplace {
         });
     }
 
-    // Directly buy a real listing at the list price
-    public entry fun buy_now(
-        marketplace: &mut Marketplace,
-        listing_id: address,
-        payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ) {
-        let buyer = tx_context::sender(ctx);
-        let bid_amount = coin::value(&payment);
-        
-        // Get the listing
-        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
-        
-        // Validate listing
-        assert!(listing.active, EListingNotActive);
-        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
-        assert!(listing.list_price > 0, EInvalidPrice);
-        assert!(bid_amount >= listing.list_price, EInsufficientBid);
-        
-        // Update bid pool and escrow
-        let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
-        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
-        
-        // Handle previous bid from this buyer if it exists
-        if (vec_map::contains(&bid_pool.bids, &buyer)) {
-            let previous_bid = *vec_map::get(&bid_pool.bids, &buyer);
-            
-            // Return previous bid to buyer
-            let prev_balance = balance::split(escrow, previous_bid);
-            let prev_payment = coin::from_balance(prev_balance, ctx);
-            transfer::public_transfer(prev_payment, buyer);
-            
-            // Remove the old bid
-            vec_map::remove(&mut bid_pool.bids, &buyer);
-        } else {
-            // Increment bid count for new bidder
-            bid_pool.bid_count = bid_pool.bid_count + 1;
-        };
-            
-        // Put new bid in escrow
-        balance::join(escrow, coin::into_balance(payment));
-        
-        // Update as highest bidder
-        vec_map::insert(&mut bid_pool.bids, buyer, bid_amount);
-        listing.highest_bid = bid_amount;
-        listing.highest_bidder = buyer;
-        
-        // Complete the listing
-        complete_listing(marketplace, listing_id, ctx);
-    }
+  
 
     // === Helper Functions ===
 
     // Complete a listing by transferring the NFT and payment
-    fun complete_listing(
+    fun complete_listing<T: key + store>(
         marketplace: &mut Marketplace,
         listing_id: address,
         ctx: &mut TxContext
     ) {
-        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+        let mut nftId:address = @0x0;
+        let mut listing_id:address = @0x0;
+        let mut buyer:address = @0x0;
+        let mut seller:address = @0x0;
+        let mut final_price:u64 = 0;
+       { let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
         assert!(listing.active, EListingNotActive);
         assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
         assert!(listing.highest_bid > 0, EInvalidBid);
         
         // Mark listing as inactive
         listing.active = false;
-        
+        nftId = listing.nft_id;
         // Remove from active listing IDs
         let mut i = 0;
         let mut active_index = 0;
@@ -531,9 +487,9 @@ module sigillum_contracts::sigillum_marketplace {
             vector::remove(&mut marketplace.active_listing_ids, active_index);
         };
         
-        let final_price = listing.highest_bid;
-        let buyer = listing.highest_bidder;
-        let seller = listing.owner;
+         final_price = listing.highest_bid;
+         buyer = listing.highest_bidder;
+         seller = listing.owner;
         
         // Update marketplace statistics
         marketplace.total_volume = marketplace.total_volume + final_price;
@@ -577,29 +533,18 @@ module sigillum_contracts::sigillum_marketplace {
             };
             
             i = i + 1;
-        };
+        };}
         
         // Transfer the NFT from the marketplace to the buyer
+        ;
         // Use dynamic field to retrieve the NFT and transfer it to the buyer
-        let nft_id = listing.nft_id;
-        
-        // Here we need to either:
-        // 1. Use dynamic fields if your NFT is stored that way, or
-        // 2. If you're using shared objects, you'll need to implement a custom transfer function
-        // For most Sui NFTs, you'll need to implement a separate function that pulls the NFT from storage
-        // and sends it to the buyer. This will depend on how your NFT is implemented.
-        
-        // Example of transferring from marketplace to buyer:
-        // dynamic_object_field::remove<address, T>(&mut marketplace.id, nft_id);
-        // transfer::public_transfer(nft, buyer);
-        
-        // Note that the actual NFT transfer must be done outside this function
-        // by calling transfer_nft<T> with the correct NFT type
+
+        transfer_nft<T>(marketplace, nftId, buyer, ctx);
         
         // Emit listing completed event
         event::emit(ListingCompleted {
             listing_id,
-            nft_id: listing.nft_id,
+            nft_id: nftId,
             seller,
             buyer,
             final_price,
@@ -810,70 +755,4 @@ module sigillum_contracts::sigillum_marketplace {
         result
     }
 
-    // Complete a transaction with a specific NFT type
-    public entry fun complete_transaction<T: key + store>(
-        marketplace: &mut Marketplace,
-        listing_id: address,
-        ctx: &mut TxContext
-    ) {
-        // First complete the financial part of the listing
-        complete_listing(marketplace, listing_id, ctx);
-        
-        // Get the listing details to know where to send the NFT
-        let listing = table::borrow(&marketplace.listings, listing_id);
-        
-        // Now transfer the NFT to the buyer
-        transfer_nft<T>(marketplace, listing.nft_id, listing.highest_bidder, ctx);
-    }
-
-    // Directly buy a real listing at the list price with a specific NFT type
-    public entry fun buy_now_with_nft<T: key + store>(
-        marketplace: &mut Marketplace,
-        listing_id: address,
-        payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ) {
-        let buyer = tx_context::sender(ctx);
-        let bid_amount = coin::value(&payment);
-        
-        // Get the listing
-        let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
-        
-        // Validate listing
-        assert!(listing.active, EListingNotActive);
-        assert!(listing.listing_type == REAL_LISTING, EInvalidListingNotRealListing);
-        assert!(listing.list_price > 0, EInvalidPrice);
-        assert!(bid_amount >= listing.list_price, EInsufficientBid);
-        
-        // Update bid pool and escrow
-        let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
-        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
-        
-        // Handle previous bid from this buyer if it exists
-        if (vec_map::contains(&bid_pool.bids, &buyer)) {
-            let previous_bid = *vec_map::get(&bid_pool.bids, &buyer);
-            
-            // Return previous bid to buyer
-            let prev_balance = balance::split(escrow, previous_bid);
-            let prev_payment = coin::from_balance(prev_balance, ctx);
-            transfer::public_transfer(prev_payment, buyer);
-            
-            // Remove the old bid
-            vec_map::remove(&mut bid_pool.bids, &buyer);
-        } else {
-            // Increment bid count for new bidder
-            bid_pool.bid_count = bid_pool.bid_count + 1;
-        };
-            
-        // Put new bid in escrow
-        balance::join(escrow, coin::into_balance(payment));
-        
-        // Update as highest bidder
-        vec_map::insert(&mut bid_pool.bids, buyer, bid_amount);
-        listing.highest_bid = bid_amount;
-        listing.highest_bidder = buyer;
-        
-        // Complete the transaction including NFT transfer
-        complete_transaction<T>(marketplace, listing_id, ctx);
-    }
 }
