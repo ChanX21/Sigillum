@@ -147,8 +147,8 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       throw new Error('Token ID and listing options are required');
     }
 
-    // Get private key from environmen  t
-    const privateKey = process.env.SUI_PRIVATE_KEY_MP;
+    // Get private key from environment
+    const privateKey = process.env.SUI_PRIVATE_KEY;
     if (!privateKey) {
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
