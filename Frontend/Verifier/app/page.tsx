@@ -122,16 +122,16 @@ export default function Home() {
 
 
   useEffect(() => {
-    if(imageBuffer) {
+    if (imageBuffer) {
       verifyImage()
     }
   }, [imageBuffer])
   useEffect(() => {
-    if(data) {
-      console.log("Data",data)
+    if (data) {
+      console.log("Data", data)
     }
   }, [data])
- 
+
   useEffect(() => {
     if (activeTab === "camera") {
       startCamera()
@@ -167,6 +167,7 @@ export default function Home() {
             />
           </>
         ) : (
+          // <></>
           <Verification
             image={image}
             verificationError={error}
