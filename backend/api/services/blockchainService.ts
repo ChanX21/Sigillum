@@ -110,6 +110,7 @@ export const mintNFT = async (
         tx.object(ADMIN_CAP),
         tx.object(REGISTRY_ID),
         tx.pure(txData.imageUrl),
+        tx.pure.address(creatorAddress),
         tx.pure(txData.vectorUrl),
         tx.pure(txData.watermarkId),
         tx.pure(txData.metadata)
