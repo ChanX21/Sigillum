@@ -9,12 +9,7 @@ import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
-import { MediaRecord } from "@/types";
-
-interface Coin {
-  objectId: string;
-  balance: string;
-}
+import { ListingDataResponse, MediaRecord } from "@/types";
 
 interface BIDFormProps {
   nft: MediaRecord;
@@ -86,6 +81,8 @@ export const BidForm = ({ nft }: BIDFormProps) => {
         const result = await signAndExecuteTransaction({
           transaction,
         });
+
+        console.log(result);
 
         if (result) {
           toast.success("Bid placed successfully!");

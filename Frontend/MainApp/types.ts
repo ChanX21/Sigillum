@@ -27,31 +27,35 @@ export interface imageAuthDetails {
 
 export type MediaRecord = {
   _id: string;
-  original: string;
-  watermarked: string;
-  metadataCID: string;
-  status: "minted" | "verified" | string;
+  original: string; // IPFS CID of the original media
+  watermarked: string; // IPFS CID of the watermarked media
+  metadataCID: string; // IPFS CID for metadata
+  status: string; // e.g., "soft-listed", "minted", etc.
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   __v: number;
 
-  authentication: {
-    sha256Hash: string;
-    pHash: string;
-    watermarkData: string; // JSON string
-    timestamp: number; // UNIX timestamp (ms)
-    authenticatedAt: string; // ISO date string
+  vector: {
+    id: string; // UUID
+    ipfsCid: string; // CID for vector representation
   };
 
   blockchain: {
     transactionHash: string;
     tokenId: string;
-    listingId: string;
     creator: string;
-    metadataURI: string;
+    listingId: string;
   };
-};
 
+  verifications: {
+    _id: string;
+    imageId: string;
+    score: number;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  }[];
+};
 
 export type NFTMetadata = {
   name: string;
@@ -66,4 +70,18 @@ export type NFTMetadata = {
     pHash: string;
     watermarkData: string; // you can also parse this as an object if needed
   };
+};
+
+export type ListingDataResponse = {
+  owner: string; // hex string address
+  nftId: string; // hex string address
+  listPrice: bigint;
+  listingType: number; // u8
+  minBid: bigint;
+  highestBid: bigint;
+  highestBidder: string; // hex string address
+  active: boolean;
+  verificationScore: bigint;
+  startTime: bigint;
+  endTime: bigint;
 };

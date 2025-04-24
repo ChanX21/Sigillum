@@ -59,18 +59,39 @@ export function formatHumanReadableDate(isoDateString: string) {
 }
 
 // Calculate time remaining from a Unix timestamp
-export function getTimeRemaining(endTimeSeconds: number | undefined): string {
-  if (!endTimeSeconds || endTimeSeconds === 0) return "No deadline";
-  
-  const now = Math.floor(Date.now() / 1000); // Current time in seconds
-  const timeLeft = endTimeSeconds - now;
-  
-  if (timeLeft <= 0) return "Auction ended";
-  
-  const hours = Math.floor(timeLeft / 3600);
-  const minutes = Math.floor((timeLeft % 3600) / 60);
-  
-  return `${hours}h ${minutes}m`;
+export function getTimeRemaining(endTime: number | undefined): string {
+  if (!endTime || endTime === 0) return "No deadline";
+
+  const nowMs = Date.now(); // current time in ms
+  const endTimeMs = endTime < 1e12 ? endTime * 1000 : endTime; // normalize to ms
+
+  console.log("Current time (ms):", nowMs);
+  console.log("End time (ms):", endTimeMs);
+
+  const timeLeftMs = endTimeMs - nowMs;
+
+  if (timeLeftMs <= 0) return "Auction ended";
+
+  const timeLeftSec = Math.floor(timeLeftMs / 1000);
+  const hours = Math.floor(timeLeftSec / 3600);
+  const minutes = Math.floor((timeLeftSec % 3600) / 60);
+
+  // Show time left if less than a day
+  if (timeLeftSec < 86400) {
+    return `Auction ends in ${hours}h ${minutes}m`;
+  }
+
+  // Otherwise, show the exact end time
+  const endDate = new Date(endTimeMs);
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  };
+
+  return `Auction ends on ${endDate.toLocaleString(undefined, options)}`;
 }
 
 // Format SUI amount (convert from MIST to SUI)

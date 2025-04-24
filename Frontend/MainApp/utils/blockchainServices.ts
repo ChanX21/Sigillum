@@ -1,66 +1,39 @@
-
-
 // CONSTANTS
-import { Transaction } from '@mysten/sui/transactions';
-
+import { Transaction } from "@mysten/sui/transactions";
 
 import { SuiClient } from "@mysten/sui/client";
 
-export const buildPlaceBidTx = (
-  marketplaceObjectId: string, // ID of the marketplace object
-  listingId: string, // listing_id
-  coinObjectId: string, // ID of the Coin<SUI> object to use for payment
-  packageId: string,
-  moduleName: string
-): Transaction => {
-  const tx = new Transaction();
-
-  // Mapping the arguments
-  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(listingId); // listing_id as address
-  const paymentArg = tx.object(coinObjectId); // Coin<SUI> object ID
-
-  // Building the move call
-  tx.moveCall({
-    target: `${packageId}::${moduleName}::place_bid`,
-    arguments: [
-      marketplaceArg,
-      listingIdArg,
-      paymentArg,
-      // ctx is handled automatically by the runtime
-    ],
-  });
-
-  return tx;
-};
-
 export const buildAcceptBidTx = (
-  marketplaceObjectId: string, // ID of the marketplace object
-  listingId: string, // listing_id
+  marketplaceObjectId: string,
+  listingId: string,
   packageId: string,
   moduleName: string
 ): Transaction => {
   const tx = new Transaction();
 
-  // Mapping the arguments
-  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(listingId); // listing_id as address
+  // Set gas budget
+  tx.setGasBudget(10000000);
 
-  // Building the move call
+  // NFT type parameter that was missing
+  const nftTypeArg =
+    "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT";
+
+  // Building the move call with type arguments
   tx.moveCall({
     target: `${packageId}::${moduleName}::accept_bid`,
-    arguments: [
-      marketplaceArg,
-      listingIdArg,
-      // ctx is handled automatically by the runtime
-    ],
+    typeArguments: [nftTypeArg], // Add this line with the NFT type
+    arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
   });
 
   return tx;
 };
 
+function bytesToHex(bytes: number[]): string {
+  return "0x" + bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // Function to get listing details
-export async function getListingDetails(
+export async function getObjectDetails(
   provider: SuiClient,
   packageId: string,
   moduleName: string,
@@ -81,20 +54,13 @@ export async function getListingDetails(
       arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
     });
 
-    console.log("Inspecting transaction with:", {
-      packageId,
-      moduleName,
-      marketplaceObjectId,
-      listingId,
-      sender: senderAddress,
-    });
-
     const result = await provider.devInspectTransactionBlock({
       sender: senderAddress,
       transactionBlock: tx,
     });
+    console.log("Result:", result);
 
-    // Check for dynamic_field error
+    //Check for dynamic_field error
     if (
       result.error &&
       (result.error.includes("dynamic_field") ||
@@ -103,7 +69,6 @@ export async function getListingDetails(
       console.log("Listing not found or not accessible.", result.error);
       return null;
     }
-
     if (
       result &&
       result.results &&
@@ -113,20 +78,50 @@ export async function getListingDetails(
     ) {
       const returnValues = result.results[0].returnValues;
 
-      // Parse the returned values
-      return {
-        owner: returnValues[0][0],
-        nftId: returnValues[1][0],
-        listPrice: Number(returnValues[2][0]),
-        listingType: Number(returnValues[3][0]),
-        minBid: Number(returnValues[4][0]),
-        highestBid: Number(returnValues[5][0]),
-        highestBidder: returnValues[6][0],
-        active: Boolean(returnValues[7][0]),
-        verificationScore: Number(returnValues[8][0]),
-        startTime: Number(returnValues[9][0]),
-        endTime: Number(returnValues[10][0]),
+      const val = {
+        owner: bytesToHex([...new Uint8Array(returnValues[0][0])]),
+        nftId: bytesToHex([...new Uint8Array(returnValues[1][0])]),
+        listPrice: BigInt(
+          new DataView(Uint8Array.from(returnValues[2][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        listingType: returnValues[3][0][0],
+        minBid: BigInt(
+          new DataView(Uint8Array.from(returnValues[4][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        highestBid: BigInt(
+          new DataView(Uint8Array.from(returnValues[5][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        highestBidder: bytesToHex([...new Uint8Array(returnValues[6][0])]),
+        active: Boolean(returnValues[7][0][0]),
+        verificationScore: BigInt(
+          new DataView(Uint8Array.from(returnValues[8][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        startTime: BigInt(
+          new DataView(Uint8Array.from(returnValues[9][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        endTime: BigInt(
+          new DataView(
+            Uint8Array.from(returnValues[10][0]).buffer
+          ).getBigUint64(0, true)
+        ),
       };
+
+      return val;
     } else {
       console.error("Invalid result structure:", result);
       return null;
@@ -327,6 +322,42 @@ export async function getListingIds(
   throw new Error("Failed to get listing IDs");
 }
 
+export const buildPlaceBidTx = (
+  marketplaceObjectId: string, // ID of the marketplace object
+  listingId: string, // listing_id
+  coinObjectId: string, // ID of the Coin<SUI> object to use for payment
+  packageId: string,
+  moduleName: string,
+  bidAmountMist: bigint, // The amount to bid
+  address: string // User's address
+): Transaction => {
+  const tx = new Transaction();
+
+  // Set gas budget - important to avoid dry run errors
+  tx.setGasBudget(100000000); // 10M gas units
+
+  // Split the coin
+  const bidCoin = tx.splitCoins(tx.object(coinObjectId), [
+    tx.pure.u64(bidAmountMist.toString()),
+  ]);
+
+  // Mapping the arguments
+  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
+  const listingIdArg = tx.pure.address(listingId); // listing_id as address
+  const paymentArg = bidCoin[0]; // Coin<SUI> object ID
+
+  // Building the move call
+  tx.moveCall({
+    target: `${packageId}::${moduleName}::place_bid`,
+    arguments: [marketplaceArg, listingIdArg, paymentArg],
+  });
+
+  // Return remaining coin to the user
+  // tx.transferObjects([remainingCoin], tx.pure.address(address));
+
+  return tx;
+};
+
 // Function to build a transaction for placing a bid with automatic coin selection
 export async function buildPlaceBidTxWithCoinSelection(
   provider: SuiClient,
@@ -370,11 +401,10 @@ export async function buildPlaceBidTxWithCoinSelection(
         listingId,
         coinObjectId,
         packageId,
-        moduleName
+        moduleName,
+        bidAmountMist,
+        address
       );
-
-      // Set gas budget - important to avoid dry run errors
-      tx.setGasBudget(50000000); // 50M gas units
 
       return { transaction: tx, success: true };
     }
@@ -386,7 +416,7 @@ export async function buildPlaceBidTxWithCoinSelection(
     const tx = new Transaction();
 
     // Set gas budget - important to avoid dry run errors
-    tx.setGasBudget(50000000); // 50M gas units
+    tx.setGasBudget(10000000); // 10M gas units
 
     // Calculate total balance
     const totalBalance = coinData.reduce(
@@ -440,14 +470,14 @@ export async function buildPlaceBidTxWithCoinSelection(
   }
 }
 
-
 export async function listNft(
   address: string,
   softListingId: string,
   listPrice: number,
   packageId: string,
   moduleName: string,
-  marketplaceObjectId: string
+  marketplaceObjectId: string,
+  nftId:string
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
@@ -455,10 +485,14 @@ export async function listNft(
 
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
+      typeArguments: [
+        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT"
+      ],
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(softListingId),
         tx.pure.u64(listPrice.toString()),
+        tx.object(nftId),
       ],
     });
 
@@ -472,5 +506,3 @@ export async function listNft(
     };
   }
 }
-
-

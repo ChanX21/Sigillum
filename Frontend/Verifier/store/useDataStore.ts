@@ -27,23 +27,16 @@ export interface DatabaseRecord {
         tokenId: string;
         transactionHash: string
     };
-    creator:{
-        id:string;
-        username:string;
-    };
-    imageId:string;
-    originalIpfsUrl:string;
-    pHash:string;
-    sha256Hash:string;
     createdAt:string;
-    watermarkedIpfsUrl:string;
+    metadataCID:string;
+    original:string;
+    score:number;
+    status:string;
 }
 
 export interface VerificationResponse {
     message: string;
-    verificationResult: VerificationResult;
-    verified: Boolean;
-    databaseRecord: DatabaseRecord
+    verifications:Array<DatabaseRecord>
 }
 export interface DataState {
     data: VerificationResponse;

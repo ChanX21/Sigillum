@@ -6,7 +6,7 @@ export async function authenticateImage(imageFile: File) {
 
     console.log("Has image?", formData.has("image"));
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}verify`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}verify/`, {
             method: 'POST',
             body: formData,
             headers: {

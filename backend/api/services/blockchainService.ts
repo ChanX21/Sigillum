@@ -25,16 +25,9 @@ const MARKETPLACE_OBJECT_ID = process.env.MARKETPLACE_OBJECT_ID || '';
 const CREATE_SOFT_LISTING_FUNCTION = 'create_soft_listing';
 const MARKETPLACE_ADMIN_CAP = process.env.MARKETPLACE_ADMIN_CAP || '';
 
-export interface Metadata {
-  metadataCID: string;
-  image: string;
-  sha256Hash: string;
-  pHash: string;
-  dHash: string;
-  watermarkData: string;
-}
 
 export interface ListingOptions {
+  owner: string;
   minBid?: number;
   description?: string;
   endTime?: number; // Epoch time in seconds
@@ -64,17 +57,23 @@ export interface VerificationResult {
 /**
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
- * @param {Metadata} metadata - Image metadata
+ * @param {string} imageUrl - Image URL
+ * @param {string} vectorCid - Vector CID of the image
+ * @param {string} watermarkCID - Watermark CID of the image
+ * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
  */
 export const mintNFT = async (
   creatorAddress: string, 
-  metadata: Metadata,
+  imageUrl: string,
+  vectorCid: string,
+  watermarkCID: string,
+  metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !metadata) {
-      throw new Error('Creator address and metadata are required');
+      if (!creatorAddress || !imageUrl || !vectorCid || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, vector CID, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -83,12 +82,8 @@ export const mintNFT = async (
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
     
-    // Extract required data from metadata
-    const imageUrl = metadata.image || '';
-    const sha256Hash = metadata.sha256Hash || '';
-    const pHash = metadata.pHash || '';
-    const dHash = metadata.pHash || ''; // Use pHash as dHash if not available
-    const watermarkId = metadata.watermarkData || '';
+    // Create keypair from private key
+    const watermarkId = watermarkCID || '';
     
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
@@ -97,11 +92,9 @@ export const mintNFT = async (
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
-      sha256Hash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(sha256Hash)),
-      pHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(pHash)),
-      dHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(dHash)),
+      vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(vectorCid)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
-      metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadata.metadataCID}`)
+      metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
     
     // Create the transaction
@@ -117,9 +110,8 @@ export const mintNFT = async (
         tx.object(ADMIN_CAP),
         tx.object(REGISTRY_ID),
         tx.pure(txData.imageUrl),
-        tx.pure(txData.sha256Hash),
-        tx.pure(txData.pHash),
-        tx.pure(txData.dHash),
+        tx.pure.address(creatorAddress),
+        tx.pure(txData.vectorUrl),
         tx.pure(txData.watermarkId),
         tx.pure(txData.metadata)
       ],
@@ -135,7 +127,7 @@ export const mintNFT = async (
     });
     return {
       transactionHash: result.digest,
-      tokenId: result.effects?.created?.[0]?.reference?.objectId || ''
+      tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || ''
     };
   } catch (error) {
     console.error('Error minting NFT:', error);
@@ -156,7 +148,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       throw new Error('Token ID and listing options are required');
     }
 
-    // Get private key from environmen  t
+    // Get private key from environment
     const privateKey = process.env.SUI_PRIVATE_KEY;
     if (!privateKey) {
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
@@ -164,7 +156,6 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
 
       // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-
     // Create the transaction
     const tx = new Transaction();
     // Add the create_soft_listing call
@@ -177,6 +168,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
         tx.object(MARKETPLACE_ADMIN_CAP),
         tx.object(MARKETPLACE_OBJECT_ID),
         tx.pure.address(tokenId),
+        tx.pure.address(listingOptions.owner),
         tx.pure(bcs.u64().serialize(BigInt(listingOptions.minBid || 0))),
         tx.pure(bcs.string().serialize(listingOptions.description || '')),
         tx.pure(bcs.string().serialize(JSON.stringify({ ipfs: listingOptions.metadataCID }))),
@@ -194,137 +186,9 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       }
     });
 
-    return result.effects?.created?.[0]?.reference?.objectId || '';
+    return (result.events?.[0]?.parsedJson as { listing_id: string })?.listing_id || '';
   } catch (error) {
     console.error('Error creating soft listing:', error);
     throw error;
   }
 };
-
-/**
- * Safely convert a field value to string, handling both base64 and byte arrays
- * @param fieldValue - The field value from the blockchain (may be byte array or base64 string)
- * @param encoding - The encoding to use for the output ('hex', 'utf8', etc)
- * @param defaultValue - Default value to return if conversion fails
- * @returns The converted string or default value
- */
-function safeFieldToString(fieldValue: any, encoding: BufferEncoding = 'utf8', defaultValue: string = ''): string {
-  if (!fieldValue) {
-    return defaultValue;
-  }
-
-  try {
-    // If it's already an array of numbers (bytes), convert directly
-    if (Array.isArray(fieldValue)) {
-      return Buffer.from(fieldValue).toString(encoding);
-    }
-    
-    // If it's a base64 string, try to decode it
-    if (typeof fieldValue === 'string') {
-      try {
-        return Buffer.from(fromBase64(fieldValue)).toString(encoding);
-      } catch (error) {
-        // If base64 decoding fails, just return the string as is
-        return fieldValue;
-      }
-    }
-    
-    // For other types, stringify
-    return String(fieldValue);
-  } catch (error) {
-    console.error('Error converting field to string:', error, 'Original value:', fieldValue);
-    return defaultValue;
-  }
-}
-
-/**
- * Comprehensive verification of an image using the Sui contract
- * @param {string} tokenId - NFT token ID
- * @param {string} sha256Hash - Image hash for verification
- * @param {string} pHash - Perceptual hash for verification
- * @returns {Promise<VerificationResult>} - Detailed verification result
- */
-export const verifyImageByHash = async (
-  tokenId: string, 
-  sha256Hash: string,
-  pHash: string,
-): Promise<VerificationResult> => {
-  try {
-    // Get object data from Sui
-    const objectData = await client.getObject({
-      id: tokenId,
-      options: { showContent: true }
-    });
-    
-    if (!objectData.data?.content) {
-      throw new Error('NFT data not found');
-    }
-    
-    const content = objectData.data.content as any;
-    const fields = content.fields;
-    // Convert stored fields to strings
-    const storedSha256Hash = safeFieldToString(fields.sha256_hash, 'utf8');
-    const storedPHash = safeFieldToString(fields.phash, 'utf8');
-    const storedImageUrl = safeFieldToString(fields.image_url, 'utf8');
-    
-    // 1. Exact hash match (verify_exact_match)
-    const exactMatch = storedSha256Hash === sha256Hash;
-    
-    // 2. Calculate perceptual hash similarity (if we have valid hashes)
-    let similarityScore = 100; // Default to max difference
-    let perceptualMatch = false;
-    
-    if (storedPHash && pHash) {
-      similarityScore = calculateHammingDistance(storedPHash, pHash);
-      perceptualMatch = similarityScore < 10; // Threshold for similarity
-    }
-    
-    // 3. Simplified registry check (skipping the actual call to find_similar_nfts)
-    const similarNFTs: Array<{id: string, distance: number}> = [];
-    
-    return {
-      isAuthentic: exactMatch,
-      exactMatch,
-      perceptualMatch,
-      similarityScore,
-      tokenDetails: {
-        tokenId,
-        creator: safeFieldToString(fields.creator, 'utf8', 'unknown'),
-        timestamp: parseInt(safeFieldToString(fields.timestamp, 'utf8', '0'), 10),
-        metadata: safeFieldToString(fields.metadata, 'utf8', ''),
-        imageUrl: storedImageUrl
-      },
-      registryResults: {
-        similarNFTs
-      }
-    };
-  } catch (error) {
-    console.error('Error verifying image with Sui contract:', error);
-    throw error;
-  }
-};
-
-
-/**
- * Calculate Hamming distance between two hash strings
- * Simulates the contract's calculate_hash_similarity function
- * @param {string} hash1 - First hash string
- * @param {string} hash2 - Second hash string
- * @returns {number} - Hamming distance
- */
-function calculateHammingDistance(hash1: string, hash2: string): number {
-  // Ensure hashes are of same length
-  const minLength = Math.min(hash1.length, hash2.length);
-  let distance = 0;
-  
-  for (let i = 0; i < minLength; i++) {
-    if (hash1[i] !== hash2[i]) {
-      distance++;
-    }
-  }
-  
-  // Add remaining length difference to distance
-  distance += Math.abs(hash1.length - hash2.length);
-  
-  return distance;
-}

@@ -1,4 +1,4 @@
-import { pinata } from '../clients/pinata';
+import { pinata } from '../clients/pinata.js';
 
 
 /**
@@ -89,3 +89,22 @@ export const createAndUploadNFTMetadata = async (imageData: any, imageCID: strin
   }
 };
 
+
+/**
+ * Upload a vector to IPFS
+ * @param {number[]} vector - Vector to upload
+ * @returns {Promise<string>} - IPFS CID (Content Identifier)
+ */
+export const uploadVectorToIPFS = async (vector: number[]) => {
+  try {
+    const vectorBuffer = Buffer.from(JSON.stringify(vector));
+    const blob = new Blob([vectorBuffer]);
+    const file = new File([blob], "vector.json", { type: "application/json"})
+    
+    const upload = await pinata.upload.public.file(file);
+    return upload.cid; // Returns the CID
+  } catch (error) {
+    console.error('Error uploading vector to IPFS:', error);
+    throw error;
+  }
+}
