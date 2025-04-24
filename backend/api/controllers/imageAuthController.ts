@@ -29,7 +29,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       });
       return;
     }
-
+  
     // Get signature data from form fields
     const { signature, message } = req.body;
     const creatorAddress = req.params.address;
@@ -103,7 +103,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       status: 'uploaded'
     });
     const savedImage = await newAuthenticatedImage.save();
-   
     await qdrantClient.upsert('images', {
       wait: true,
       points: [{
@@ -114,7 +113,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
           watermarked: watermarkedIpfsCid,
         }
       }]
-    });
+      });
     await axios.post(`${process.env.BASE_URL}/blockchain`, {
       action: 'mint',
       id: savedImage.id

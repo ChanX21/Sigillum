@@ -114,9 +114,11 @@ export const addWatermark = async (
  * @returns Vector of the image
  */
 export const getImageVector = async (imageBuffer: Buffer): Promise<number[]> => {
-  const formData = new FormData();
-  formData.append('image', new Blob([imageBuffer]), 'image.png');
-  const vectorResponse = await axios.post(`${process.env.EMBEDDING_URL}/get_image_embedding`, formData);
+  const vectorResponse = await axios.post(`${process.env.EMBEDDING_URL}/get_image_embedding`, { image: imageBuffer.toString('base64') }, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
   return vectorResponse.data.embedding;
 };
 
