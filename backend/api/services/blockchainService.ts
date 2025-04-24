@@ -27,6 +27,7 @@ const MARKETPLACE_ADMIN_CAP = process.env.MARKETPLACE_ADMIN_CAP || '';
 
 
 export interface ListingOptions {
+  owner: string;
   minBid?: number;
   description?: string;
   endTime?: number; // Epoch time in seconds
@@ -57,6 +58,7 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
+ * @param {string} vectorCid - Vector CID of the image
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
@@ -64,13 +66,14 @@ export interface VerificationResult {
 export const mintNFT = async (
   creatorAddress: string, 
   imageUrl: string,
+  vectorCid: string,
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-      if (!creatorAddress || !imageUrl || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, watermark CID, and metadata CID are required');
+      if (!creatorAddress || !imageUrl || !vectorCid || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, vector CID, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -89,9 +92,7 @@ export const mintNFT = async (
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
-      sha256Hash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-      pHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-      dHash: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+      vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(vectorCid)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
       metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
@@ -109,9 +110,7 @@ export const mintNFT = async (
         tx.object(ADMIN_CAP),
         tx.object(REGISTRY_ID),
         tx.pure(txData.imageUrl),
-        tx.pure(txData.sha256Hash),
-        tx.pure(txData.pHash),
-        tx.pure(txData.dHash),
+        tx.pure(txData.vectorUrl),
         tx.pure(txData.watermarkId),
         tx.pure(txData.metadata)
       ],
@@ -149,14 +148,13 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
     }
 
     // Get private key from environmen  t
-    const privateKey = process.env.SUI_PRIVATE_KEY;
+    const privateKey = process.env.SUI_PRIVATE_KEY_MP;
     if (!privateKey) {
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
 
       // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-
     // Create the transaction
     const tx = new Transaction();
     // Add the create_soft_listing call
@@ -168,6 +166,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       arguments: [
         tx.object(MARKETPLACE_ADMIN_CAP),
         tx.object(MARKETPLACE_OBJECT_ID),
+        tx.pure.address(listingOptions.owner),
         tx.pure.address(tokenId),
         tx.pure(bcs.u64().serialize(BigInt(listingOptions.minBid || 0))),
         tx.pure(bcs.string().serialize(listingOptions.description || '')),

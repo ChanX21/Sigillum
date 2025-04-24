@@ -12,7 +12,10 @@ interface IBlockchain {
 export interface IAuthenticatedImage extends Document {
   original: string;
   watermarked: string;
-  vectorId: string;
+  vector: {
+    id: string;
+    ipfsCid: string;
+  };
   blockchain: IBlockchain;
   metadataCID: string;
   status: 'uploaded' | 'minted' | 'soft-listed' | 'error';
@@ -59,9 +62,17 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
     type: String,
     required: true,
   },
-  vectorId: {
-    type: String,
-    required: true,
+  vector: {
+    id: {
+      unique: true,
+      type: String,
+      required: true,
+    },
+    ipfsCid: {
+      unique: true,
+      type: String,
+      required: true,
+    },
   },
   blockchain: {
     transactionHash: {

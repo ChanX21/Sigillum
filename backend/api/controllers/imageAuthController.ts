@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { processImageForAuthentication } from '../utils/imageUtils.js';
-import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService.js';
+import { uploadToIPFS, createAndUploadNFTMetadata, uploadVectorToIPFS } from '../services/ipfsService.js';
 import {
   mintNFT,
   createSoftListing,
@@ -80,10 +80,12 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     let metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: originalIpfsCid,
-      vector: authenticationData.vector,
       watermarkData: authenticationData.watermarkData
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
+
+    // Upload vector to IPFS
+    const vectorIpfsCid = await uploadVectorToIPFS(authenticationData.vector);
 
     // Create new authenticated image record
     const vectorId = v4();
@@ -91,7 +93,10 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       original: originalIpfsCid,
       watermarked: watermarkedIpfsCid,
       metadataCID: metadataIpfsCid,
-      vectorId: vectorId,
+      vector: {
+        id: vectorId,
+        ipfsCid: vectorIpfsCid,
+      },
       blockchain: {
         creator: creatorAddress,
       },
@@ -143,24 +148,24 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
 export const blockchain = async (req: Request, res: Response): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    /*   if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
-         res.status(401).json({ message: 'Unauthorized' });
-         return;
+    /*if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
        }*/
     const { action, id } = req.body;
     if (action === 'mint') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
-      if (!authenticatedImage || authenticatedImage.status !== 'uploaded') {
+      if (!authenticatedImage || (authenticatedImage.status !== 'uploaded' && authenticatedImage.status !== 'error')) {
         res.status(400).json({ message: 'Image not uploaded' });
         return;
       }
       res.status(200).json({ message: 'Image will be minted' });
-      const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.watermarked, authenticatedImage.metadataCID);
+      const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.vector.ipfsCid, authenticatedImage.watermarked, authenticatedImage.metadataCID);
       await AuthenticatedImage.findByIdAndUpdate(
         authenticatedImage._id,
         { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
       );
-      await axios.post(`${process.env.BASE_URL}/blockchain`, {
+   /*   await axios.post(`${process.env.BASE_URL}/blockchain`, {
         action: 'soft-list',
         id: authenticatedImage.id
       },
@@ -169,16 +174,17 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.BE_KEY}`
           }
-        });
+        });*/
     }
     else if (action === 'soft-list') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
-      if (!authenticatedImage || authenticatedImage.status !== 'minted') {
+      if (!authenticatedImage || (authenticatedImage.status !== 'minted' && authenticatedImage.status !== 'error')) {
         res.status(400).json({ message: 'Image not minted' });
         return;
       }
       res.status(200).json({ message: 'Image will be soft listed' });
       const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
+        owner: authenticatedImage.blockchain.creator,
         minBid: 100,
         endTime: Date.now() + (60 * 60 * 24 * 2),
         description: 'Soft listing',
@@ -236,7 +242,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
     }
     const verifications = [];
     for(const image of filteredSimilarImages) {
-      const authenticatedImage = await AuthenticatedImage.findOne({vectorId: image.id});
+      const authenticatedImage = await AuthenticatedImage.findOne({vector: {id: image.id}});
       if(authenticatedImage) {
         // Create a new verification record
         const verification = new Verification({
