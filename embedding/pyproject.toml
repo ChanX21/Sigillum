@@ -3,24 +3,7 @@ name = "repl-nix-workspace"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
-dependencies = [
-    "boto3>=1.37.38",
-    "botocore>=1.37.38",
-    "email-validator>=2.2.0",
-    "fastapi>=0.115.12",
-    "flask>=3.1.0",
-    "flask-sqlalchemy>=3.1.1",
-    "gunicorn>=23.0.0",
-    "numpy>=2.2.5",
-    "openai>=1.75.0",
-    "pillow>=11.2.1",
-    "psycopg2-binary>=2.9.10",
-    "python-multipart>=0.0.20",
-    "scikit-learn>=1.6.1",
-    "torch>=2.6.0",
-    "torchvision>=0.21.0",
-    "uvicorn>=0.34.2",
-]
+dependencies = []
 
 [[tool.uv.index]]
 explicit = true
