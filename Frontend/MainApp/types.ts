@@ -27,31 +27,35 @@ export interface imageAuthDetails {
 
 export type MediaRecord = {
   _id: string;
-  original: string;
-  watermarked: string;
-  metadataCID: string;
-  status: "minted" | "verified" | string;
+  original: string; // IPFS CID of the original media
+  watermarked: string; // IPFS CID of the watermarked media
+  metadataCID: string; // IPFS CID for metadata
+  status: string; // e.g., "soft-listed", "minted", etc.
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   __v: number;
 
-  authentication: {
-    sha256Hash: string;
-    pHash: string;
-    watermarkData: string; // JSON string
-    timestamp: number; // UNIX timestamp (ms)
-    authenticatedAt: string; // ISO date string
+  vector: {
+    id: string; // UUID
+    ipfsCid: string; // CID for vector representation
   };
 
   blockchain: {
     transactionHash: string;
     tokenId: string;
-    listingId: string;
     creator: string;
-    metadataURI: string;
+    listingId: string;
   };
-};
 
+  verifications: {
+    _id: string;
+    imageId: string;
+    score: number;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  }[];
+};
 
 export type NFTMetadata = {
   name: string;
@@ -69,36 +73,15 @@ export type NFTMetadata = {
 };
 
 export type ListingDataResponse = {
-  objectId: string;
-  version: string;
-  digest: string;
-  content: {
-    dataType: "moveObject";
-    type: string;
-    hasPublicTransfer: boolean;
-    fields: {
-      id: {
-        id: string;
-      };
-      name: string;
-      value: {
-        type: string;
-        fields: {
-          active: boolean;
-          description: string;
-          end_time: string;
-          highest_bid: string;
-          highest_bidder: string;
-          list_price: string;
-          listing_type: number;
-          metadata: string;
-          min_bid: string;
-          nft_id: string;
-          owner: string;
-          start_time: string;
-          verification_score: string;
-        };
-      };
-    };
-  };
+  owner: string; // hex string address
+  nftId: string; // hex string address
+  listPrice: bigint;
+  listingType: number; // u8
+  minBid: bigint;
+  highestBid: bigint;
+  highestBidder: string; // hex string address
+  active: boolean;
+  verificationScore: bigint;
+  startTime: bigint;
+  endTime: bigint;
 };
