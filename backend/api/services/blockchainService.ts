@@ -166,8 +166,8 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       arguments: [
         tx.object(MARKETPLACE_ADMIN_CAP),
         tx.object(MARKETPLACE_OBJECT_ID),
-        tx.pure.address(listingOptions.owner),
         tx.pure.address(tokenId),
+        tx.pure.address(listingOptions.owner),
         tx.pure(bcs.u64().serialize(BigInt(listingOptions.minBid || 0))),
         tx.pure(bcs.string().serialize(listingOptions.description || '')),
         tx.pure(bcs.string().serialize(JSON.stringify({ ipfs: listingOptions.metadataCID }))),
