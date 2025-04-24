@@ -1,35 +1,36 @@
-
-
 // CONSTANTS
-import { Transaction } from '@mysten/sui/transactions';
-
+import { Transaction } from "@mysten/sui/transactions";
 
 import { SuiClient } from "@mysten/sui/client";
 
 export const buildAcceptBidTx = (
-  marketplaceObjectId: string, // ID of the marketplace object
-  listingId: string, // listing_id
+  marketplaceObjectId: string,
+  listingId: string,
   packageId: string,
   moduleName: string
 ): Transaction => {
   const tx = new Transaction();
 
-  // Mapping the arguments
-  const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(listingId); // listing_id as address
+  // Set gas budget
+  tx.setGasBudget(10000000);
 
-  // Building the move call
+  // NFT type parameter that was missing
+  const nftTypeArg =
+    "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT";
+
+  // Building the move call with type arguments
   tx.moveCall({
     target: `${packageId}::${moduleName}::accept_bid`,
-    arguments: [
-      marketplaceArg,
-      listingIdArg,
-      // ctx is handled automatically by the runtime
-    ],
+    typeArguments: [nftTypeArg], // Add this line with the NFT type
+    arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
   });
 
   return tx;
 };
+
+function bytesToHex(bytes: number[]): string {
+  return "0x" + bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 // Function to get listing details
 export async function getObjectDetails(
@@ -48,73 +49,83 @@ export async function getObjectDetails(
     const tx = new Transaction();
 
     // Call the function
-    // tx.moveCall({
-    //   target: `${packageId}::${moduleName}::get_listing_details`,
-    //   arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
-    // });
-
-    // console.log("Inspecting transaction with:", {
-    //   packageId,
-    //   moduleName,
-    //   marketplaceObjectId,
-    //   listingId,
-    //   sender: senderAddress,
-    // });
-
-    const txn = await provider.getObject({
-      id: listingId, //"0xe7ba7336673ffa9bbd1c001820de70ebda35782d16ff093744a2312a8e6be5d5",
-      // fetch the object content field
-      options: { showContent: true },
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::get_listing_details`,
+      arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
     });
 
-    console.log("txn:", txn);
+    const result = await provider.devInspectTransactionBlock({
+      sender: senderAddress,
+      transactionBlock: tx,
+    });
+    console.log("Result:", result);
 
-    if (txn.error) {
-      throw new Error(txn.error?.code);
+    //Check for dynamic_field error
+    if (
+      result.error &&
+      (result.error.includes("dynamic_field") ||
+        result.error.includes("MoveAbort"))
+    ) {
+      console.log("Listing not found or not accessible.", result.error);
+      return null;
     }
-    return txn.data;
-    // const result = await provider.devInspectTransactionBlock({
-    //   sender: senderAddress,
-    //   transactionBlock: tx,
-    // });
+    if (
+      result &&
+      result.results &&
+      result.results[0] &&
+      result.results[0].returnValues &&
+      result.results[0].returnValues.length > 10
+    ) {
+      const returnValues = result.results[0].returnValues;
 
-    // Check for dynamic_field error
-    // if (
-    //   result.error &&
-    //   (result.error.includes("dynamic_field") ||
-    //     result.error.includes("MoveAbort"))
-    // ) {
-    //   console.log("Listing not found or not accessible.", result.error);
-    //   return null;
-    // }
+      const val = {
+        owner: bytesToHex([...new Uint8Array(returnValues[0][0])]),
+        nftId: bytesToHex([...new Uint8Array(returnValues[1][0])]),
+        listPrice: BigInt(
+          new DataView(Uint8Array.from(returnValues[2][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        listingType: returnValues[3][0][0],
+        minBid: BigInt(
+          new DataView(Uint8Array.from(returnValues[4][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        highestBid: BigInt(
+          new DataView(Uint8Array.from(returnValues[5][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        highestBidder: bytesToHex([...new Uint8Array(returnValues[6][0])]),
+        active: Boolean(returnValues[7][0][0]),
+        verificationScore: BigInt(
+          new DataView(Uint8Array.from(returnValues[8][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        startTime: BigInt(
+          new DataView(Uint8Array.from(returnValues[9][0]).buffer).getBigUint64(
+            0,
+            true
+          )
+        ),
+        endTime: BigInt(
+          new DataView(
+            Uint8Array.from(returnValues[10][0]).buffer
+          ).getBigUint64(0, true)
+        ),
+      };
 
-    // if (
-    //   result &&
-    //   result.results &&
-    //   result.results[0] &&
-    //   result.results[0].returnValues &&
-    //   result.results[0].returnValues.length > 10
-    // ) {
-    //   const returnValues = result.results[0].returnValues;
-
-    //   // Parse the returned values
-    //   return {
-    //     owner: returnValues[0][0],
-    //     nftId: returnValues[1][0],
-    //     listPrice: Number(returnValues[2][0]),
-    //     listingType: Number(returnValues[3][0]),
-    //     minBid: Number(returnValues[4][0]),
-    //     highestBid: Number(returnValues[5][0]),
-    //     highestBidder: returnValues[6][0],
-    //     active: Boolean(returnValues[7][0]),
-    //     verificationScore: Number(returnValues[8][0]),
-    //     startTime: Number(returnValues[9][0]),
-    //     endTime: Number(returnValues[10][0]),
-    //   };
-    // } else {
-    //   console.error("Invalid result structure:", result);
-    //   return null;
-    // }
+      return val;
+    } else {
+      console.error("Invalid result structure:", result);
+      return null;
+    }
   } catch (error) {
     console.error("Error in getListingDetails:", error);
     return null;
@@ -332,9 +343,7 @@ export const buildPlaceBidTx = (
 
   // Mapping the arguments
   const marketplaceArg = tx.object(marketplaceObjectId); // Shared marketplace object
-  const listingIdArg = tx.pure.address(
-    "0xe7ba7336673ffa9bbd1c001820de70ebda35782d16ff093744a2312a8e6be5d5"
-  ); // listing_id as address
+  const listingIdArg = tx.pure.address(listingId); // listing_id as address
   const paymentArg = bidCoin[0]; // Coin<SUI> object ID
 
   // Building the move call
@@ -461,7 +470,6 @@ export async function buildPlaceBidTxWithCoinSelection(
   }
 }
 
-
 export async function listNft(
   address: string,
   softListingId: string,
@@ -493,5 +501,3 @@ export async function listNft(
     };
   }
 }
-
-
