@@ -147,10 +147,10 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
 export const blockchain = async (req: Request, res: Response): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    /*if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
+    if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
-       }*/
+    }
     const { action, id } = req.body;
     if (action === 'mint') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
