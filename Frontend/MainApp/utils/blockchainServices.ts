@@ -476,7 +476,8 @@ export async function listNft(
   listPrice: number,
   packageId: string,
   moduleName: string,
-  marketplaceObjectId: string
+  marketplaceObjectId: string,
+  nftId:string
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
@@ -484,10 +485,14 @@ export async function listNft(
 
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
+      typeArguments: [
+        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT"
+      ],
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(softListingId),
         tx.pure.u64(listPrice.toString()),
+        tx.object(nftId),
       ],
     });
 

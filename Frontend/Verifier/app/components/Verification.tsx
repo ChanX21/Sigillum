@@ -74,7 +74,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.databaseRecord?.blockchain.creator)}</p>
+                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.verifications[0]?.blockchain.creator)}</p>
                                             <p className="text-xs text-[#616161]">Creator</p>
                                         </div>
 
@@ -82,7 +82,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
                                     <div className="text-right">
                                         <p className="text-xs text-[#616161]">Created</p>
-                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.databaseRecord?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
+                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                     </div>
 
                                 </div>
@@ -110,10 +110,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                     <h3 className="text-lg font-medium mt-6 mb-2">Verifying Image</h3>
                                     <p className="text-[#616161]">Analyzing authenticity and provenance...</p>
                                 </div>
-                            ) : verificationData ? (
+                            ) : verificationData && verificationData.verifications.length !== 0 ? (
                                 <div className="space-y-8">
-                                    <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border ${verificationData?.verificationResult?.isAuthentic ? 'border-[#b7eb8f]' : 'border-[#f5222d]'}`}>
-                                        {verificationData?.verificationResult?.isAuthentic ? (
+                                    <div className={`flex items-center gap-4 p-4 rounded-lg bg-[#f6ffed] border ${verificationData?.verifications.length !== 0 ? 'border-[#b7eb8f]' : 'border-[#f5222d]'}`}>
+                                        {verificationData?.verifications.length !== 0 ? (
                                             <>
                                                 <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
                                                     <Check className="w-6 h-6 text-[#52c41a]" />
@@ -144,9 +144,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg flex justify-between items-center">
-                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.databaseRecord?.blockchain?.creator)}</p>
+                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.verifications[0]?.blockchain?.creator)}</p>
                                                     <Button variant='ghost' onClick={async () => {
-                                                        await navigator.clipboard.writeText(verificationData?.databaseRecord?.blockchain?.creator)
+                                                        await navigator.clipboard.writeText(verificationData?.verifications[0]?.blockchain?.creator)
                                                         toast.success("Copied to Clipboard")
                                                     }}>
                                                         <Copy />
@@ -162,7 +162,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.databaseRecord?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
+                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                                 </div>
                                             </div>
                                         </div>
