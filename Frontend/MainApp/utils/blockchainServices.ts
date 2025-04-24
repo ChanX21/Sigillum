@@ -475,9 +475,11 @@ export async function listNft(
     const tx = new Transaction();
     tx.setGasBudget(50000000); // 50M gas
 
-    console.log(marketplaceObjectId,softListingId,listPrice,nftId)
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
+      typeArguments: [
+        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT"
+      ],
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(softListingId),
