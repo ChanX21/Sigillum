@@ -13,6 +13,7 @@ interface NFTCardFeaturedProps {
 }
 
 export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
+  
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   useEffect(() => {
     const fetchData = async () => {
@@ -20,7 +21,7 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
         const response = await fetchMetadata(
           `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
         );
-        console.log(response)
+        // console.log(response)
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
