@@ -126,7 +126,7 @@ export const mintNFT = async (
     });
     return {
       transactionHash: result.digest,
-      tokenId: result.effects?.created?.[0]?.reference?.objectId || ''
+      tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || ''
     };
   } catch (error) {
     console.error('Error minting NFT:', error);
@@ -185,7 +185,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       }
     });
 
-    return result.effects?.created?.[0]?.reference?.objectId || '';
+    return (result.events?.[0]?.parsedJson as { listing_id: string })?.listing_id || '';
   } catch (error) {
     console.error('Error creating soft listing:', error);
     throw error;
