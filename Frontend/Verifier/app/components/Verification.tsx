@@ -25,13 +25,14 @@ interface VerificationProps {
             date: string
         }>
     } | null
-    resetState: () => void
+    resetState: () => void,
+    setSubmittedForVerification:React.Dispatch<React.SetStateAction<boolean>>
 }
 const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
 }
-const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState }: VerificationProps) => {
+const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState, setSubmittedForVerification }: VerificationProps) => {
     useEffect(() => {
         console.log(verificationData)
     }, [verificationData])
