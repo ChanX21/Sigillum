@@ -165,7 +165,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
         authenticatedImage._id,
         { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
       );
-   /*   await axios.post(`${process.env.BASE_URL}/blockchain`, {
+      await axios.post(`${process.env.BASE_URL}/blockchain`, {
         action: 'soft-list',
         id: authenticatedImage.id
       },
@@ -174,7 +174,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.BE_KEY}`
           }
-        });*/
+        });
     }
     else if (action === 'soft-list') {
       const authenticatedImage = await AuthenticatedImage.findById(id);
@@ -222,9 +222,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'No image file uploaded' });
       return;
     }
-    const authenticationData = await processImageForAuthentication(req.file.buffer, {
-      creatorId: req.params.verifier
-    });
+    const authenticationData = await processImageForAuthentication(req.file.buffer);
 
     // find similar images in qdrant
     const similarImages = await qdrantClient.query("images", {
@@ -240,14 +238,14 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'No similar images found' });
       return;
     }
-    const verifications = [];
-    for(const image of filteredSimilarImages) {
-      const authenticatedImage = await AuthenticatedImage.findOne({vector: {id: image.id}});
+    const verifications: any[] = [];
+    for(let i = 0; i < filteredSimilarImages.length; i++) {
+      let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications').lean();
       if(authenticatedImage) {
         // Create a new verification record
         const verification = new Verification({
-            imageId: authenticatedImage._id,
-          verifier: req.params.verifier,
+          imageId: authenticatedImage._id,
+          score: filteredSimilarImages[i].score,
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -258,7 +256,8 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
           authenticatedImage._id,
           { $addToSet: { verifications: savedVerification._id } }
         );
-        verifications.push({id: authenticatedImage.id, score: image.score});
+        verifications.push(authenticatedImage);
+        verifications[i].score = filteredSimilarImages[i].score;
       }
     }
         res.status(200).json({
