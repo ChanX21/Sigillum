@@ -232,7 +232,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       },
       limit: 5,
     });
-    const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.97);
+    const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.85);
     if(filteredSimilarImages.length === 0) {
       res.status(400).json({ message: 'No similar images found' });
       return;
