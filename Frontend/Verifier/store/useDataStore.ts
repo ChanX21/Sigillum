@@ -27,16 +27,16 @@ export interface DatabaseRecord {
         tokenId: string;
         transactionHash: string
     };
-    createdAt:string;
-    metadataCID:string;
-    original:string;
-    score:number;
-    status:string;
+    createdAt: string;
+    metadataCID: string;
+    original: string;
+    score: number;
+    status: string;
 }
 
 export interface VerificationResponse {
     message: string;
-    verifications:Array<DatabaseRecord>
+    verifications: Array<DatabaseRecord>
 }
 export interface DataState {
     data: VerificationResponse;
@@ -52,7 +52,7 @@ export const useDataStore = create((set) => ({
     loading: false,
     error: null,
     fetchData: async (imageFile: File) => {
-        set({ loading: true, error: null });
+        set({ loading: true, error: null, data: null });
         try {
             const data = await authenticateImage(imageFile);
             set({ data, loading: false });

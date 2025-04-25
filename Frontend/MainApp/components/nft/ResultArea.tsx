@@ -6,6 +6,7 @@ import { ChevronLeft, Terminal } from "lucide-react";
 import { NFTDetails } from "./NFTDetails";
 import { useEffect } from "react";
 import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
+import { useGetImageById } from "@/hooks/useGetImageById";
 
 export const ResultArea = ({
   setStep,
@@ -13,6 +14,7 @@ export const ResultArea = ({
   setStep: (step: number) => void;
 }) => {
   const { result } = useImageAuthStore() as AuthState
+
   const handleDownload = () => {
     const link = document.createElement("a");
     link.href = `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.watermarkedIpfsCid}`; // Replace with your image URL

@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Transaction } from '@mysten/sui/transactions';
 import { listNft } from "@/utils/blockchainServices";
 import { client } from "@/lib/suiClient";
@@ -11,11 +11,12 @@ type ListNftParams = {
     packageId: string;
     moduleName: string;
     marketplaceObjectId: string;
-    nftId:string;
+    nftId: string;
     signTransaction: ({ transaction }: { transaction: Transaction }) => Promise<any>;
 };
 
 export function useListNft() {
+
     return useMutation({
         mutationKey: ["list-nft"], // Unique key for the mutation
         mutationFn: async ({ address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId, nftId, signTransaction }: ListNftParams) => {

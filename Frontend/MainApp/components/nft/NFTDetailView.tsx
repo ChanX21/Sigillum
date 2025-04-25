@@ -11,6 +11,10 @@ import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { useWallet } from "@suiet/wallet-kit";
 import { formatSuiAmount, getTimeRemaining } from "@/utils/web2";
 import { BidAcceptanceForm } from "../shared/BidAcceptanceForm";
+import Link from "next/link";
+import { toast } from "sonner";
+import { FaRegCopy } from "react-icons/fa";
+import { Button } from "../ui/button";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -62,6 +66,12 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
 
   //console.log(nft);
   console.log(listingDetails);
+
+  const handleCopy = async (text: string) => {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    toast.success(`Copied Text Successfully`)
+  }
 
   // Check if there's a highest bid
   const hasHighestBid = listingDetails && Number(listingDetails.highestBid) > 0;
@@ -169,38 +179,51 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Token ID</span>
-            <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
+            <div className="flex items-center justify-end gap-4">
+              <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
+              <button onClick={() => handleCopy(nft?.blockchain?.tokenId)} className="">
+                <FaRegCopy size={15} className="cursor-pointer" />
+              </button>
+            </div>
+
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
-            <span>
-              {nft.blockchain.creator
-                ? shortenAddress(nft.blockchain.creator)
-                : "Unknown"}
-            </span>
+            <div className="flex justify-end items-center gap-2">
+              <span>
+                {nft.blockchain.creator
+                  ? shortenAddress(nft.blockchain.creator)
+                  : "Unknown"}
+              </span>
+              <button onClick={() => handleCopy(nft?.blockchain?.creator)} className="">
+                <FaRegCopy size={15} className="cursor-pointer" />
+              </button>
+            </div>
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Contract</span>
-            <div className="flex items-center gap-2">
-              <span className="text-primary">
-                {shortenAddress(nft.blockchain.tokenId) || ""}
-              </span>
-              <button className="text-primary">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </button>
-            </div>
+            <Link href={`${process.env.NEXT_PUBLIC_SUI_EXPLORER_URL}${nft.blockchain.tokenId}`} target="_blank">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <span className="text-primary">
+                  {shortenAddress(nft.blockchain.tokenId) || ""}
+                </span>
+                <button className="text-primary pointer-events-none">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </Link>
           </div>
           {listingDetails && (
             <div className="flex justify-between items-center py-2 border-t border-stone-300">

@@ -12,6 +12,7 @@ export function useAuthenticateImage() {
         mutationFn: ({ address, image }: { address: string | undefined, image: File }) => {
             const formData = new FormData();
             formData.append("image", image);
+            
             return axiosInstance
                 .post(`/authenticate/${address}`, formData, {
                     headers: {

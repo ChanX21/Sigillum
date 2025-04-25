@@ -7,16 +7,43 @@ import { useGetMyNfts } from '@/hooks/useGetMyNfts';
 import { MediaRecord } from '@/types';
 import { useWallet } from '@suiet/wallet-kit';
 import { Wallet } from 'lucide-react';
-import React, { useEffect } from 'react'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+
+import React, { useEffect, useState } from 'react'
+import { emit } from 'process';
 
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()
+    const [filteredNfts, setFilteredNfts] = useState<Array<MediaRecord>>()
+    const [filterType, setFilterType] = useState<string>()
     const { data, isLoading } = useGetMyNfts(address ?? "", {
         enabled: !!address
     });
     useEffect(() => {
-        console.log(data)
-    },[data])
+        if (data) {
+            console.log("Data",data)
+            setFilteredNfts(data)
+            if(filterType) {
+                filterNft(filterType as string)
+            }
+        }
+    }, [data])
+
+    const filterNft = (filterType: string) => {
+
+        const source = data ?? [];
+        setFilterType(filterType)
+
+        const filtered = filterType === 'all' ? source : source.filter(nft => nft.status === filterType);
+        console.log(filtered)
+        setFilteredNfts(filtered);
+    }
 
     return (
         <div>
@@ -32,17 +59,32 @@ const UnlistedNfts = () => {
                             </>
                         ) : (
                             <>
-                                <div className="mx-10 mt-10 md:mt-0 md:mx-0">
+                                <div className="mx-10 mt-10 md:mt-0 md:mx-0 flex justify-between items-center ">
                                     <h2 className='text-3xl font-semibold'>All Nft's</h2>
+                                    <Select defaultValue='all' onValueChange={(value) => filterNft(value)}>
+                                        <SelectTrigger className="w-[180px] border border-gray-400">
+                                            <SelectValue placeholder="All" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="soft-listed">Unlisted</SelectItem>
+                                            <SelectItem value="listed">Listed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
                                 </div>
                                 <div className="flex justify-center items-center mt-5">
-                                    <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
-                                        {data?.map((nft: MediaRecord, index: number) => (
-                                            <div key={index} className="snap-start">
-                                                <NFTCardBrowse nft={nft} idx={index} status={nft.status}/>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    {filteredNfts && filteredNfts.length != 0 ? (
+                                        <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
+                                            {filteredNfts?.map((nft: MediaRecord, index: number) => (
+                                                <div key={index} className="snap-start">
+                                                    <NFTCardBrowse nft={nft} idx={index} status={nft.status} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p>No Nft</p>
+                                    )}
                                 </div>
                             </>
 
