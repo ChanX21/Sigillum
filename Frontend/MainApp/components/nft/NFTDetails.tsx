@@ -3,6 +3,9 @@ import { shortenAddress } from "@/utils/shortenAddress";
 import { FaRegCopy } from "react-icons/fa";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { useGetImageById } from "@/hooks/useGetImageById";
+
 
 interface NFTDetailsProps {
   compact?: boolean;
@@ -10,6 +13,18 @@ interface NFTDetailsProps {
 
 export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   const { result } = useImageAuthStore() as AuthState
+  const { data: nftDetail, refetch, isLoading: nftDetailLoading } = useGetImageById(result?.image?.id as string)
+
+  useEffect(() => {
+    if (result?.image?.id) {
+      refetch()
+    }
+  }, [result?.image?.id])
+  useEffect(() => {
+    if (nftDetail) {
+      console.log(nftDetail)
+    }
+  }, [nftDetail])
   const details = compact
     ? [{ label: "NFT Id", value: "#52" }]
     : [
@@ -23,12 +38,8 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
         value: result?.image.status,
       },
       {
-        label: "SHA-256 Hash",
-        value: result?.image.sha256Hash,
-      },
-      {
-        label: "Perceptual Hash",
-        value: result?.image.pHash,
+        label: "Vector Url",
+        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${nftDetail?.vector?.ipfsCid}`,
       },
     ];
   const handleCopy = async (text: string, label: string) => {
@@ -45,19 +56,28 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
           Your image is now secured on the blockchain
         </p>
       </div>
-      <div className="flex pt-4 flex-1 flex-col gap-3">
-        {details.map((detail) => (
-          <div key={detail.label} className="flex flex-col">
-            <p className="font-semibold text-gray-500 text-md">{detail.label}</p>
-            <p className="text-sm font-medium flex items-center gap-2">
-              <span>{['IPFS URL', 'SHA-256 Hash', 'Perceptual Hash'].includes(detail.label) ? shortenAddress(detail.value) : detail.value}</span>
-              <Button onClick={() => handleCopy(detail.value as string, detail.label as string)}>
-                <FaRegCopy size={12} className="cursor-pointer" />
-              </Button>
-            </p>
+      {nftDetailLoading ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 border-4 border-t-[#1b263b] border-[#f1f3f5] rounded-full animate-spin"></div>
           </div>
-        ))}
-      </div>
+          <h3 className="text-lg font-medium mt-6 mb-2">Loading Nft Details</h3>
+        </div>
+      ) : (
+        <div className="flex pt-4 flex-1 flex-col gap-3">
+          {details.map((detail) => (
+            <div key={detail.label} className="flex flex-col">
+              <p className="font-semibold text-gray-500 text-md">{detail.label}</p>
+              <p className="text-sm font-medium flex items-center gap-2">
+                <span>{['IPFS URL', 'SHA-256 Hash', 'Perceptual Hash','Vector Url'].includes(detail.label) ? shortenAddress(detail.value) : detail.value}</span>
+                <Button onClick={() => handleCopy(detail.value as string, detail.label as string)}>
+                  <FaRegCopy size={12} className="cursor-pointer" />
+                </Button>
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
