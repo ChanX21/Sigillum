@@ -54,7 +54,7 @@ const UnlistedNfts = () => {
                                 <div className="mx-10 mt-10 md:mt-0 md:mx-0 flex justify-between items-center ">
                                     <h2 className='text-3xl font-semibold'>All Nft's</h2>
                                     <Select defaultValue='all' onValueChange={(value) => filterNft(value)}>
-                                        <SelectTrigger className="w-[180px]">
+                                        <SelectTrigger className="w-[180px] border border-gray-400">
                                             <SelectValue placeholder="All" />
                                         </SelectTrigger>
                                         <SelectContent>
