@@ -19,11 +19,13 @@ import { useListNft } from '@/hooks/useListNft';
 import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 import { toast } from 'sonner';
 import { useUpdateNftDets } from '@/hooks/useUpdateNftDets';
+import { useQueryClient } from '@tanstack/react-query';
 
 const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, tokenId: string, nftId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
     const { signTransaction, address } = useWallet()
     const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
+    const queryClient = useQueryClient()
     const { data: nftDetUpdate, mutate: updateNftDet } = useUpdateNftDets()
     const handleListing = async () => {
         const price = parseFloat(listPrice)
@@ -47,6 +49,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
         if (isSuccess) {
             toast.success("Nft Listed SuccessFully")
             updateNftDet({ nftId })
+            queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'] })
         }
         if (isError) {
             toast.error(error.message)

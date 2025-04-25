@@ -21,20 +21,28 @@ import { emit } from 'process';
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()
     const [filteredNfts, setFilteredNfts] = useState<Array<MediaRecord>>()
+    const [filterType, setFilterType] = useState<string>()
     const { data, isLoading } = useGetMyNfts(address ?? "", {
         enabled: !!address
     });
     useEffect(() => {
         if (data) {
-            console.log(data)
+            console.log("Data",data)
             setFilteredNfts(data)
+            if(filterType) {
+                filterNft(filterType as string)
+            }
         }
     }, [data])
 
     const filterNft = (filterType: string) => {
+
         const source = data ?? [];
-    const filtered = filterType === 'all' ? source : source.filter(nft => nft.status === filterType);
-    setFilteredNfts(filtered);
+        setFilterType(filterType)
+
+        const filtered = filterType === 'all' ? source : source.filter(nft => nft.status === filterType);
+        console.log(filtered)
+        setFilteredNfts(filtered);
     }
 
     return (
@@ -66,13 +74,17 @@ const UnlistedNfts = () => {
 
                                 </div>
                                 <div className="flex justify-center items-center mt-5">
-                                    <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
-                                        {filteredNfts?.map((nft: MediaRecord, index: number) => (
-                                            <div key={index} className="snap-start">
-                                                <NFTCardBrowse nft={nft} idx={index} status={nft.status} />
-                                            </div>
-                                        ))}
-                                    </div>
+                                    {filteredNfts && filteredNfts.length != 0 ? (
+                                        <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
+                                            {filteredNfts?.map((nft: MediaRecord, index: number) => (
+                                                <div key={index} className="snap-start">
+                                                    <NFTCardBrowse nft={nft} idx={index} status={nft.status} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p>No Nft</p>
+                                    )}
                                 </div>
                             </>
 
