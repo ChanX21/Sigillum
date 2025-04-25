@@ -315,7 +315,7 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
 export const getImageById = async (req: Request, res: Response): Promise<void> => {
   try {
     const imageId = req.params.id;
-    const authenticatedImage = await AuthenticatedImage.findById(imageId, { status: { $in: ['soft-listed', 'listed'] } })
+    const authenticatedImage = await AuthenticatedImage.findOne({ _id: imageId, status: { $in: ['soft-listed', 'listed'] } })
       .populate({
         path: 'verifications',
         model: 'Verification'
