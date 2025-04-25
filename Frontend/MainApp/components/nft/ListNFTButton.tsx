@@ -49,7 +49,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
         if (isSuccess) {
             toast.success("Nft Listed SuccessFully")
             updateNftDet({ nftId })
-            queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'] })
+            queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'], exact: false })
         }
         if (isError) {
             toast.error(error.message)
