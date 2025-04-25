@@ -15,10 +15,11 @@ def embed():
     data = request.json
     image_data = base64.b64decode(data["image"])
     image = Image.open(BytesIO(image_data))
+    input = processor(images=image, return_tensors="pt")
+    outputs = model.get_image_features(**input)
+    embedding = torch.nn.functional.normalize(outputs, p=2, dim=-1)
+    embedding = embedding[0].tolist()
 
-    inputs = processor(images=image, return_tensors="pt")
-    outputs = model.get_image_features(**inputs)
-    embedding = outputs[0].tolist()
     return jsonify(embedding=embedding)
 
 app.run(port=5001)
