@@ -10,6 +10,9 @@ router.post('/authenticate/:address', upload.single('image'), imageAuthControlle
 // POST /mint - Mint an image
 router.post('/blockchain', imageAuthController.blockchain);
 
+// POST /status-update - Update the status of an image
+router.post('/status-update/:id', imageAuthController.statusUpdate);
+
 // POST /verify - Verify an image using the uploaded file
 router.post('/verify', upload.single('image'), imageAuthController.verify);
 

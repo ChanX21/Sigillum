@@ -273,14 +273,29 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * Status update
+ * @param req - Express request with image ID
+ * @param res - Express response object
+ */
+export const statusUpdate = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const authenticatedImage = await AuthenticatedImage.findById(id, { status: "soft-listed" });
+  if (!authenticatedImage) {
+    res.status(400).json({ message: 'Image not found' });
+    return;
+  }
+  await AuthenticatedImage.findByIdAndUpdate(id, { status: "listed" });
+  res.status(200).json({ message: 'Image status updated' });
+};
+
+/**
  * Get all authenticated images
  * @param req - Express request object
  * @param res - Express response object
  */
 export const getAllImages = async (req: Request, res: Response): Promise<void> => {
   try {
-    await AuthenticatedImage.updateMany({}, { status: 'soft-listed' });
-    const authenticatedImages = await AuthenticatedImage.find({ status: 'soft-listed' })
+    const authenticatedImages = await AuthenticatedImage.find({ status: { $in: ['soft-listed', 'listed'] } })
       .populate({
         path: 'verifications',
         model: 'Verification'
@@ -300,7 +315,7 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
 export const getImageById = async (req: Request, res: Response): Promise<void> => {
   try {
     const imageId = req.params.id;
-    const authenticatedImage = await AuthenticatedImage.findById(imageId)
+    const authenticatedImage = await AuthenticatedImage.findById(imageId, { status: { $in: ['soft-listed', 'listed'] } })
       .populate({
         path: 'verifications',
         model: 'Verification'

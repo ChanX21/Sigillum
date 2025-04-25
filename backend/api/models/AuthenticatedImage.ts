@@ -18,7 +18,7 @@ export interface IAuthenticatedImage extends Document {
   };
   blockchain: IBlockchain;
   metadataCID: string;
-  status: 'uploaded' | 'minted' | 'soft-listed' | 'error';
+  status: 'uploaded' | 'minted' | 'soft-listed' | 'listed' | 'error';
   verifications: IVerification[] | string[];
   createdAt: Date;
   updatedAt: Date;
@@ -99,7 +99,7 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
   },
   status: {
     type: String,
-    enum: ['uploaded', 'minted', 'soft-listed', 'error'],
+    enum: ['uploaded', 'minted', 'soft-listed', 'listed', 'error'],
     default: 'uploaded'
   },
   createdAt: {
