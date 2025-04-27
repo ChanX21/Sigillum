@@ -12,8 +12,9 @@ export const buildAcceptBidTx = (
 ): Transaction => {
   const tx = new Transaction();
 
-  // Set gas budget
-  tx.setGasBudget(10000000);
+  // Set reasonable gas budget
+  const estimatedGasFee = BigInt(30000000); // 0.03 SUI
+  tx.setGasBudget(Number(estimatedGasFee));
 
   // NFT type parameter that was missing
   const nftTypeArg =
@@ -334,8 +335,9 @@ export const buildPlaceBidTx = (
 ): Transaction => {
   const tx = new Transaction();
 
-  // Set gas budget - important to avoid dry run errors
-  tx.setGasBudget(100000000); // 10M gas units
+  // Set reasonable gas budget
+  const estimatedGasFee = BigInt(30000000); // 0.03 SUI
+  tx.setGasBudget(Number(estimatedGasFee));
 
   // Split the coin
   const bidCoin = tx.splitCoins(tx.object(coinObjectId), [
@@ -359,7 +361,6 @@ export const buildPlaceBidTx = (
   return tx;
 };
 
-// Function to build a transaction for placing a bid with automatic coin selection
 export async function buildPlaceBidTxWithCoinSelection(
   provider: SuiClient,
   address: string,
@@ -384,40 +385,15 @@ export async function buildPlaceBidTxWithCoinSelection(
       };
     }
 
-    // Find a suitable coin or create one
-    let coinObjectId: string | null = null;
+    // Sort coins by balance (largest first)
+    const sortedCoins = [...coinData].sort((a, b) =>
+      Number(BigInt(b.balance) - BigInt(a.balance))
+    );
 
-    // First, try to find a coin with enough balance
-    for (const coin of coinData) {
-      if (BigInt(coin.balance) >= bidAmountMist) {
-        coinObjectId = coin.coinObjectId;
-        break;
-      }
-    }
-
-    // If we found a coin with enough balance, use it directly
-    if (coinObjectId) {
-      const tx = buildPlaceBidTx(
-        marketplaceObjectId,
-        listingId,
-        coinObjectId,
-        packageId,
-        moduleName,
-        bidAmountMist,
-        address
-      );
-
-      return { transaction: tx, success: true };
-    }
-
-    // Otherwise, we need to create a transaction that:
-    // 1. Merges coins to create enough balance
-    // 2. Splits the right amount
-    // 3. Uses that for the bid
     const tx = new Transaction();
-
-    // Set gas budget - important to avoid dry run errors
-    tx.setGasBudget(10000000); // 10M gas units
+    // Set reasonable gas budget
+    const estimatedGasFee = BigInt(30000000); // 0.03 SUI
+    tx.setGasBudget(Number(estimatedGasFee));
 
     // Calculate total balance
     const totalBalance = coinData.reduce(
@@ -434,29 +410,66 @@ export async function buildPlaceBidTxWithCoinSelection(
       };
     }
 
-    // Merge all coins into the first coin
-    const primaryCoin = coinData[0].coinObjectId;
-    const otherCoins = coinData.slice(1).map((coin) => coin.coinObjectId);
+    // CRITICAL FIX: Use separate coins for bid and gas when possible
+    if (sortedCoins.length > 1) {
+      // Use the second largest coin for the bid if it's sufficient
+      if (BigInt(sortedCoins[1].balance) >= bidAmountMist) {
+        const bidCoinId = sortedCoins[1].coinObjectId;
+        // The largest coin will be used for gas automatically
 
-    if (otherCoins.length > 0) {
-      tx.mergeCoins(
-        tx.object(primaryCoin),
-        otherCoins.map((id: string) => tx.object(id))
-      );
+        // Split the exact amount needed for the bid
+        const bidCoin = tx.splitCoins(tx.object(bidCoinId), [
+          tx.pure.u64(bidAmountMist.toString()),
+        ]);
+
+        // Build the place bid transaction
+        tx.moveCall({
+          target: `${packageId}::${moduleName}::place_bid`,
+          arguments: [
+            tx.object(marketplaceObjectId),
+            tx.pure.address(listingId),
+            bidCoin[0],
+          ],
+        });
+
+        return { transaction: tx, success: true };
+      }
+    }
+
+    // If we can't use separate coins or only have one coin
+    // Use the largest coin but ensure we're not using the entire balance
+    const largestCoin = sortedCoins[0];
+
+    // Check if the largest coin can cover both bid and gas
+    if (BigInt(largestCoin.balance) < bidAmountMist + estimatedGasFee) {
+      // Calculate how much the user can actually bid
+      const maxPossibleBid = BigInt(largestCoin.balance) - estimatedGasFee;
+      const bidAmountSui = Number(bidAmountMist) / 1_000_000_000;
+      const gasSui = Number(estimatedGasFee) / 1_000_000_000;
+
+      return {
+        transaction: tx,
+        success: false,
+        error: `Insufficient funds for this bid plus gas fees. Your largest coin has ${
+          Number(largestCoin.balance) / 1_000_000_000
+        } SUI, but you need ${
+          bidAmountSui + gasSui
+        } SUI (${bidAmountSui} SUI for bid + ${gasSui} SUI for gas). Try merging your coins first.`,
+      };
     }
 
     // Split the exact amount needed for the bid
-    const [bidCoin] = tx.splitCoins(tx.object(primaryCoin), [
+    const bidCoin = tx.splitCoins(tx.object(largestCoin.coinObjectId), [
       tx.pure.u64(bidAmountMist.toString()),
     ]);
 
-    // Build the place bid transaction using this coin
+    // Build the place bid transaction
     tx.moveCall({
       target: `${packageId}::${moduleName}::place_bid`,
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(listingId),
-        bidCoin,
+        bidCoin[0],
       ],
     });
 
@@ -482,11 +495,11 @@ export async function listNft(
   try {
     const tx = new Transaction();
     tx.setGasBudget(50000000); // 50M gas
-    
+
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       typeArguments: [
-        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT"
+        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT",
       ],
       arguments: [
         tx.object(marketplaceObjectId),
