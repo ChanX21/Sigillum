@@ -20,44 +20,38 @@ import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 import { toast } from 'sonner';
 import { useUpdateNftDets } from '@/hooks/useUpdateNftDets';
 import { useQueryClient } from '@tanstack/react-query';
+import { listNft } from '@/utils/blockchainServices';
 
 const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, tokenId: string, nftId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
-    const { signTransaction, address } = useWallet()
-    const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
+    const { signAndExecuteTransaction, address } = useWallet()
+    // const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
     const queryClient = useQueryClient()
     const { data: nftDetUpdate, mutate: updateNftDet } = useUpdateNftDets()
     const handleListing = async () => {
         const price = parseFloat(listPrice)
         if (!isNaN(price) && address) {
-            listNft?.({
-                address,
-                marketplaceObjectId: MARKETPLACE_ID,
-                moduleName: MODULE_NAME,
-                packageId: PACKAGE_ID,
-                softListingId: listingId,
-                listPrice: price,
-                nftId: tokenId,
-                signTransaction,
-            });
+            const { transaction } = await listNft(listingId, price, PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID, tokenId)
+
+            try {
+                const result = await signAndExecuteTransaction({
+                    transaction: transaction,
+                });
+
+                if (result) {
+                    toast.success("Bid accepted successfully!");
+                    updateNftDet({ nftId })
+                    queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'], exact: false })
+                }
+            } catch (txError: any) {
+                console.error("Transaction execution error:", txError);
+                toast.error("Transaction execution error")
+            }
         } else {
-            alert("Please enter a valid price");
+            toast.error("Please enter a valid price");
         }
     }
 
-    useEffect(() => {
-        if (isSuccess) {
-            toast.success("Nft Listed SuccessFully")
-            updateNftDet({ nftId })
-            queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'], exact: false })
-        }
-        if (isError) {
-            toast.error(error.message)
-        }
-    }, [isSuccess, isError])
-    useEffect(() => {
-        console.log(nftDetUpdate)
-    }, [nftDetUpdate])
     return (
         <Dialog>
             <DialogTrigger asChild>

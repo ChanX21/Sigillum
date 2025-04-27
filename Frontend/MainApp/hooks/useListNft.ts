@@ -12,40 +12,29 @@ type ListNftParams = {
     moduleName: string;
     marketplaceObjectId: string;
     nftId: string;
-    signTransaction: ({ transaction }: { transaction: Transaction }) => Promise<any>;
+    signAndExecuteTransaction: ({ transaction }: { transaction: Transaction }) => Promise<any>;
 };
 
 export function useListNft() {
 
     return useMutation({
         mutationKey: ["list-nft"], // Unique key for the mutation
-        mutationFn: async ({ address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId, nftId, signTransaction }: ListNftParams) => {
+        mutationFn: async ({ address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId, nftId, signAndExecuteTransaction }: ListNftParams) => {
             try {
                 // Create a new transaction block for the listing
-                const { transaction } = await listNft(address, softListingId, listPrice, packageId, moduleName, marketplaceObjectId, nftId);
+                const { transaction } = await listNft(softListingId, listPrice, packageId, moduleName, marketplaceObjectId, nftId);
 
                 // Sign the transaction block
-                const sign = await signTransaction({
-                    transaction
-                });
-
-                if (!sign) {
-                    throw new Error("Transaction signing failed");
-                }
 
                 // Execute the signed transaction on the client
-                const result = await client.executeTransactionBlock({
-                    transactionBlock: sign.bytes,
-                    signature: sign.signature,
-                    options: {
-                        showEffects: true,
-                        showEvents: true,
-                    },
+                const result = await signAndExecuteTransaction({
+                    transaction
                 });
 
                 const txStatus = result.effects?.status?.status;
                 if (txStatus !== 'success') {
                     const errorMsg = result.effects?.status?.error || 'Unknown Sui execution error';
+                    console.log(result)
                     throw new Error(`Transaction failed`);
                 }
                 // Return the result

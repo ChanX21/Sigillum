@@ -2,6 +2,7 @@
 import { Transaction } from "@mysten/sui/transactions";
 
 import { SuiClient } from "@mysten/sui/client";
+import { client } from "@/lib/suiClient";
 
 export const buildAcceptBidTx = (
   marketplaceObjectId: string,
@@ -471,18 +472,17 @@ export async function buildPlaceBidTxWithCoinSelection(
 }
 
 export async function listNft(
-  address: string,
   softListingId: string,
   listPrice: number,
   packageId: string,
   moduleName: string,
   marketplaceObjectId: string,
-  nftId:string
+  nftId: string
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
-    tx.setGasBudget(50000000); // 50M gas
-
+    tx.setGasBudget(500000000); // 50M gas
+    
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       typeArguments: [
