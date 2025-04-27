@@ -481,7 +481,7 @@ export async function listNft(
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
-    tx.setGasBudget(500000000); // 50M gas
+    tx.setGasBudget(50000000); // 50M gas
     
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,

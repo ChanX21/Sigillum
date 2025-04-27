@@ -29,7 +29,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
     const queryClient = useQueryClient()
     const { data: nftDetUpdate, mutate: updateNftDet } = useUpdateNftDets()
     const handleListing = async () => {
-        const price = parseFloat(listPrice)
+        const price = Math.floor(parseFloat(listPrice) * 10 ** 9)
         if (!isNaN(price) && address) {
             const { transaction } = await listNft(listingId, price, PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID, tokenId)
 
