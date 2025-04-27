@@ -72,6 +72,13 @@ module sigillum_contracts::sigillum_marketplace {
         bid_count: u64,              // Number of bids received
     }
 
+    // Holds all stakes for a listing
+    public struct StakingPool has store {
+        stakes: VecMap<address, u64>,  // Maps staker address to staked amount
+        total_staked: u64,             // Total amount staked
+        rewards_rate: u64,             // Percentage of sale that goes to stakers (basis points)
+    }
+
     // Marketplace object to keep track of all listings
     public struct Marketplace has key {
         id: UID,
@@ -93,6 +100,8 @@ module sigillum_contracts::sigillum_marketplace {
         listing_ids: vector<address>,
         // Vector of active listing IDs for pagination
         active_listing_ids: vector<address>,
+        // Maps listing ID to StakingPool
+        staking_pools: Table<address, StakingPool>,
     }
 
     // Events
@@ -135,6 +144,21 @@ module sigillum_contracts::sigillum_marketplace {
         verifier: address,
     }
 
+    // Add these event structs after your existing events
+
+    public struct StakeAdded has copy, drop {
+        listing_id: address,
+        staker: address,
+        stake_amount: u64,
+        total_staked: u64,
+    }
+
+    public struct StakeWithdrawn has copy, drop {
+        listing_id: address,
+        staker: address,
+        amount: u64,
+    }
+
     // === Initialization ===
     fun init(ctx: &mut TxContext) {
         // Create admin capability
@@ -155,6 +179,7 @@ module sigillum_contracts::sigillum_marketplace {
             total_listings: 0,
             listing_ids: vector::empty<address>(),
             active_listing_ids: vector::empty<address>(),
+            staking_pools: table::new(ctx),
         };
 
         transfer::transfer(
@@ -417,10 +442,43 @@ module sigillum_contracts::sigillum_marketplace {
         // Add fee to treasury
         let fee_balance = balance::split(escrow, fee_amount);
         balance::join(&mut marketplace.treasury, fee_balance);
-        
+
+        let mut seller_settlement = 0;
+
+           // complete_listing<T>(marketplace, listing_id, ctx);
+
+        if (table::contains(&marketplace.staking_pools, listing_id)) {
+            let staking_pool = table::borrow(&marketplace.staking_pools, listing_id);
+            if (staking_pool.total_staked > 0) {
+                let rewards_total = (final_price * staking_pool.rewards_rate) / 10000;
+                // Calculate and transfer rewards to each staker
+                let stakers = vec_map::keys(&staking_pool.stakes);
+                let mut i = 0;
+                let len = vector::length(&stakers);
+                
+                while (i < len) {
+                    let staker = *vector::borrow(&stakers, i);
+                    let stake_amount = *vec_map::get(&staking_pool.stakes, &staker);
+                    let staker_share = (stake_amount * rewards_total) / staking_pool.total_staked;
+                    
+                    // Transfer reward to staker
+                    let staker_reward = balance::split(escrow, staker_share);
+                    let reward_payment = coin::from_balance(staker_reward, ctx);
+                    transfer::public_transfer(reward_payment, staker);
+                    
+                    i = i + 1;
+                };
+                
+                // Reduce seller amount by rewards_total
+                seller_settlement = seller_amount - rewards_total;
+            };
+        };
+
+                
         // Send payment to seller
-        let seller_balance = balance::split(escrow, seller_amount);
+        let seller_balance = balance::split(escrow, seller_settlement);
         let seller_payment = coin::from_balance(seller_balance, ctx);
+
         transfer::public_transfer(seller_payment, seller);
         
         // For any remaining bids, return them to their bidders
@@ -466,7 +524,7 @@ module sigillum_contracts::sigillum_marketplace {
             success: true,
         });
         
-        // complete_listing<T>(marketplace, listing_id, ctx);
+     
     }
 
     // Cancel a listing
@@ -505,26 +563,56 @@ module sigillum_contracts::sigillum_marketplace {
             vector::remove(&mut marketplace.active_listing_ids, active_index);
         };
         
-            let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
-            let bidders = vec_map::keys(&bid_pool.bids);
-            let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+        let bidders = vec_map::keys(&bid_pool.bids);
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        
+        let mut i = 0;
+        let len = vector::length(&bidders);
+        
+        while (i < len) {
+            let bidder = *vector::borrow(&bidders, i);
+            let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
+            
+            // Return bid to bidder
+            if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
+                let bid_balance = balance::split(escrow, bid_amount);
+                let payment = coin::from_balance(bid_balance, ctx);
+                transfer::public_transfer(payment, bidder);
+            };
+            
+            i = i + 1;
+        };
+        
+        // Add this code to return stakes when a listing is cancelled
+        if (table::contains(&marketplace.staking_pools, listing_id)) {
+            let staking_pool = table::borrow(&marketplace.staking_pools, listing_id);
+            let stakers = vec_map::keys(&staking_pool.stakes);
             
             let mut i = 0;
-            let len = vector::length(&bidders);
+            let len = vector::length(&stakers);
             
             while (i < len) {
-                let bidder = *vector::borrow(&bidders, i);
-                let bid_amount = *vec_map::get(&bid_pool.bids, &bidder);
+                let staker = *vector::borrow(&stakers, i);
+                let stake_amount = *vec_map::get(&staking_pool.stakes, &staker);
                 
-                // Return bid to bidder
-                if (bid_amount > 0 && balance::value(escrow) >= bid_amount) {
-                    let bid_balance = balance::split(escrow, bid_amount);
-                    let payment = coin::from_balance(bid_balance, ctx);
-                    transfer::public_transfer(payment, bidder);
+                // Return stake to staker
+                if (stake_amount > 0 && balance::value(escrow) >= stake_amount) {
+                    let stake_balance = balance::split(escrow, stake_amount);
+                    let payment = coin::from_balance(stake_balance, ctx);
+                    transfer::public_transfer(payment, staker);
+                    
+                    // Emit stake withdrawn event
+                    event::emit(StakeWithdrawn {
+                        listing_id,
+                        staker,
+                        amount: stake_amount,
+                    });
                 };
                 
                 i = i + 1;
             };
+        };
         
         // Emit listing completed event
         event::emit(ListingCompleted {
@@ -662,6 +750,123 @@ module sigillum_contracts::sigillum_marketplace {
             new_score: score,
             verifier: tx_context::sender(ctx),
         });
+    }
+
+    // Stake SUI on a listing
+    public entry fun stake_on_listing(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let staker = tx_context::sender(ctx);
+        let stake_amount = coin::value(&payment);
+        
+        // Ensure listing exists and is active
+        assert!(table::contains(&marketplace.listings, listing_id), ENotListed);
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        assert!(listing.active, EListingNotActive);
+        
+        // Get or create staking pool
+        if (!table::contains(&marketplace.staking_pools, listing_id)) {
+            table::add(&mut marketplace.staking_pools, listing_id, StakingPool {
+                stakes: vec_map::empty(),
+                total_staked: 0,
+                rewards_rate: 1000, // 10% default reward rate (basis points)
+            });
+        };
+        
+        let staking_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
+        
+        // Add stake to pool
+        if (vec_map::contains(&staking_pool.stakes, &staker)) {
+            let old_stake = *vec_map::get(&staking_pool.stakes, &staker);
+            vec_map::remove(&mut staking_pool.stakes, &staker);
+            vec_map::insert(&mut staking_pool.stakes, staker, old_stake + stake_amount);
+        } else {
+            vec_map::insert(&mut staking_pool.stakes, staker, stake_amount);
+        };
+        
+        // Update total staked
+        staking_pool.total_staked = staking_pool.total_staked + stake_amount;
+        
+        // Put stake in escrow
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        balance::join(escrow, coin::into_balance(payment));
+        
+        // Emit stake event
+        event::emit(StakeAdded {
+            listing_id,
+            staker,
+            stake_amount,
+            total_staked: staking_pool.total_staked,
+        });
+    }
+
+    // Withdraw stake from a listing that is no longer active
+    public entry fun withdraw_stake(
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        ctx: &mut TxContext
+    ) {
+        let staker = tx_context::sender(ctx);
+        
+        // Ensure listing exists
+        assert!(table::contains(&marketplace.listings, listing_id), ENotListed);
+        let listing = table::borrow(&marketplace.listings, listing_id);
+        
+        // Can only withdraw if listing is inactive or expired
+        assert!(!listing.active || (listing.end_time > 0 && tx_context::epoch(ctx) > listing.end_time), 
+               EListingNotActive);
+        
+        // Ensure staking pool exists and user has staked
+        assert!(table::contains(&marketplace.staking_pools, listing_id), EInvalidListing);
+        let staking_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
+        assert!(vec_map::contains(&staking_pool.stakes, &staker), ENotOwner);
+        
+        // Get stake amount
+        let stake_amount = *vec_map::get(&staking_pool.stakes, &staker);
+        vec_map::remove(&mut staking_pool.stakes, &staker);
+        
+        // Update total staked
+        staking_pool.total_staked = staking_pool.total_staked - stake_amount;
+        
+        // Return stake from escrow
+        let escrow = table::borrow_mut(&mut marketplace.escrow, listing_id);
+        let stake_balance = balance::split(escrow, stake_amount);
+        let stake_payment = coin::from_balance(stake_balance, ctx);
+        transfer::public_transfer(stake_payment, staker);
+        
+        // Emit stake withdrawn event
+        event::emit(StakeWithdrawn {
+            listing_id,
+            staker,
+            amount: stake_amount,
+        });
+    }
+
+    // Add a function to update staking reward rate (admin only)
+    public entry fun update_staking_reward_rate(
+        _: &MarketplaceCap,
+        marketplace: &mut Marketplace,
+        listing_id: address,
+        new_rate: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(table::contains(&marketplace.listings, listing_id), ENotListed);
+        assert!(new_rate <= 3000, EInvalidPrice); // Max 30% reward rate
+        
+        // Get or create staking pool
+        if (!table::contains(&marketplace.staking_pools, listing_id)) {
+            table::add(&mut marketplace.staking_pools, listing_id, StakingPool {
+                stakes: vec_map::empty(),
+                total_staked: 0,
+                rewards_rate: new_rate,
+            });
+        } else {
+            let staking_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
+            staking_pool.rewards_rate = new_rate;
+        };
     }
 
     // === Test Helper Functions ===
