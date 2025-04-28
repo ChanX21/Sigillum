@@ -30,6 +30,7 @@ module sigillum_contracts::sigillum_nft {
         // phash: vector<u8>,           // Perceptual hash
         // dhash: vector<u8>,           // Difference hash (another perceptual hash variant)
         vector_url: vector<u8>,      // Vector url of the image
+        blobId: vector<u8>,          // ID of the blob
         watermark_id: vector<u8>,    // ID embedded in steganographic watermark
         timestamp: u64,              // Creation timestamp
         metadata: String,            // Additional photo metadata (JSON string)
@@ -84,6 +85,7 @@ module sigillum_contracts::sigillum_nft {
         // phash: vector<u8>,
         // dhash: vector<u8>,
         vector_url:vector<u8>,
+        blobId: vector<u8>,
         // asset_id: vector<u8>,
         watermark_id: vector<u8>,
         metadata: String,
@@ -97,7 +99,7 @@ module sigillum_contracts::sigillum_nft {
             // phash,
             // dhash,
             vector_url,
-            // asset_id,
+            blobId,
             watermark_id,
             timestamp: tx_context::epoch(ctx),
             metadata,
@@ -190,4 +192,10 @@ module sigillum_contracts::sigillum_nft {
     public fun get_vector_url(photo: &PhotoNFT): vector<u8>{
         photo.vector_url
     }
+
+    public fun get_blob_id(photo: &PhotoNFT): vector<u8>{
+        photo.blobId
+    }
+    
+    
 }

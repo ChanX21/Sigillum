@@ -18,6 +18,7 @@ module sigillum_contracts::sigillum_nft_tests {
     const VECTOR_URL_2: vector<u8> = b"https://vector.storage/image2";
     const WATERMARK_ID: vector<u8> = b"watermark123";
     const METADATA: vector<u8> = b"{\"name\":\"Test Photo\",\"description\":\"A test photo\"}";
+    const BLOB1: vector<u8> = b"blob1";
 
     // Helper function to set up the test environment
     fun setup_test(): Scenario {
@@ -58,6 +59,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
+                BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -107,6 +109,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
+                 BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -128,6 +131,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_2,
                 VECTOR_URL_2,
+                BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -175,6 +179,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
+                 BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -224,6 +229,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
+                 BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -245,6 +251,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_2,
                 VECTOR_URL_1,
+                BLOB1,
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)

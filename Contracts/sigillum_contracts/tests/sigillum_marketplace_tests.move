@@ -30,7 +30,11 @@ module sigillum_contracts::marketplace_tests {
         get_total_listings,
         place_bid,
         accept_bid,
-        transfer_nft
+        transfer_nft,
+        stake_on_listing,
+        withdraw_stake,
+        update_staking_reward_rate,
+        StakingPool
     };
     use sui::object::uid_to_address;
 
@@ -833,6 +837,480 @@ module sigillum_contracts::marketplace_tests {
             assert!(count == 2, 0);
             assert!(vector::length(&listing_ids) == 2, 0);
             
+            ts::return_shared(marketplace_obj);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test basic staking functionality
+    #[test]
+    public fun test_staking_basics() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT and soft listing
+        let nft_id = @0x123;
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // BUYER1 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 150;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // We don't have a direct getter for staking amounts, so we'll just 
+            // rely on the event emission and later tests to verify staking worked
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // BUYER2 also stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER2);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 250;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test staking withdrawal
+    #[test]
+    public fun test_stake_withdrawal() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT and soft listing with an end time for testing expiration
+        let nft_id = @0x123;
+        
+        // Create soft listing with an end time
+        let listing_id: address;
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
+            
+            let description = string::utf8(b"Test NFT Description");
+            let metadata = string::utf8(b"{\"artist\":\"Test Artist\"}");
+            let end_time = 10; // Set an end time for testing expiration
+            
+            marketplace::create_soft_listing(
+                &admin_cap,
+                &mut marketplace_obj,
+                nft_id,
+                SELLER,
+                MIN_BID,
+                description,
+                metadata,
+                end_time,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Get the listing ID
+            let (listing_ids, _) = get_listing_ids(&marketplace_obj, 0, 10, true, get_soft_listing_type());
+            listing_id = *vector::borrow(&listing_ids, 0);
+            
+            ts::return_to_sender(&mut scenario, admin_cap);
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // BUYER1 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 150;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Fast forward to after end time
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            // Set epoch to 11, after the end_time
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1);
+            ts::next_epoch(&mut scenario, BUYER1); // Now at epoch 11
+        };
+        
+        // BUYER1 withdraws stake after listing expires
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            marketplace::withdraw_stake(
+                &mut marketplace_obj,
+                listing_id,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify BUYER1 received their stake back
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+            let coin = ts::take_from_sender<Coin<SUI>>(&scenario);
+            assert!(coin::value(&coin) == 150, 0); // Should get back the original 150
+            ts::return_to_sender(&mut scenario, coin);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test stake rewards distribution during sale
+    #[test]
+    public fun test_stake_rewards_on_sale() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT
+        let nft_id: address;
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let ctx = ts::ctx(&mut scenario);
+            let mock_nft = mock_nft::create(ctx);
+            nft_id = object::id_address(&mock_nft);
+            transfer::public_transfer(mock_nft, SELLER);
+        };
+        
+        // Create soft listing
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // Convert to real listing
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let mock_nft = ts::take_from_sender<MockNFT>(&scenario);
+            
+            marketplace::convert_to_real_listing(
+                &mut marketplace_obj,
+                listing_id,
+                LIST_PRICE,
+                mock_nft,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Update the staking reward rate to a known value (20%)
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let marketplace_cap = ts::take_from_sender<MarketplaceCap>(&scenario);
+            
+            marketplace::update_staking_reward_rate(
+                &marketplace_cap,
+                &mut marketplace_obj,
+                listing_id,
+                2000, // 20%
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_to_sender(&mut scenario, marketplace_cap);
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // BUYER1 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 100;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // BUYER2 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER2);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 300; // 3x more than BUYER1
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // A different buyer (ADMIN) places a high bid
+      
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let bid_amount: u64 = 1000;
+            let payment = mint_test_coin(bid_amount, ts::ctx(&mut scenario));
+            
+            marketplace::place_bid(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Seller accepts the bid, which should distribute rewards to stakers
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            marketplace::accept_bid<MockNFT>(
+                &mut marketplace_obj,
+                listing_id,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify BUYER1 received rewards
+        // 20% of 1000 = 200, divided proportionally: BUYER1 gets 1/4 * 200 = 50
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+            let coin = ts::take_from_sender<Coin<SUI>>(&scenario);
+            assert!(coin::value(&coin) == 50, 0); 
+            ts::return_to_sender(&mut scenario, coin);
+        };
+        
+        // Verify BUYER2 received rewards
+        // 20% of 1000 = 200, divided proportionally: BUYER2 gets 3/4 * 200 = 150
+        {
+            ts::next_tx(&mut scenario, BUYER2);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+            let coin = ts::take_from_sender<Coin<SUI>>(&scenario);
+            assert!(coin::value(&coin) == 150, 0); 
+            ts::return_to_sender(&mut scenario, coin);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test stake refund on listing cancellation
+    #[test]
+    public fun test_stake_refund_on_cancel() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT and soft listing
+        let nft_id = @0x123;
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // BUYER1 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 200;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Seller cancels the listing
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            marketplace::cancel_listing(
+                &mut marketplace_obj,
+                listing_id,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify listing is no longer active
+            assert!(!is_listing_active(&marketplace_obj, listing_id), 0);
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify BUYER1 received their stake back
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+            let coin = ts::take_from_sender<Coin<SUI>>(&scenario);
+            assert!(coin::value(&coin) == 200, 0); // Should get back the original 200
+            ts::return_to_sender(&mut scenario, coin);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test updating stake with additional funds
+    #[test]
+    public fun test_updating_stake() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT and soft listing
+        let nft_id = @0x123;
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // BUYER1 stakes on the listing
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 100;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // BUYER1 adds more to their stake
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let additional_stake = 150;
+            let payment = mint_test_coin(additional_stake, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Cancel the listing to verify the full stake amount is returned
+        {
+            ts::next_tx(&mut scenario, SELLER);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            marketplace::cancel_listing(
+                &mut marketplace_obj,
+                listing_id,
+                ts::ctx(&mut scenario)
+            );
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // Verify BUYER1 received their combined stake back
+        {
+            ts::next_tx(&mut scenario, BUYER1);
+            assert!(ts::has_most_recent_for_sender<coin::Coin<SUI>>(&scenario), 0);
+            let coin = ts::take_from_sender<Coin<SUI>>(&scenario);
+            assert!(coin::value(&coin) == 250, 0); // 100 + 150 = 250
+            ts::return_to_sender(&mut scenario, coin);
+        };
+        
+        ts::end(scenario);
+    }
+
+    // Test admin functionality for staking rewards rate
+    #[test]
+    public fun test_admin_staking_rate() {
+        let mut scenario = ts::begin(ADMIN);
+        
+        // Initialize marketplace
+        setup_marketplace(&mut scenario);
+        
+        // Create a mock NFT and soft listing
+        let nft_id = @0x123;
+        let listing_id = create_test_soft_listing(&mut scenario, nft_id);
+        
+        // Admin sets custom staking reward rate
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            let marketplace_cap = ts::take_from_sender<MarketplaceCap>(&scenario);
+            
+            let new_rate = 1500; // 15%
+            marketplace::update_staking_reward_rate(
+                &marketplace_cap,
+                &mut marketplace_obj,
+                listing_id,
+                new_rate,
+                ts::ctx(&mut scenario)
+            );
+            
+            // We don't have a direct getter for staking reward rate,
+            // but we can test it via the reward distribution in another test
+            
+            ts::return_to_sender(&mut scenario, marketplace_cap);
             ts::return_shared(marketplace_obj);
         };
         
