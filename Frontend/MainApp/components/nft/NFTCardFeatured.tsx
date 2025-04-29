@@ -98,12 +98,12 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
         <div className="flex flex-col lg:flex-row justify-between gap-3 lg:gap-0">
           <div className="flex items-center gap-2">
             <UserAvatar
-              walletAddress={nft.blockchain.creator}
-              alt={nft.blockchain.creator || "Creator"}
+              walletAddress={nft.user.walletAddress}
+              alt={nft.user.walletAddress || "Creator"}
             />
             <div className="flex flex-col">
               <p className="text-xs font-medium">
-                {shortenAddress(nft.blockchain.creator) || ""}
+                {shortenAddress(nft.user.walletAddress) || ""}
               </p>
               <p className="text-xs text-gray-400">Owner</p>
             </div>
