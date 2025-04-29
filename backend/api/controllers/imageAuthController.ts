@@ -116,12 +116,12 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     });
     await session.save();
 
-    // Return the token
-    res.status(200).cookie('token', token, {
+    res.status(200).cookie("token",token,{
       httpOnly: true,
       secure: true,
-      maxAge: 24 * 60 * 60 * 1000
-    }).json({ message: 'Session created successfully' });
+      path:'/',
+      sameSite:'none',
+      maxAge: 3600000,}).json({ message: 'Authentication successful' });
   } catch (error) {
     console.error('Error creating session:', error);
     res.status(500).json({ message: 'Failed to create session' });
