@@ -13,7 +13,14 @@ import "@suiet/wallet-kit/style.css";
 import WalletModal from "../wallet/WalletModal";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { SiSui } from "react-icons/si";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -46,7 +53,7 @@ export const Header = () => {
   return (
     <>
       {/* Wallet Modal */}
-      <header className="fixed top-0 z-50 w-full h-16 px-4 md:px-10 bg-background border-b border-stone-300">
+      <header className="fixed top-0 z-50 w-full h-12  px-4 md:px-10 bg-background border-b border-stone-300">
         {showWalletModal && (
           <WalletModal setShowWalletModal={setShowWalletModal} />
         )}
@@ -54,7 +61,7 @@ export const Header = () => {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 bg-white rounded-full px-3 py-2 font-bold text-[#0d0d0d]"
+            className="flex items-center gap-2 bg-white rounded-full px-3  font-bold text-[#0d0d0d]"
           >
             <div className="flex items-center justify-center w-6 h-6 bg-[#1b263b] rounded-full">
               <Shield className="w-3 h-3 text-white" />
@@ -63,7 +70,7 @@ export const Header = () => {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3 bg-white p-1 rounded-full">
+          <nav className="hidden md:flex items-center gap-3      border-l ">
             {/* Search */}
             <div className="flex items-center rounded-full w-[250px] bg-background h-10 relative">
               <IoSearchSharp
@@ -80,6 +87,15 @@ export const Header = () => {
             </div>
             {walletConnected ? (
               <>
+                <Link href={"/upload"} className="h-full block">
+                  <Button
+                    variant="default"
+                    className="rounded-none text-sm px-4 py-2  h-12"
+                  >
+                    Secure image
+                  </Button>
+                </Link>
+
                 {/* Balance */}
                 <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-full">
                   <div className="bg-white p-1.5 rounded-full flex items-center justify-center">
@@ -94,30 +110,20 @@ export const Header = () => {
                     )}
                   </p>
                 </div>
-
-                <Link href={'/upload'}>
-                  <Button
-                    variant="default"
-                    className="rounded-full text-sm px-4 py-2"
-                  >
-                    Secure image
-                  </Button>
-                </Link>
                 {address && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-
-                      className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                    <DropdownMenuTrigger className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
                       {shortenAddress(address)}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href={'/my-nfts/unlisted'}>
+                      <Link href={"/my-nfts/unlisted"}>
                         <DropdownMenuItem>My Nft's</DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem onClick={() => disconnect()}>Disconnect</DropdownMenuItem>
-
+                      <DropdownMenuItem onClick={() => disconnect()}>
+                        Disconnect
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -152,19 +158,18 @@ export const Header = () => {
               <div className="relative">
                 {address && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-
-                      className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                    <DropdownMenuTrigger className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
                       {shortenAddress(address)}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href={'/my-nfts/unlisted'}>
+                      <Link href={"/my-nfts/unlisted"}>
                         <DropdownMenuItem>My Nft's</DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem onClick={() => disconnect()}>Disconnect</DropdownMenuItem>
-
+                      <DropdownMenuItem onClick={() => disconnect()}>
+                        Disconnect
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -213,10 +218,10 @@ export const Header = () => {
               )}
             </p>
           </div>
-          <Link href={'/upload'} className="w-1/2">
+          <Link href={"/upload"} className="w-1/2">
             <Button
               variant="default"
-              className="rounded-full text-sm px-4 py-2 w-full h-10"
+              className="rounded-none text-sm px-4 py-2 w-full h-10"
             >
               Secure image
             </Button>

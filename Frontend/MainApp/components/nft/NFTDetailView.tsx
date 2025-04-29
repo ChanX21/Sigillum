@@ -70,8 +70,8 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
   const handleCopy = async (text: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
-    toast.success(`Copied Text Successfully`)
-  }
+    toast.success(`Copied Text Successfully`);
+  };
 
   // Check if there's a highest bid
   const hasHighestBid = listingDetails && Number(listingDetails.highestBid) > 0;
@@ -181,13 +181,15 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
             <span className="text-gray-600">Token ID</span>
             <div className="flex items-center justify-end gap-4">
               <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
-              <button onClick={() => handleCopy(nft?.blockchain?.tokenId)} className="">
+              <button
+                onClick={() => handleCopy(nft?.blockchain?.tokenId)}
+                className=""
+              >
                 <FaRegCopy size={15} className="cursor-pointer" />
               </button>
             </div>
-
           </div>
-          <div className="flex justify-between items-center py-2 border-t border-stone-300">
+          {/* <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
             <div className="flex justify-end items-center gap-2">
               <span>
@@ -199,10 +201,13 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
                 <FaRegCopy size={15} className="cursor-pointer" />
               </button>
             </div>
-          </div>
+          </div> */}
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Contract</span>
-            <Link href={`${process.env.NEXT_PUBLIC_SUI_EXPLORER_URL}${nft.blockchain.tokenId}`} target="_blank">
+            <Link
+              href={`${process.env.NEXT_PUBLIC_SUI_EXPLORER_URL}${nft.blockchain.tokenId}`}
+              target="_blank"
+            >
               <div className="flex items-center gap-2 cursor-pointer">
                 <span className="text-primary">
                   {shortenAddress(nft.blockchain.tokenId) || ""}
@@ -227,12 +232,8 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           </div>
           {listingDetails && (
             <div className="flex justify-between items-center py-2 border-t border-stone-300">
-              <span className="text-gray-600">Listing Type</span>
-              <span>
-                {listingDetails.listingType === 0
-                  ? "Soft Listing"
-                  : "Real Listing"}
-              </span>
+              <span className="text-gray-600">Metadata</span>
+              <span className="underline cursor-pointer">IPFS</span>
             </div>
           )}
         </div>
