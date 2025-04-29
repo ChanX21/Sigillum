@@ -39,7 +39,9 @@ export type MediaRecord = {
     id: string; // UUID
     ipfsCid: string; // CID for vector representation
   };
-
+  user:{
+    walletAddress:string;
+  },
   blockchain: {
     transactionHash: string;
     tokenId: string;
