@@ -1,14 +1,23 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { WalrusClient } from '@mysten/walrus';
 import { Transaction } from '@mysten/sui/transactions';
 import { fromBase64 } from '@mysten/bcs';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { bcs } from '@mysten/sui/bcs';
+import { v4 } from 'uuid';
 
 // use getFullnodeUrl to define Devnet RPC location
 const rpcUrl = getFullnodeUrl('testnet');
 
-// create a client connected to devnet
-const client = new SuiClient({ url: rpcUrl });
+// Create a client connected to testnet
+const suiClient = new SuiClient({
+	url: rpcUrl,
+});
+
+const walrusClient = new WalrusClient({
+	network: 'testnet',
+	suiRpcUrl: rpcUrl,
+});
 
 // Sui contract configuration - extract package ID and module name from the fully qualified name
 const PACKAGE_ID_WITH_MODULE = process.env.SUI_PACKAGE_ID || '';
@@ -58,22 +67,22 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
- * @param {string} vectorCid - Vector CID of the image
+ * @param {Blob} vectorBlob - Vector blob of the image
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
  */
 export const mintNFT = async (
-  creatorAddress: string, 
+  creatorAddress: string,
   imageUrl: string,
-  vectorCid: string,
+  vectorBlob: Blob,
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-      if (!creatorAddress || !imageUrl || !vectorCid || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, vector CID, watermark CID, and metadata CID are required');
+    if (!creatorAddress || !imageUrl || !vectorBlob || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, vector blob, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -81,25 +90,39 @@ export const mintNFT = async (
     if (!privateKey) {
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
-    
+
     // Create keypair from private key
     const watermarkId = watermarkCID || '';
-    
+
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
+
+    // Convert Blob to Uint8Array
+    const arrayBuffer = await vectorBlob.arrayBuffer();
+    const vectorData = new Uint8Array(arrayBuffer);
+    const blobId = v4();
     
+  /*  const { blobId } = await walrusClient.writeBlob({
+      blob: vectorData,
+      deletable: false,
+      epochs: 3,
+      signer: keypair,
+    });
+    console.log(blobId);*/
+
     // Serialize data for transaction
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
-      vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(vectorCid)),
+      vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
       metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
-    
+
     // Create the transaction
     const tx = new Transaction();
-    
+
     // Add the register_photo call
     tx.moveCall({
       package: PACKAGE_ID,
@@ -112,22 +135,24 @@ export const mintNFT = async (
         tx.pure(txData.imageUrl),
         tx.pure.address(creatorAddress),
         tx.pure(txData.vectorUrl),
+        tx.pure(txData.blobId),
         tx.pure(txData.watermarkId),
         tx.pure(txData.metadata)
       ],
     });
-        // Sign and execute the transaction
-        const result = await client.signAndExecuteTransaction({
-          transaction: tx,
-          signer: keypair,
-          options: {
-            showEffects: true,
-            showEvents: true
+    // Sign and execute the transaction
+    const result = await suiClient.signAndExecuteTransaction({
+      transaction: tx,
+      signer: keypair,
+      options: {
+        showEffects: true,
+        showEvents: true
       }
     });
     return {
       transactionHash: result.digest,
-      tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || ''
+      tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || '',
+      blobId: blobId
     };
   } catch (error) {
     console.error('Error minting NFT:', error);
@@ -154,7 +179,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
       throw new Error('SUI_PRIVATE_KEY environment variable is not set');
     }
 
-      // Create keypair from private key
+    // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
     // Create the transaction
     const tx = new Transaction();
@@ -177,7 +202,7 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
     });
 
     // Sign and execute the transaction
-    const result = await client.signAndExecuteTransaction({
+    const result = await suiClient.signAndExecuteTransaction({
       transaction: tx,
       signer: keypair,
       options: {

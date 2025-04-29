@@ -12,7 +12,8 @@
     "declaration": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["./api/types/express"],
   },
   "include": [
     "**/*.ts"

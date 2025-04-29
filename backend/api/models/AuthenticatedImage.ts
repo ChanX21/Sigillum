@@ -1,20 +1,21 @@
 import mongoose, { Document, Schema } from 'mongoose';
-
+import { IUser } from './User.js';
 // Define interfaces
 
 interface IBlockchain {
   transactionHash: string;
   tokenId: string;
-  creator: string;
+  listingId: string;
 }
 
 
 export interface IAuthenticatedImage extends Document {
   original: string;
   watermarked: string;
+  user: IUser;
   vector: {
     id: string;
-    ipfsCid: string;
+    blobId: string;
   };
   blockchain: IBlockchain;
   metadataCID: string;
@@ -68,11 +69,14 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
       type: String,
       required: true,
     },
-    ipfsCid: {
-      unique: true,
-      type: String,
-      required: true,
+    blobId: {
+      type: String
     },
+  },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
   blockchain: {
     transactionHash: {
@@ -80,10 +84,6 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
     },
     tokenId: {
       type: String,
-    },
-    creator: {
-      type: String,
-      required: true,
     },
     listingId: {
       type: String,

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { processImageForAuthentication } from '../utils/imageUtils.js';
 import { uploadToIPFS, createAndUploadNFTMetadata, uploadVectorToIPFS } from '../services/ipfsService.js';
 import {
@@ -9,11 +9,144 @@ import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage.j
 import axios from 'axios';
 import qdrantClient from '../clients/qdrant.js';
 import { v4 } from 'uuid';
+import { Nonce, Session, User } from '../models/User.js';
+import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
+import jwt from 'jsonwebtoken';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
   file?: Express.Multer.File;
 }
+
+// JWT secret key
+const JWT_SECRET = process.env.JWT_SECRET || 'sigillum-secret-key';
+// JWT expiration time (1 day)
+const JWT_EXPIRATION = '1d';
+
+/**
+ * Get a nonce for a user
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+
+export const getNonce = async (req: Request, res: Response): Promise<void> => {
+  const { address } = req.params;
+  const nonce = v4();
+  await Nonce.deleteMany({ user: address });
+  const newNonce = new Nonce({
+    nonce: nonce,
+    user: address
+  });
+  await newNonce.save();
+  res.status(200).json({ nonce: nonce });
+};
+
+/**
+ * Create a session for a user
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+
+export const createSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { signature, message, address } = req.body;
+
+    if (!signature || !message) {
+      res.status(400).json({ 
+        message: 'Signature and message are required for authentication',
+        hint: 'Send these in the request body'
+      });
+      return;
+    }
+
+    // Parse message to extract the nonce
+    let nonce;
+    try {
+      // Assuming message format is "Sign this message to authenticate: NONCE"
+      nonce = message.split(': ')[1];
+    } catch (error) {
+      res.status(400).json({
+        message: 'Invalid message format',
+        hint: 'Message should be in format: "Sign this message to authenticate: NONCE"'
+      });
+      return;
+    }
+
+    // Verify the nonce exists in the database
+    const nonceRecord = await Nonce.findOne({ nonce, user: address });
+    if (!nonceRecord) {
+      res.status(400).json({
+        message: 'Invalid or expired nonce',
+        hint: 'Request a new nonce and try again'
+      });
+      return;
+    }
+
+    // Verify the signature
+    const publicKey = await verifyPersonalMessageSignature(message, signature);
+    if (!publicKey.verifyAddress(address)) {
+      res.status(400).json({ 
+        message: 'Signature verification failed',
+        hint: 'Please check your signature and message'
+      });
+      return;
+    }
+
+    // Delete the used nonce
+    await Nonce.deleteOne({ _id: nonceRecord._id });
+    let user = await User.findOne({ address });
+    if (!user) {
+      user = new User({ address });
+      await user.save();
+    }
+    const sessionId = v4();
+
+    // Create a JWT token
+    const token = jwt.sign(
+      { sessionId: sessionId },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION }
+    );
+
+    // Create a new session in the database
+    const session = new Session({
+      sessionId: sessionId,
+      user: user._id,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 1 day
+    });
+    await session.save();
+
+    // Return the token
+    res.status(200).cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000
+    }).json({ message: 'Session created successfully' });
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ message: 'Failed to create session' });
+  }
+};
+
+/**
+ * Update user profile
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name } = req.body;
+    const user = await User.findByIdAndUpdate(req.user._id, { name });
+    if (!user) {
+      res.status(400).json({ message: 'User not found' });
+      return;
+    }
+    res.status(200).json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+};
 
 /**
  * Authenticate an image and prepare it for NFT minting
@@ -29,32 +162,12 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       });
       return;
     }
+    const { walletAddress } = req.user;
   
-    // Get signature data from form fields
-    const { signature, message } = req.body;
-    const creatorAddress = req.params.address;
-
-    /* if (!signature || !message) {
-       res.status(400).json({ 
-         message: 'Signature and message are required for authentication',
-         hint: 'Send these as form fields in the same multipart/form-data request as the image'
-       });
-       return;
-     }
- 
-     // Verify the signature
-     const publicKey = await verifyPersonalMessageSignature(message, signature);
-     if (!publicKey.verifyAddress(creatorAddress)) {
-       res.status(400).json({ 
-         message: 'Signature verification failed',
-         hint: 'Please check your signature and message'
-       });
-       return;
-     }*/
 
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer, {
-      creatorId: creatorAddress
+      creatorId: walletAddress
     });
 
     // find similar images in qdrant
@@ -66,7 +179,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       },
       limit: 5,
     });
-    if(similarImages.points.filter((image: any) => image.score > 0.97).length > 0) {
+    if(similarImages.points.filter((image: any) => image.score > 0.85).length > 0) {
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
@@ -84,22 +197,16 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
 
-    // Upload vector to IPFS
-    const vectorIpfsCid = await uploadVectorToIPFS(authenticationData.vector);
-
     // Create new authenticated image record
     const vectorId = v4();
     const newAuthenticatedImage = new AuthenticatedImage({
       original: originalIpfsCid,
       watermarked: watermarkedIpfsCid,
       metadataCID: metadataIpfsCid,
+      user: req.user._id,
       vector: {
         id: vectorId,
-        ipfsCid: vectorIpfsCid,
-      },
-      blockchain: {
-        creator: creatorAddress,
-      },
+        },
       status: 'uploaded'
     });
     const savedImage = await newAuthenticatedImage.save();
@@ -153,16 +260,42 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
     }
     const { action, id } = req.body;
     if (action === 'mint') {
-      const authenticatedImage = await AuthenticatedImage.findById(id);
+      const authenticatedImage = await AuthenticatedImage.findById(id).populate('user');
       if (!authenticatedImage || (authenticatedImage.status !== 'uploaded' && authenticatedImage.status !== 'error')) {
         res.status(400).json({ message: 'Image not uploaded' });
         return;
       }
       res.status(200).json({ message: 'Image will be minted' });
-      const result = await mintNFT(authenticatedImage.blockchain.creator, authenticatedImage.original, authenticatedImage.vector.ipfsCid, authenticatedImage.watermarked, authenticatedImage.metadataCID);
+      // Use type assertion to bypass type checking for Qdrant client
+      const vectorResponse = await qdrantClient.retrieve("images", {
+        ids: [authenticatedImage.vector.id],
+        with_vector: true
+      });
+      if(!vectorResponse[0].vector) {  
+        res.status(400).json({ message: 'Image not found' });
+        return;
+      }
+      
+      // Handle different possible vector formats and convert to flat array
+      let vectorData: number[] = [];
+      const vector = vectorResponse[0].vector;
+      
+      if (Array.isArray(vector)) {
+        // If it's a flat array, use it directly
+        if (typeof vector[0] === 'number') {
+          vectorData = vector as number[];
+        } 
+        // If it's an array of arrays, flatten it
+        else if (Array.isArray(vector[0])) {
+          vectorData = (vector as number[][]).flat();
+        }
+      }
+      
+      const vectorBlob = new Blob([new Float32Array(vectorData)], {type: 'application/octet-stream'});
+      const result = await mintNFT(authenticatedImage.user.walletAddress, authenticatedImage.original, vectorBlob, authenticatedImage.watermarked, authenticatedImage.metadataCID);
       await AuthenticatedImage.findByIdAndUpdate(
         authenticatedImage._id,
-        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId } }
+        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId, blobId: result.blobId } }
       );
       await axios.post(`${process.env.BASE_URL}/blockchain`, {
         action: 'soft-list',
@@ -176,14 +309,14 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
         });
     }
     else if (action === 'soft-list') {
-      const authenticatedImage = await AuthenticatedImage.findById(id);
+      const authenticatedImage = await AuthenticatedImage.findById(id).populate('user');
       if (!authenticatedImage || (authenticatedImage.status !== 'minted' && authenticatedImage.status !== 'error')) {
         res.status(400).json({ message: 'Image not minted' });
         return;
       }
       res.status(200).json({ message: 'Image will be soft listed' });
       const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
-        owner: authenticatedImage.blockchain.creator,
+        owner: authenticatedImage.user.walletAddress,
         minBid: 100,
         endTime: Date.now() + (60 * 60 * 24 * 2),
         description: 'Soft listing',

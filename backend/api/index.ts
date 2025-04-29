@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction, Application } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
 
 // Initialize Express app
@@ -11,6 +12,7 @@ const PORT: number = parseInt(process.env.PORT || '5000', 10);
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // API routes
 app.use('/', apiRoutes);
