@@ -136,14 +136,25 @@ export const BidForm = ({ nft }: BIDFormProps) => {
         <span className="text-lg font-medium">SUI</span>
       </div>
 
-      <Button
-        className="w-full py-6 text-lg rounded-md"
-        size="lg"
-        onClick={handlePlaceBid}
-        disabled={submitting || !address || !bidAmount}
-      >
-        {submitting ? "Processing..." : "Place a Bid"}
-      </Button>
+      <div className="w-full flex gap-2">
+        <Button
+          className="w-[49%] py-6 text-lg "
+          size="lg"
+          onClick={handlePlaceBid}
+          disabled={submitting || !address || !bidAmount}
+        >
+          {submitting ? "Processing..." : "Place a Bid"}
+        </Button>
+        <Button
+          className="w-[49%] py-6 text-lg border text-primary "
+          size="lg"
+          onClick={handlePlaceBid}
+          variant="outline"
+          disabled={submitting || !address || !bidAmount}
+        >
+          {submitting ? "Processing..." : "Stake"}
+        </Button>
+      </div>
 
       {/* {debugInfo && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-mono overflow-auto max-h-32">
