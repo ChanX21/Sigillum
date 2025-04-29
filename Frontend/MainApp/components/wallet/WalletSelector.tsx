@@ -25,19 +25,19 @@ const WalletSelector = () => {
     }
   }
 
-  // useEffect(() => {
-  //   if (address && connected) {
-  //     console.log("nonce")
-  //     axiosInstance.get(`/nonce/${address}`)
-  //       .then((res) => {
-  //         setNonce(res.data);
-  //         createWalletSession({ nonce: res.data.nonce })
-  //       })
-  //       .catch((error) => {
-  //         console.error('Error fetching nonce:', error);
-  //       });
-  //   }
-  // }, [address, connected]);
+  useEffect(() => {
+    if (address && connected) {
+      console.log("nonce")
+      axiosInstance.get(`/nonce/${address}`)
+        .then((res) => {
+          setNonce(res.data);
+          createWalletSession({ nonce: res.data.nonce })
+        })
+        .catch((error) => {
+          console.error('Error fetching nonce:', error);
+        });
+    }
+  }, [address, connected]);
 
 
   useEffect(() => {

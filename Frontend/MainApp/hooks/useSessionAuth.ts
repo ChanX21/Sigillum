@@ -24,16 +24,16 @@ export const useCreateSession = () => {
             }, {
                 withCredentials: true
             })
-                .then((res) => {
-                    console.log("Session",res)
-                })
-                .catch((error) => {
-                    console.log(error)
-                    const axiosErr = error as AxiosError<{ message?: string }>;
-                    const message =
-                        axiosErr.response?.data?.message || axiosErr.message || "Upload failed";
-                    throw new Error(message);
-                })
+            .then((res) => {
+                console.log("Session",res)
+            })
+            .catch((error) => {
+                console.log(error)
+                const axiosErr = error as AxiosError<{ message?: string }>;
+                const message =
+                    axiosErr.response?.data?.message || axiosErr.message || "Upload failed";
+                throw new Error(message);
+            })
         }
     })
 }
