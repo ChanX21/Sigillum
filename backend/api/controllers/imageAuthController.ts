@@ -73,7 +73,7 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     }
 
     // Verify the nonce exists in the database
-    const nonceRecord = await Nonce.findOne({ nonce, user: address });
+    const nonceRecord = await Nonce.findOne({ nonce, user: address })
     if (!nonceRecord) {
       res.status(400).json({
         message: 'Invalid or expired nonce',
@@ -119,7 +119,7 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     // Return the token
     res.status(200).cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       maxAge: 24 * 60 * 60 * 1000
     }).json({ message: 'Session created successfully' });
   } catch (error) {

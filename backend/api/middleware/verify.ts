@@ -1,13 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { Session, User } from '../models/User.js';
+import { Session } from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 export const verifySession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { token } = req.cookies;
-  const user = await User.findOne();
-  req.user = user;
-  return next();
-
   jwt.verify(token, process.env.JWT_SECRET!, async (err: any, decoded: any) => {
     if (err) {
       res.status(401).json({ message: 'Unauthorized' });
