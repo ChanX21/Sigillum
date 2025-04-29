@@ -42,7 +42,9 @@ export type MediaRecord = {
     timestamp: number; // UNIX timestamp (ms)
     authenticatedAt: string; // ISO date string
   };
-
+  user:{
+    walletAddress:string;
+  },
   blockchain: {
     transactionHash: string;
     tokenId: string;
