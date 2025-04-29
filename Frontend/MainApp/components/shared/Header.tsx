@@ -14,6 +14,7 @@ import WalletModal from "../wallet/WalletModal";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { SiSui } from "react-icons/si";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { useWalletSession } from "@/hooks/useWalletSession";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -22,7 +23,7 @@ export const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const { connected: walletConnected, address, disconnect } = useWallet();
   const { balance, loading } = useAccountBalance();
-
+ 
   const readableSui = (rawBalance: bigint | number) => {
     return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);
   };
