@@ -81,9 +81,9 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
       });
       return;
     }
-
+    const messageBytes = new TextEncoder().encode(message);
     // Verify the signature
-    const publicKey = await verifyPersonalMessageSignature(message, signature);
+    const publicKey = await verifyPersonalMessageSignature(messageBytes, signature);
     if (!publicKey.verifyAddress(address)) {
       res.status(400).json({ 
         message: 'Signature verification failed',
@@ -94,9 +94,9 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
 
     // Delete the used nonce
     await Nonce.deleteOne({ _id: nonceRecord._id });
-    let user = await User.findOne({ address });
+    let user = await User.findOne({ walletAddress: address });
     if (!user) {
-      user = new User({ address });
+      user = new User({ walletAddress: address });
       await user.save();
     }
     const sessionId = v4();
