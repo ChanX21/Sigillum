@@ -1,10 +1,8 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 import { WalrusClient } from '@mysten/walrus';
 import { Transaction } from '@mysten/sui/transactions';
-import { fromBase64 } from '@mysten/bcs';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { bcs } from '@mysten/sui/bcs';
-import { v4 } from 'uuid';
 
 // use getFullnodeUrl to define Devnet RPC location
 const rpcUrl = getFullnodeUrl('testnet');
@@ -100,15 +98,15 @@ export const mintNFT = async (
     // Convert Blob to Uint8Array
     const arrayBuffer = await vectorBlob.arrayBuffer();
     const vectorData = new Uint8Array(arrayBuffer);
-    const blobId = v4();
     
-  /*  const { blobId } = await walrusClient.writeBlob({
+    /*const { blobId } = await walrusClient.writeBlob({
       blob: vectorData,
       deletable: false,
-      epochs: 3,
+      epochs: 45,
       signer: keypair,
-    });
-    console.log(blobId);*/
+    });*/
+    const blobId = Date.now().toString();
+    console.log(blobId);
 
     // Serialize data for transaction
     const txData = {

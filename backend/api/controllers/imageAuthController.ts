@@ -73,7 +73,7 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     }
 
     // Verify the nonce exists in the database
-    const nonceRecord = await Nonce.findOne({ nonce, user: address });
+    const nonceRecord = await Nonce.findOne({ nonce, user: address })
     if (!nonceRecord) {
       res.status(400).json({
         message: 'Invalid or expired nonce',
@@ -81,9 +81,9 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
       });
       return;
     }
-
+    const messageBytes = new TextEncoder().encode(message);
     // Verify the signature
-    const publicKey = await verifyPersonalMessageSignature(message, signature);
+    const publicKey = await verifyPersonalMessageSignature(messageBytes, signature);
     if (!publicKey.verifyAddress(address)) {
       res.status(400).json({ 
         message: 'Signature verification failed',
@@ -94,9 +94,9 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
 
     // Delete the used nonce
     await Nonce.deleteOne({ _id: nonceRecord._id });
-    let user = await User.findOne({ address });
+    let user = await User.findOne({ walletAddress: address });
     if (!user) {
-      user = new User({ address });
+      user = new User({ walletAddress: address });
       await user.save();
     }
     const sessionId = v4();
@@ -116,12 +116,12 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     });
     await session.save();
 
-    // Return the token
-    res.status(200).cookie('token', token, {
+    res.status(200).cookie("token",token,{
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000
-    }).json({ message: 'Session created successfully' });
+      secure: true,
+      path:'/',
+      sameSite:'none',
+      maxAge: 3600000,}).json({ message: 'Authentication successful' });
   } catch (error) {
     console.error('Error creating session:', error);
     res.status(500).json({ message: 'Failed to create session' });
@@ -432,6 +432,10 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
       .populate({
         path: 'verifications',
         model: 'Verification'
+      })
+      .populate({
+        path: 'user',
+        model: 'User'
       });
     res.status(200).json(authenticatedImages);
   } catch (error) {
@@ -452,6 +456,10 @@ export const getImageById = async (req: Request, res: Response): Promise<void> =
       .populate({
         path: 'verifications',
         model: 'Verification'
+      })
+      .populate({
+        path: 'user',
+        model: 'User'
       });
     res.status(200).json(authenticatedImage);
   } catch (error) {

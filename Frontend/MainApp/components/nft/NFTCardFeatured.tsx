@@ -197,17 +197,23 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
           </div>
         )}
 
-        {/* Owner */}
-        <div className="mt-6 flex items-center">
-          <UserAvatar
-            walletAddress={nft.blockchain.creator}
-            alt={nft.blockchain.creator || "Creator"}
-          />
-          <div className="ml-2">
-            <p className="text-sm font-medium">
-              {shortenAddress(nft.blockchain.creator)}
-            </p>
-            <p className="text-xs text-gray-500">Owner</p>
+
+        <div className="flex flex-col lg:flex-row justify-between gap-3 lg:gap-0">
+          <div className="flex items-center gap-2">
+            <UserAvatar
+              walletAddress={nft.user.walletAddress}
+              alt={nft.user.walletAddress || "Creator"}
+            />
+            <div className="flex flex-col">
+              <p className="text-xs font-medium">
+                {shortenAddress(nft.user.walletAddress) || ""}
+              </p>
+              <p className="text-xs text-gray-400">Owner</p>
+            </div>
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="text-xs text-gray-400">Instant buy</p>
+            <p className="text-xs font-semibold">{0.06} SUI</p>
           </div>
         </div>
       </div>
