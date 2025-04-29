@@ -432,6 +432,10 @@ export const getAllImages = async (req: Request, res: Response): Promise<void> =
       .populate({
         path: 'verifications',
         model: 'Verification'
+      })
+      .populate({
+        path: 'user',
+        model: 'User'
       });
     res.status(200).json(authenticatedImages);
   } catch (error) {
@@ -452,6 +456,10 @@ export const getImageById = async (req: Request, res: Response): Promise<void> =
       .populate({
         path: 'verifications',
         model: 'Verification'
+      })
+      .populate({
+        path: 'user',
+        model: 'User'
       });
     res.status(200).json(authenticatedImage);
   } catch (error) {
