@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "./ui/button";
 
 export function LandingCta() {
@@ -13,12 +14,16 @@ export function LandingCta() {
         digital authentication needs.
       </p>
       <div className="flex gap-4">
-        <Button className="bg-black text-white px-6 py-2 rounded-none shadow hover:bg-gray-900 text-sm">
-          Get Started Now
-        </Button>
-        <Button className="bg-white border border-gray-400 px-6 py-2 text-primary rounded-none shadow text-sm hover:bg-gray-100">
-          Verify Your Vision
-        </Button>
+        <Link href="/secure">
+          <Button className="bg-black text-white px-6 py-2 rounded-none shadow hover:bg-gray-900 text-sm">
+            Get Started Now
+          </Button>
+        </Link>
+        <Link href="https://sigillum-verifier.vercel.app/" target="_blank">
+          <Button className="bg-white border border-gray-400 px-6 py-2 text-primary rounded-none shadow text-sm hover:bg-gray-100">
+            Verify Your Vision
+          </Button>
+        </Link>
       </div>
     </section>
   );

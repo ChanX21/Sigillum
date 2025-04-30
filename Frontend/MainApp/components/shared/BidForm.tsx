@@ -14,12 +14,13 @@ import { ListingDataResponse, MediaRecord } from "@/types";
 
 interface BIDFormProps {
   nft: MediaRecord;
+  setOpen?: (open: boolean) => void;
 }
 
-export const BidForm = ({ nft }: BIDFormProps) => {
+export const BidForm = ({ nft, setOpen }: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  const [bidding, setBidding] = useState<boolean>(false);
+  const [staking, setStaking] = useState<boolean>(false);
   const wallet = useWallet();
   const { address, signAndExecuteTransaction } = wallet;
 
@@ -40,8 +41,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
     }
 
     try {
-      setSubmitting(true);
-      setDebugInfo("");
+      setBidding(true);
 
       // Log information for debugging
       console.log("Placing bid with:", {
@@ -74,7 +74,6 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
       if (!success) {
         toast.error(error || "Failed to build transaction");
-        setDebugInfo(`Error building transaction: ${error}`);
         return;
       }
 
@@ -87,6 +86,8 @@ export const BidForm = ({ nft }: BIDFormProps) => {
         console.log(result);
 
         if (result) {
+          setBidAmount("");
+          setOpen?.(false);
           toast.success("Bid placed successfully!");
         }
       } catch (txError: any) {
@@ -94,7 +95,6 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
         // Extract more detailed error information
         const errorMessage = txError?.message || "Unknown error";
-        setDebugInfo(`Transaction error: ${errorMessage}`);
 
         if (
           errorMessage.includes("dynamic_field") &&
@@ -116,10 +116,9 @@ export const BidForm = ({ nft }: BIDFormProps) => {
       }
     } catch (error: any) {
       console.error("Error placing bid:", error);
-      setDebugInfo(`General error: ${error?.message || "Unknown error"}`);
       toast.error("Failed to place bid. Please try again.");
     } finally {
-      setSubmitting(false);
+      setBidding(false);
     }
   };
 
@@ -136,8 +135,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
     }
 
     try {
-      setSubmitting(true);
-      setDebugInfo("");
+      setStaking(true);
 
       // Log information for debugging
       console.log("Placing stake with:", {
@@ -170,7 +168,6 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
       if (!success) {
         toast.error(error || "Failed to build transaction");
-        setDebugInfo(`Error building transaction: ${error}`);
         return;
       }
 
@@ -183,6 +180,8 @@ export const BidForm = ({ nft }: BIDFormProps) => {
         console.log(result);
 
         if (result) {
+          setBidAmount("");
+          setOpen?.(false);
           toast.success("Stake placed successfully!");
         }
       } catch (txError: any) {
@@ -190,7 +189,6 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
         // Extract more detailed error information
         const errorMessage = txError?.message || "Unknown error";
-        setDebugInfo(`Transaction error: ${errorMessage}`);
 
         if (
           errorMessage.includes("dynamic_field") &&
@@ -212,24 +210,23 @@ export const BidForm = ({ nft }: BIDFormProps) => {
       }
     } catch (error: any) {
       console.error("Error placing stake:", error);
-      setDebugInfo(`General error: ${error?.message || "Unknown error"}`);
       toast.error("Failed to place stake. Please try again.");
     } finally {
-      setSubmitting(false);
+      setStaking(false);
     }
   };
 
   return (
     <div className="space-y-4">
       {/* Bid input */}
-      <div className="flex items-center gap-2 border border-stone-300 rounded-xl p-4">
+      <div className="flex items-center gap-2 border border-stone-300  p-4">
         <input
           type="number"
-          className="flex-1 bg-transparent outline-none h-full"
+          className="flex-1 bg-transparent outline-none h-full rounded-none"
           placeholder="0.0"
           value={bidAmount}
           onChange={handleBidAmountChange}
-          disabled={submitting}
+          disabled={bidding || staking}
         />
         <span className="text-lg font-medium">SUI</span>
       </div>
@@ -239,18 +236,18 @@ export const BidForm = ({ nft }: BIDFormProps) => {
           className="w-[49%] py-6 text-lg rounded-none"
           size="lg"
           onClick={handlePlaceBid}
-          disabled={submitting || !address || !bidAmount}
+          disabled={bidding || staking || !address || !bidAmount}
         >
-          {submitting ? "Processing..." : "Place a Bid"}
+          {bidding ? "Bidding..." : "Place a Bid"}
         </Button>
         <Button
           className="w-[49%] py-6 text-lg border text-primary rounded-none"
           size="lg"
           onClick={handlePlaceStake}
           variant="outline"
-          disabled={submitting || !address || !bidAmount}
+          disabled={bidding || staking || !address || !bidAmount}
         >
-          {submitting ? "Processing..." : "Stake"}
+          {staking ? "Staking..." : "Stake"}
         </Button>
       </div>
 
