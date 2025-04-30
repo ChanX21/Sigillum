@@ -18,13 +18,17 @@ export function LandingHero() {
         Where authenticity is valued and every image tells its true story.
       </p>
       <div className="flex items-center justify-center space-x-4  ">
-        <Button
-          className="bg-black text-white font-medium px-4 py-2 rounded-none shadow hover:bg-gray-900 transition text-sm flex items-center gap-2"
-          style={{ width: "150px" }}
-        >
-          <FiCheck className="text-lg" />
-          Verify your vision
-        </Button>
+
+        <Link href={'https://sigillum-verifier.vercel.app'} target="_blank">
+        
+          <Button
+            className="bg-black text-white font-medium px-4 py-2 rounded-none shadow hover:bg-gray-900 transition text-sm flex items-center gap-2"
+            style={{ width: "150px" }}
+          >
+            <FiCheck className="text-lg" />
+            Verify your vision
+          </Button>
+        </Link>
         <Link href="/marketplace">
           <Button
             variant="outline"

@@ -1,12 +1,15 @@
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check, Copy } from 'lucide-react'
 import Image from 'next/image'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from "framer-motion"
 import { VerificationResponse } from '@/store/useDataStore'
 import { format } from 'date-fns'
 import { shortenAddress } from '@/lib/shortenAddress'
 import { toast } from 'sonner'
+import BeforeAfterSlide from './BeforeAfterSlide'
+import axios from 'axios'
+
 interface VerificationProps {
     image: string | null
     verificationError: string | null,
@@ -26,16 +29,30 @@ interface VerificationProps {
         }>
     } | null
     resetState: () => void,
-    setSubmittedForVerification:React.Dispatch<React.SetStateAction<boolean>>
+    setSubmittedForVerification: React.Dispatch<React.SetStateAction<boolean>>
 }
 const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
 }
 const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState, setSubmittedForVerification }: VerificationProps) => {
+    const [authenticImage, setAuthenticImage] = useState('')
+    const fetchMetadata = async () => {
+        const response = await axios.get(`https://gold-capitalist-bison-622.mypinata.cloud/ipfs/${verificationData.verifications[0].metadataCID}`)
+
+        return response.data
+    }
     useEffect(() => {
-        console.log(verificationData)
+        if (verificationData && verificationData.verifications) {
+            fetchMetadata().then((res) => {
+                setAuthenticImage(res.image)
+            }).catch(err => {
+                console.log(err)
+            }) 
+        }
     }, [verificationData])
+
+
     return (
         <div className="max-w-5xl mx-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-6">
@@ -58,7 +75,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                 >
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div className="relative aspect-square">
-                            <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
+                            {verificationData?.verifications && (
+                                <BeforeAfterSlide afterImage={image as string} beforeImage={authenticImage as string} />
+                            )}
+                            {/* <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" /> */}
                         </div>
                         {!verificationError && !isVerifying && (
                             <div className="p-4 border-t border-[#f1f3f5]">
@@ -75,7 +95,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.verifications[0]?.blockchain.creator)}</p>
+                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.verifications[0]?.user)}</p>
                                             <p className="text-xs text-[#616161]">Creator</p>
                                         </div>
 
@@ -93,7 +113,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-                    <div className="bg-white rounded-xl shadow-sm h-full">
+                    <div className="bg-white rounded-xl shadow-sm h-full border border-1">
                         <div className="p-6 border-b border-[#f1f3f5]">
                             <h2 className="text-2xl font-bold mb-1">Verification Results</h2>
                             <p className="text-[#616161]">Analysis of your image's authenticity and history</p>
@@ -145,9 +165,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg flex justify-between items-center">
-                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.verifications[0]?.blockchain?.creator)}</p>
+                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.verifications[0]?.user)}</p>
                                                     <Button variant='ghost' onClick={async () => {
-                                                        await navigator.clipboard.writeText(verificationData?.verifications[0]?.blockchain?.creator)
+                                                        await navigator.clipboard.writeText(verificationData?.verifications[0]?.user)
                                                         toast.success("Copied to Clipboard")
                                                     }}>
                                                         <Copy />
@@ -210,11 +230,11 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                     </div>
 
                                     <div className="flex gap-4 pt-4 border-t border-[#f1f3f5]">
-                                        <Button className="md:flex-1 w-[50%] px-3 bg-[#1b263b] hover:bg-[#2d3748] text-white gap-2 md:py-6 py-3">
+                                        <Button className="md:flex-1 w-[50%] px-3 bg-[#000] hover:bg-gray-950 rounded-none text-white gap-2 md:py-6 py-3">
                                             <Download className="w-4 h-4" />
                                             Download Report
                                         </Button>
-                                        <Button variant="outline" className="md:flex-1 w-[50%] px-3 gap-2 md:py-6 py-3 border-[#1b263b] text-[#1b263b]">
+                                        <Button variant="outline" className="md:flex-1 w-[50%] px-3 gap-2 md:py-6 py-3 border-[#000] text-[#000] rounded-none">
                                             <Share2 className="w-4 h-4" />
                                             Share Results
                                         </Button>

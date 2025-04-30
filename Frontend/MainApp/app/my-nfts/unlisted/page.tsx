@@ -17,6 +17,8 @@ import {
 
 import React, { useEffect, useState } from 'react'
 import { emit } from 'process';
+import NftAuctionCard from '@/components/nft/nftAuctionCard';
+import NftAuctionCardPreview from '@/components/nft/NftAuctionCardPreview';
 
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()

@@ -74,6 +74,7 @@ export const UploadArea = ({
       setStepLoading(false)
     }
     if (isError) {
+      console.log(error)
       toast.error(error.message)
     }
     if (isSuccess) {
@@ -135,10 +136,10 @@ export const UploadArea = ({
 
       <div className="text-right mt-10 mb-10">
         <Button onClick={handleMint} variant="default">
-          {isPending ? (
-            <div className="relative w-6 h-6 bg-[#1b263b] rounded-full">
-              <div className="absolute inset-0 border-2 border-[#1b263b]  border-t-[#fff] rounded-full animate-spin m-0.5"></div>
-            </div>
+        {isPending ? (
+          <div className="relative w-6 h-6 bg-[#1b263b] rounded-full">
+            <div className="absolute inset-0 border-2 border-[#1b263b]  border-t-[#fff] rounded-full animate-spin m-0.5"></div>
+          </div>
           ) : (
             'Secure & Mint'
           )}
