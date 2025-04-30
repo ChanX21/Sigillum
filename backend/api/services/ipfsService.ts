@@ -48,18 +48,10 @@ export const uploadMetadataToIPFS = async (metadata: any) => {
 export const createAndUploadNFTMetadata = async (imageData: any, imageCID: string) => {
   try {
     const metadata = {
-      name: `PicSecure Authenticated Image`,
-      description: `Authenticated image with blockchain verification`,
+      name: imageData.name,
+      description: imageData.description,
       image: `https://${process.env.PINATA_GATEWAY}/ipfs/${imageCID}`,
       attributes: [
-        {
-          trait_type: 'SHA256 Hash',
-          value: imageData.sha256Hash
-        },
-        {
-          trait_type: 'Perceptual Hash',
-          value: imageData.pHash
-        },
         {
           trait_type: 'Creator ID',
           value: imageData.creatorId
@@ -74,8 +66,6 @@ export const createAndUploadNFTMetadata = async (imageData: any, imageCID: strin
         }
       ],
       authentication: {
-        sha256Hash: imageData.sha256Hash,
-        pHash: imageData.pHash,
         watermarkData: imageData.watermarkData,
         timestamp: imageData.timestamp,
         authenticatedAt: imageData.authenticatedAt

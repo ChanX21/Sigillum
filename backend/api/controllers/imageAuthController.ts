@@ -192,7 +192,11 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       return;
     }
     const { walletAddress } = req.user;
-  
+    const data = JSON.parse(req.body.metadata);
+    if(!data.name || !data.description) {
+      res.status(400).json({ message: 'Name and description are required' });
+      return;
+    }
 
     // Process image for authentication
     const authenticationData = await processImageForAuthentication(req.file.buffer, {
@@ -222,7 +226,8 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     let metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: originalIpfsCid,
-      watermarkData: authenticationData.watermarkData
+      watermarkData: authenticationData.watermarkData,
+      ...data
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
 
