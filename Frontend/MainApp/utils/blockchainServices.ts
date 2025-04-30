@@ -17,7 +17,7 @@ export const buildAcceptBidTx = (
 
   // NFT type parameter that was missing
   const nftTypeArg =
-    "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT";
+    "0xaa557c1f174c247585b42de60e35fb46fe103b47552ba05c4532fb0f0f8f68a0::sigillum_nft::PhotoNFT";
 
   // Building the move call with type arguments
   tx.moveCall({
@@ -620,7 +620,7 @@ export async function listNft(
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       typeArguments: [
-        "0x9fdabd883953851312fab19cc1ae72e22bc75ea30fa0142d58f7f0e9539ba7fc::sigillum_nft::PhotoNFT",
+        "0xaa557c1f174c247585b42de60e35fb46fe103b47552ba05c4532fb0f0f8f68a0::sigillum_nft::PhotoNFT",
       ],
       arguments: [
         tx.object(marketplaceObjectId),
