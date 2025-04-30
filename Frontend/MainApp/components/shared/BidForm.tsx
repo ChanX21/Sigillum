@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   getListingIds,
   buildPlaceBidTxWithCoinSelection,
+  buildPlaceStakeTxWithCoinSelection,
 } from "@/utils/blockchainServices";
 import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
@@ -26,6 +27,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
     setBidAmount(e.target.value);
   };
 
+  // Handle bid placement
   const handlePlaceBid = async () => {
     if (
       !address ||
@@ -121,6 +123,102 @@ export const BidForm = ({ nft }: BIDFormProps) => {
     }
   };
 
+  // Handle stake placement
+  const handlePlaceStake = async () => {
+    if (
+      !address ||
+      !nft.blockchain.listingId ||
+      !bidAmount ||
+      parseFloat(bidAmount) <= 0
+    ) {
+      toast.error("Please enter a valid stake amount");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setDebugInfo("");
+
+      // Log information for debugging
+      console.log("Placing stake with:", {
+        address,
+        listingId: nft.blockchain.listingId,
+        marketplaceId: MARKETPLACE_ID,
+        packageId: PACKAGE_ID,
+        moduleName: MODULE_NAME,
+      });
+
+      // Convert stake amount to MIST (1 SUI = 10^9 MIST)
+      const stakeAmountMist = BigInt(
+        Math.floor(parseFloat(bidAmount) * 1_000_000_000)
+      );
+
+      // Create a SuiClient instance
+      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+
+      // Use the new helper function to build the transaction
+      const { transaction, success, error } =
+        await buildPlaceStakeTxWithCoinSelection(
+          provider,
+          address,
+          MARKETPLACE_ID,
+          nft.blockchain.listingId,
+          stakeAmountMist,
+          PACKAGE_ID,
+          MODULE_NAME
+        );
+
+      if (!success) {
+        toast.error(error || "Failed to build transaction");
+        setDebugInfo(`Error building transaction: ${error}`);
+        return;
+      }
+
+      // Execute the transaction
+      try {
+        const result = await signAndExecuteTransaction({
+          transaction,
+        });
+
+        console.log(result);
+
+        if (result) {
+          toast.success("Stake placed successfully!");
+        }
+      } catch (txError: any) {
+        console.error("Transaction execution error:", txError);
+
+        // Extract more detailed error information
+        const errorMessage = txError?.message || "Unknown error";
+        setDebugInfo(`Transaction error: ${errorMessage}`);
+
+        if (
+          errorMessage.includes("dynamic_field") &&
+          errorMessage.includes("borrow_child_object_mut")
+        ) {
+          toast.error(
+            "Failed to place stake: The listing may not exist or you don't have permission to stake on it."
+          );
+        } else if (errorMessage.includes("Dry run failed")) {
+          toast.error(
+            "Failed to place stake: Transaction simulation failed. The listing may not be active."
+          );
+        } else {
+          toast.error(
+            `Failed to place stake: ${errorMessage.substring(0, 100)}...`
+          );
+        }
+        return;
+      }
+    } catch (error: any) {
+      console.error("Error placing stake:", error);
+      setDebugInfo(`General error: ${error?.message || "Unknown error"}`);
+      toast.error("Failed to place stake. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Bid input */}
@@ -138,7 +236,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
       <div className="w-full flex gap-2">
         <Button
-          className="w-[49%] py-6 text-lg "
+          className="w-[49%] py-6 text-lg rounded-none"
           size="lg"
           onClick={handlePlaceBid}
           disabled={submitting || !address || !bidAmount}
@@ -146,9 +244,9 @@ export const BidForm = ({ nft }: BIDFormProps) => {
           {submitting ? "Processing..." : "Place a Bid"}
         </Button>
         <Button
-          className="w-[49%] py-6 text-lg border text-primary "
+          className="w-[49%] py-6 text-lg border text-primary rounded-none"
           size="lg"
-          onClick={handlePlaceBid}
+          onClick={handlePlaceStake}
           variant="outline"
           disabled={submitting || !address || !bidAmount}
         >
