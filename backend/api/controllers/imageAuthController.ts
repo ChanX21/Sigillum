@@ -129,6 +129,21 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
 };
 
 /**
+ * Clear session
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+export const clearSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await Session.deleteMany({ user: req.user._id });
+    res.status(200).clearCookie('token').json({ message: 'Session cleared' });
+  } catch (error) {
+    console.error('Error clearing session:', error);
+    res.status(500).json({ message: 'Failed to clear session' });
+  }
+};
+
+/**
  * Update user profile
  * @param req - Express request object
  * @param res - Express response object
