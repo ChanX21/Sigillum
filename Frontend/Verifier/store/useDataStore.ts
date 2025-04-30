@@ -27,6 +27,7 @@ export interface DatabaseRecord {
         tokenId: string;
         transactionHash: string
     };
+    user:string
     createdAt: string;
     metadataCID: string;
     original: string;

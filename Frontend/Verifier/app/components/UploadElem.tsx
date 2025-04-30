@@ -54,12 +54,12 @@ const UploadElem = ({
     }
 
     return (
-        <Card className={`bg-white rounded-xl shadow-sm overflow-hidden border-0 ${isMobile && activeTab === 'camera' ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
+        <Card className={`bg-white rounded-none shadow-sm overflow-hidden border-0 ${isMobile && activeTab === 'camera' ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}>
             <CardContent className={`p-0 ${isMobile && activeTab === 'camera' ? 'h-screen' : ''}`}>
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
                     <TabsContent value="upload" className="m-0">
                         <div
-                            className={`border-2 border-dashed ${isDragging ? 'border-[#1b263b] bg-[#f1f3f5]' : 'border-[#d9d9d9] bg-[#fafafa]'} rounded-b-lg p-16 text-center cursor-pointer hover:border-[#1b263b] transition-colors`}
+                            className={`border-2 border-dashed ${isDragging ? 'border-[#1b263b] bg-[#fff]' : 'border-[#d9d9d9] bg-[#fff]'} rounded-b-lg p-16 text-center cursor-pointer hover:border-[#1b263b] transition-colors`}
                             onClick={() => fileInputRef.current?.click()}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
@@ -70,14 +70,14 @@ const UploadElem = ({
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <div className="w-20 h-20 bg-[#f1f3f5] rounded-full flex items-center justify-center mx-auto mb-6">
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Upload className="w-10 h-10 text-[#8c8c8c]" />
                                 </div>
                                 <h3 className="text-xl font-medium mb-3">Upload an image to verify</h3>
                                 <p className="text-[#616161] mb-6">Drag and drop or click to browse your files</p>
                                 <div className="flex justify-center items-center gap-2">
                                     <Button
-                                        className="bg-[#1b263b] hover:bg-[#2d3748] text-white px-6 py-6 rounded-xl text-sm "
+                                        className="bg-[#000] hover:bg-gray-950 text-white px-6 py-6 rounded-none text-sm "
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             fileInputRef.current?.click()
@@ -87,7 +87,7 @@ const UploadElem = ({
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="bg-transparent text-black border-black hover:bg-black/10 hover:text-black px-6 py-6 rounded-xl font-medium text-sm"
+                                        className="bg-transparent text-black border-black hover:bg-black/10 hover:text-black px-6 py-6 rounded-none font-medium text-sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setActiveTab("camera");
