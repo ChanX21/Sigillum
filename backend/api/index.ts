@@ -11,7 +11,7 @@ const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://sigillum.vercel.app'],
+  origin: ['http://localhost:3000', 'https://sigillum.vercel.app', 'https://sigillum-verifier.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
