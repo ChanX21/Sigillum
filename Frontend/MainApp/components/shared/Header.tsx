@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { useGetProfile } from "@/hooks/useProfile";
+import Image from "next/image";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -33,6 +34,7 @@ export const Header = () => {
   const readableSui = (rawBalance: bigint | number) => {
     return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);
   };
+
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -53,7 +55,7 @@ export const Header = () => {
   return (
     <>
       {/* Wallet Modal */}
-      <header className="fixed top-0 z-50 w-full h-12 md:px-5 bg-background border-b border-stone-300">
+      <header className={`fixed top-0 z-50 w-full h-12 ${walletConnected && profile?.data?.name ? 'md:pr-3' : 'md:px-0'} bg-background border-b border-stone-300`}>
         {showWalletModal && (
           <WalletModal setShowWalletModal={setShowWalletModal} />
         )}
@@ -61,16 +63,13 @@ export const Header = () => {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 bg-white rounded-full px-3  font-bold text-[#0d0d0d]"
+            className="flex bg-black items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
           >
-            <div className="flex items-center justify-center w-6 h-6 bg-[#1b263b] rounded-full">
-              <Shield className="w-3 h-3 text-white" />
-            </div>
-            <span className="text-sm sm:text-base">SIGILLUM</span>
+            <Image alt="Sigillum"  width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3 border-l ">
+          <nav className="hidden md:flex items-center h-full border-l ">
             {/* Search */}
             {walletConnected ? (
               <>
@@ -105,7 +104,7 @@ export const Header = () => {
                         <User size={20} className="text-gray-700" />
                       </DropdownMenuTrigger>
                     ) : (
-                      <DropdownMenuTrigger className="rounded-full text-sm px-4 py-2 border border-gray-300 cursor-pointer hover:bg-gray-100 transition-all">
+                      <DropdownMenuTrigger className="rounded-none outline-none text-sm h-full px-2 cursor-pointer hover:bg-gray-100 transition-all">
                         {shortenAddress(address)}
                       </DropdownMenuTrigger>
                     )}
@@ -144,7 +143,7 @@ export const Header = () => {
               <>
                 <Button
                   variant="default"
-                  className="rounded-full text-sm px-4 py-2"
+                  className="rounded-none h-full text-sm px-4 py-2"
                   onClick={() => setShowWalletModal(true)}
                 >
                   Connect Wallet

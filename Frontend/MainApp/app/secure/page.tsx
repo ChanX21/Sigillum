@@ -6,7 +6,7 @@ import { ImageUploadShowcase } from "@/components/nft/ImageUploadShowcase";
 import { NftMintedDetails } from "@/components/nft/NftMintedDetails";
 
 export default function Upload() {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0);
   const [stepLoading, setStepLoading] = useState<Boolean>(false);
 
   return (

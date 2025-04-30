@@ -123,7 +123,7 @@ export default function ProfilePage() {
                                         {shortenAddress(profile?.data?.walletAddress)}
                                     </div>
                                     <div className="ml-auto flex items-center gap-1.5">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
                                         <span className="text-xs text-green-600">Active</span>
                                     </div>
                                 </div>
@@ -166,7 +166,7 @@ export default function ProfilePage() {
                             </CardContent>
                             <CardFooter className="flex justify-between pt-4 pb-6 border-t border-gray-100 mt-6">
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                    <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                     <span className="text-xs text-gray-500 flex items-center gap-1">
                                         <CheckCircle size={10} className={connected ? 'text-green-500' : 'text-red-500'} /> 
                                         {connected ? 'Connected to Sui' : 'Disconnected'}

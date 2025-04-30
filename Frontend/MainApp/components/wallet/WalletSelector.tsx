@@ -5,10 +5,12 @@ import { useWalletSession } from '@/hooks/useWalletSession'
 import { useGetNonce } from '@/hooks/useSessionAuth'
 import axiosInstance from '@/lib/axios'
 import { toast } from 'sonner'
+import { useGetProfile } from '@/hooks/useProfile'
 
 const WalletSelector = () => {
   const { connected, connecting, address, configuredWallets, allAvailableWallets, detectedWallets, select } = useWallet()
   const { data, isPending, isSuccess, mutate: createWalletSession } = useWalletSession()
+  const { isError: sessionFailed } = useGetProfile()
   const [nonce, setNonce] = useState<any>()
 
   const handleWalletClick = async (wallet: any) => {
@@ -27,25 +29,25 @@ const WalletSelector = () => {
 
   useEffect(() => {
     if (address && connected) {
-      console.log("nonce")
-      axiosInstance.get(`/nonce/${address}`)
-        .then((res) => {
-          setNonce(res.data);
-          createWalletSession({ nonce: res.data.nonce })
-        })
-        .catch((error) => {
-          console.error('Error fetching nonce:', error);
-        });
+      if (sessionFailed) {
+        axiosInstance.get(`/nonce/${address}`)
+          .then((res) => {
+            setNonce(res.data);
+            createWalletSession({ nonce: res.data.nonce })
+          })
+          .catch((error) => {
+            console.error('Error fetching nonce:', error);
+          });
+      }
     }
-  }, [address, connected]);
+  }, [address, connected, sessionFailed]);
 
 
   useEffect(() => {
-    console.log(isSuccess,isPending)
     if (isSuccess) {
       toast.success("User Authenticated Successfully")
     }
-  }, [isSuccess,isPending])
+  }, [isSuccess])
   return (
     <div className='relative mt-10 md:px-10 px-15 flex flex-col overflow-y-scroll md:max-h-[85%]'>
       {[...configuredWallets, ...allAvailableWallets, ...detectedWallets].map((wallet, index) => (
