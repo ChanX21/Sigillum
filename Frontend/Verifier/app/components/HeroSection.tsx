@@ -11,7 +11,7 @@ const HeroSection = ({ image, fileInputRef, setActiveTab, handleFileUpload }: {
     return (
         <div>
             {!image && (
-                <div className="relative rounded-lg mx-5 bg-[#1b263b] text-white py-16 overflow-hidden">
+                <div className="relative mt-10 mx-5 bg-[#000] text-white py-16 overflow-hidden">
                     <div className="container max-w-5xl mx-auto px-4 relative z-10">
                         <div className="max-w-2xl">
                             <h1 className="text-4xl font-bold mb-4">Verify Image Authenticity</h1>

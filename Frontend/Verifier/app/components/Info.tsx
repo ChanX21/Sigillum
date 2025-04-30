@@ -9,7 +9,7 @@ const Info = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white p-6 rounded-xl shadow-sm"
+                className="bg-white p-6 rounded-xl border border-1 shadow-sm"
             >
                 <div className="w-12 h-12 bg-[#e6f7ff] rounded-full flex items-center justify-center mb-4">
                     <Shield className="w-6 h-6 text-[#0070f3]" />
@@ -22,7 +22,7 @@ const Info = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white p-6 rounded-xl shadow-sm"
+                className="bg-white p-6 rounded-xl border border-1 shadow-sm"
             >
                 <div className="w-12 h-12 bg-[#fff7e6] rounded-full flex items-center justify-center mb-4">
                     <User className="w-6 h-6 text-[#fa8c16]" />
@@ -35,7 +35,7 @@ const Info = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-white p-6 rounded-xl shadow-sm"
+                className="bg-white p-6 rounded-xl border border-1 shadow-sm"
             >
                 <div className="w-12 h-12 bg-[#f6ffed] rounded-full flex items-center justify-center mb-4">
                     <History className="w-6 h-6 text-[#52c41a]" />

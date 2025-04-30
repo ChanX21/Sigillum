@@ -17,6 +17,8 @@ import {
 
 import React, { useEffect, useState } from 'react'
 import { emit } from 'process';
+import NftAuctionCard from '@/components/nft/nftAuctionCard';
+import NftAuctionCardPreview from '@/components/nft/NftAuctionCardPreview';
 
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()
@@ -78,7 +80,7 @@ const UnlistedNfts = () => {
                                         <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
                                             {filteredNfts?.map((nft: MediaRecord, index: number) => (
                                                 <div key={index} className="snap-start">
-                                                    <NFTCardBrowse nft={nft} idx={index} status={nft.status} />
+                                                    <NftAuctionCardPreview nft={nft} idx={index} status={nft.status} />
                                                 </div>
                                             ))}
                                         </div>
