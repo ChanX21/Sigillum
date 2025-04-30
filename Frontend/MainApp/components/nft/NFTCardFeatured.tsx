@@ -197,7 +197,6 @@ export const NFTCardFeatured = ({ nft }: NFTCardFeaturedProps) => {
           </div>
         )}
 
-
         <div className="flex flex-col lg:flex-row justify-between gap-3 lg:gap-0">
           <div className="flex items-center gap-2">
             <UserAvatar
