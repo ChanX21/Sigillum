@@ -155,12 +155,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
  */
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      res.status(400).json({ message: 'User not found' });
-      return;
-    }
-    res.status(200).json(user);
+    res.status(200).json(req.user);
   } catch (error) {
     console.error('Error getting profile:', error);
     res.status(500).json({ message: 'Failed to get profile' });
