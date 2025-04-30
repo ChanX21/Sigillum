@@ -9,7 +9,7 @@ export function useGetMyNfts(creator: string, options?: Omit<UseQueryOptions<Med
         queryFn: ({ queryKey }) => {
             const [_, creator] = queryKey;
             return axiosInstance.get("/all").then((res) => {
-                const filteredNfts = res.data.filter((nft: MediaRecord) => nft.blockchain.creator === creator)
+                const filteredNfts = res.data.filter((nft: MediaRecord) => nft.user.walletAddress === creator)
                 return filteredNfts
             })
         },

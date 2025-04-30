@@ -1,6 +1,6 @@
 export function shortenAddress(
   address: string | null | undefined,
-  prefixLength: number = 7,
+  prefixLength: number = 20,
   suffixLength: number = 4
 ): string {
   // Handle null, undefined, empty strings

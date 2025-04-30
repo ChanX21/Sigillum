@@ -49,7 +49,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   }
 
   return (
-    <div className="flex flex-col border border-primary rounded-xl shadow-lg p-6">
+    <div className="flex flex-col gap-10 w-full md:w-[45%] p-8 pt-6">
       <div>
         <p className="font-semibold text-xl">NFT Details</p>
         <p className="text-sm text-gray-500 font-medium">

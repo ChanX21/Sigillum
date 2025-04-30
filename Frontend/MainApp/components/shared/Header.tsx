@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { IoCloseSharp, IoSearchSharp } from "react-icons/io5";
-import { FaEthereum } from "react-icons/fa";
 import { Shield } from "lucide-react";
 import Link from "next/link";
 
@@ -21,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { useWalletSession } from "@/hooks/useWalletSession";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -88,7 +86,7 @@ export const Header = () => {
             </div>
             {walletConnected ? (
               <>
-                <Link href={"/upload"} className="h-full block">
+                <Link href={"/secure"} className="h-full block">
                   <Button
                     variant="default"
                     className="rounded-none text-sm px-4 py-2  h-12"
