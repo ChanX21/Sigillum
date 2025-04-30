@@ -5,34 +5,31 @@ import { IoMdDownload } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { useRouter } from "next/navigation";
 import { GoDownload } from "react-icons/go";
+import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
+import { NFTDetails } from "./NFTDetails";
 
 export function NftMintedDetails({
-  imageUrl = "/image.png",
-  nftId = "#52",
-  ipfsUrl = "ipfs://Qm242725a3dc1262baa079...",
-  txHash = "0xab50e53...e12ed55f",
-  sha256 = "0x65535f45...67f8a5ec",
-  perceptualHash = "0xe84d3d17322e896f",
-  onDownload,
-  onBack,
+  setStep,
 }: {
-  imageUrl?: string;
-  nftId?: string;
-  ipfsUrl?: string;
-  txHash?: string;
-  sha256?: string;
-  perceptualHash?: string;
-  onDownload?: () => void;
-  onBack?: () => void;
+  setStep: (step: number) => void;
 }) {
   const router = useRouter();
+  const { result } = useImageAuthStore() as AuthState
+
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.watermarkedIpfsCid}`; // Replace with your image URL
+    link.download = "watermarked-image"; // The filename to save as
+    link.target = "_blank"
+    link.click();
+  };
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full">
       {/* Back button */}
       <div className="max-w-4xl  w-full">
         <button
-          onClick={() => (onBack ? onBack() : router.back())}
-          className="flex items-center gap-1 text-xs text-gray-600 hover:text-black mb-2 ml-2 mt-4 focus:outline-none"
+          onClick={() => setStep(0)}
+          className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer hover:text-black mb-2 ml-2 mt-4 focus:outline-none"
           style={{ alignSelf: "flex-start" }}
         >
           <IoMdClose size={14} />
@@ -44,7 +41,7 @@ export function NftMintedDetails({
         <div className="flex flex-col items-start w-full md:w-[55%] p-8 pb-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden  ">
             <Image
-              src={imageUrl}
+              src={`${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.watermarkedIpfsCid}`}
               alt="NFT"
               fill
               className="object-cover rounded-lg"
@@ -53,7 +50,7 @@ export function NftMintedDetails({
             />
           </div>
           <button
-            onClick={onDownload}
+            onClick={handleDownload}
             className="mt-4 flex items-center gap-2 border border-gray-400 px-4 py-2  bg-white hover:bg-gray-100 text-sm font-normal"
           >
             <GoDownload size={18} />
@@ -61,7 +58,8 @@ export function NftMintedDetails({
           </button>
         </div>
         {/* NFT Details */}
-        <div className="flex flex-col gap-10 w-full md:w-[45%] p-8 pt-6">
+        <NFTDetails />
+        {/* <div className="flex flex-col gap-10 w-full md:w-[45%] p-8 pt-6">
           <div>
             <h2 className="font-semibold text-base mb-1">NFT Details</h2>
             <div className="text-gray-500 text-xs mb-4">
@@ -98,7 +96,7 @@ export function NftMintedDetails({
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
       {/* Green Info Box */}
       <div className="w-full max-w-4xl mt-8">

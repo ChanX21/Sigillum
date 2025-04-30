@@ -63,7 +63,7 @@ export const UploadArea = ({
       toast.error("Could not find any media")
     }
     if (imageFile && connected) {
-      authenticateImage({ address, image: imageFile })
+      authenticateImage({ image: imageFile })
     }
   }
 
