@@ -39,7 +39,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
                 });
 
                 if (result) {
-                    toast.success("Bid accepted successfully!");
+                    toast.success("Nft Listed Successfully!");
                     updateNftDet({ nftId })
                     queryClient.invalidateQueries({ queryKey: ['unlisted-nfts'], exact: false })
                 }
@@ -59,7 +59,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
                     variant="outline"
                     className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
                 >
-                    List
+                    New Listing
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
