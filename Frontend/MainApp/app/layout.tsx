@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${albertSans.variable} antialiased`}>
+      <body className={`${albertSans.variable} antialiased bg-white`}>
         <Provider>
           {children}
         </Provider>
