@@ -5,40 +5,39 @@ import { Footer } from "@/components/shared/Footer";
 import { Header } from "@/components/shared/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useGetAllImages } from "@/hooks/useGetAllImages";
+import { MediaRecord } from "@/types";
 
 export default function MarketplacePage() {
+  const { data } = useGetAllImages();
+  console.log(data);
+
   return (
     <>
       <Header />
 
       <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10">
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
-          {Array(2)
-            .fill(0)
-            .map((idx) => (
-              <NftAuctionCard key={idx} />
-            ))}
+          {data?.slice(-2).map((nft: MediaRecord, index: number) => (
+            <NftAuctionCard key={index} nft={nft} />
+          ))}
         </section>
 
         <h2 className="text-2xl font-bold mb-8">Explore</h2>
         <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          {Array(5)
-            .fill(0)
-            .map((_, idx) => (
-              <div key={idx} className="snap-start">
-                <NftAuctionCardPreview key={idx} item={idx} />
-              </div>
-            ))}
+          {data?.map((nft: MediaRecord, index: number) => (
+            <div key={index} className="snap-start">
+              <NftAuctionCardPreview nft={nft} idx={index} />
+            </div>
+          ))}
         </section>
         <h2 className="text-2xl font-bold mb-8">Featured Drops</h2>
         <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          {Array(5)
-            .fill(0)
-            .map((_, idx) => (
-              <div key={idx} className="snap-start">
-                <NftAuctionCardPreview key={idx} item={idx} />
-              </div>
-            ))}
+          {data?.map((nft: MediaRecord, index: number) => (
+            <div key={index} className="snap-start">
+              <NftAuctionCardPreview nft={nft} idx={index} />
+            </div>
+          ))}
         </section>
 
         <section className="w-full my-16 flex flex-col items-center">

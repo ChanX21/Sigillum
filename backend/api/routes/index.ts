@@ -11,6 +11,9 @@ router.post('/authenticate', verifySession, upload.single('image'), imageAuthCon
 // POST /profile - Update user profile
 router.post('/profile', verifySession, imageAuthController.updateProfile);
 
+// POST /clear-session - Clear session
+router.post('/clear-session', verifySession, imageAuthController.clearSession);
+
 // GET /profile - Get user profile
 router.get('/profile', verifySession, imageAuthController.getProfile);
 

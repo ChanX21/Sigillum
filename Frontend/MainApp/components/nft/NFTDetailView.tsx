@@ -106,11 +106,6 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
               </p>
             )}
           </div>
-          {listingDetails && Number(listingDetails.minBid) > 0 && (
-            <p className="text-xs text-gray-500">
-              Min bid: {formatSuiAmount(Number(listingDetails.minBid))} SUI
-            </p>
-          )}
         </div>
         <div>
           <p className="text-sm text-gray-500">Ends in</p>
@@ -134,7 +129,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           </h2>
         </div>
         {hasHighestBid && (
-          <div className="flex items-center justify-between py-4 border-t">
+          <div className="flex items-center justify-between py-4 border-b border-t">
             <div className="flex items-center gap-3">
               <UserAvatar
                 walletAddress={listingDetails.highestBidder}
@@ -163,7 +158,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
       </div>
 
       <div className="space-y-4">
-        <h2 className="font-medium">Description</h2>
+        <h2 className="font-medium border-b">Description</h2>
         <p className="text-gray-600">{metadata?.description}</p>
       </div>
 
@@ -231,7 +226,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
             </Link>
           </div>
           {listingDetails && (
-            <div className="flex justify-between items-center py-2 border-t border-stone-300">
+            <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
               <span className="text-gray-600">Metadata</span>
               <span className="underline cursor-pointer">IPFS</span>
             </div>

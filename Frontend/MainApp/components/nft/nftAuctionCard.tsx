@@ -1,37 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import Image from "next/image";
 import { Button } from "../ui/button";
+import { MediaRecord } from "@/types";
+import { NFTMetadata } from "@/types";
+import { fetchMetadata, formatHumanReadableDate } from "@/utils/web2";
+import Link from "next/link";
+import { UserAvatar } from "../shared/UserAvatar";
+import { shortenAddress } from "@/utils/shortenAddress";
 
-export default function NftAuctionCard() {
+interface NFTCardFeaturedProps {
+  nft: MediaRecord;
+}
+
+export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetchMetadata(
+          `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
+        );
+        // console.log(response)
+        setMetadata(response);
+      } catch (error) {
+        console.error("Error fetching metadata:", error);
+      }
+    };
+
+    if (nft?.metadataCID) {
+      fetchData();
+    }
+  }, [nft]);
 
   return (
     <div className="col-span-1  bg-white  border-2 p-3  overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* Left side - Image */}
-        <div className="relative w-full md:w-1/2 bg-blue-200">
-          <div className="relative w-full h-[300px] md:h-full">
-            <Image
-              src="/image.png"
-              alt="Austrian Briar Art"
-              className="object-cover"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            {/* Timer overlay */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[160px] h-[40px] rounded-[16px] border border-white/30 bg-white/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[5px] flex items-center justify-center">
-              <span className="text-white font-semibold">4h:20m:30s</span>
+        <div className="relative w-full md:w-1/2 ">
+          <Link href={`/detail/${nft._id}`}>
+            <div className="relative w-full h-[300px] md:h-full">
+              <Image
+                src={metadata?.image || "/fallback.png"}
+                alt={metadata?.name || ""}
+                className="object-cover"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              {/* Timer overlay */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[160px] h-[40px] rounded-[16px] border border-white/30 bg-white/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[5px] flex items-center justify-center">
+                <span className="text-white font-semibold">4h:20m:30s</span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Right side - Details */}
         <div className="w-full md:w-1/2 p-6">
-          <h2 className="text-2xl font-bold mb-4">Human Austrian Briar Art</h2>
+          <Link href={`/detail/${nft._id}`}>
+            <h2 className="text-2xl font-bold mb-4">
+              {metadata?.name || "Human Austrian Briar Art"}
+            </h2>
+          </Link>
 
           {/* Current Bid */}
           <div className="mb-6">
@@ -64,7 +99,9 @@ export default function NftAuctionCard() {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">date</span>
                 </div>
-                <span className="text-gray-600">2nd March,2025</span>
+                <span className="text-gray-600">
+                  {formatHumanReadableDate(nft.createdAt)}
+                </span>
               </div>
 
               {/* Metadata */}
@@ -82,18 +119,22 @@ export default function NftAuctionCard() {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">blockchain</span>
                 </div>
-                <span className="text-gray-600">Ethereum</span>
+                <span className="text-gray-600">SUI</span>
               </div>
             </div>
           </div>
 
           {/* Creator */}
-          <div className="flex items-center mt-4">
-            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
-              <span className="text-sm">👤</span>
-            </div>
+          <div className="flex items-center mt-4 gap-2">
+            <UserAvatar
+              walletAddress={nft.user.walletAddress}
+              alt={nft.user.walletAddress || "Creator"}
+            />
             <div>
-              <p className="font-medium">Jane Cooper</p>
+              <p className="font-medium">
+                {" "}
+                {shortenAddress(nft.user.walletAddress) || ""}
+              </p>
               <p className="text-sm text-gray-500">Owner</p>
             </div>
           </div>

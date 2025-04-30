@@ -2,7 +2,6 @@
 import { Transaction } from "@mysten/sui/transactions";
 
 import { SuiClient } from "@mysten/sui/client";
-import { client } from "@/lib/suiClient";
 
 export const buildAcceptBidTx = (
   marketplaceObjectId: string,
@@ -476,6 +475,128 @@ export async function buildPlaceBidTxWithCoinSelection(
     return { transaction: tx, success: true };
   } catch (error) {
     console.error("Error building bid transaction:", error);
+    return {
+      transaction: new Transaction(),
+      success: false,
+      error: "Failed to build transaction",
+    };
+  }
+}
+export async function buildPlaceStakeTxWithCoinSelection(
+  provider: SuiClient,
+  address: string,
+  marketplaceObjectId: string,
+  listingId: string,
+  stakeAmountMist: bigint,
+  packageId: string,
+  moduleName: string
+): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
+  try {
+    // Get user's coins
+    const { data: coinData } = await provider.getCoins({
+      owner: address,
+      coinType: "0x2::sui::SUI",
+    });
+
+    if (!coinData || coinData.length === 0) {
+      return {
+        transaction: new Transaction(),
+        success: false,
+        error: "No coins available",
+      };
+    }
+
+    // Sort coins by balance (largest first)
+    const sortedCoins = [...coinData].sort((a, b) =>
+      Number(BigInt(b.balance) - BigInt(a.balance))
+    );
+
+    const tx = new Transaction();
+    // Set reasonable gas budget
+    const estimatedGasFee = BigInt(30000000); // 0.03 SUI
+    tx.setGasBudget(Number(estimatedGasFee));
+
+    // Calculate total balance
+    const totalBalance = coinData.reduce(
+      (sum: bigint, coin) => sum + BigInt(coin.balance),
+      BigInt(0)
+    );
+
+    if (totalBalance < stakeAmountMist) {
+      const stakeAmountSui = Number(stakeAmountMist) / 1_000_000_000;
+      return {
+        transaction: tx,
+        success: false,
+        error: `Insufficient balance. You need at least ${stakeAmountSui} SUI`,
+      };
+    }
+
+    // CRITICAL FIX: Use separate coins for stake and gas when possible
+    if (sortedCoins.length > 1) {
+      // Use the second largest coin for the stake if it's sufficient
+      if (BigInt(sortedCoins[1].balance) >= stakeAmountMist) {
+        const stakeCoinId = sortedCoins[1].coinObjectId;
+        // The largest coin will be used for gas automatically
+
+        // Split the exact amount needed for the stake
+        const stakeCoin = tx.splitCoins(tx.object(stakeCoinId), [
+          tx.pure.u64(stakeAmountMist.toString()),
+        ]);
+
+        // Build the stake transaction
+        tx.moveCall({
+          target: `${packageId}::${moduleName}::stake_on_listing`,
+          arguments: [
+            tx.object(marketplaceObjectId),
+            tx.pure.address(listingId),
+            stakeCoin[0],
+          ],
+        });
+
+        return { transaction: tx, success: true };
+      }
+    }
+
+    // If we can't use separate coins or only have one coin
+    // Use the largest coin but ensure we're not using the entire balance
+    const largestCoin = sortedCoins[0];
+
+    // Check if the largest coin can cover both stake and gas
+    if (BigInt(largestCoin.balance) < stakeAmountMist + estimatedGasFee) {
+      // Calculate how much the user can actually stake
+      const maxPossibleStake = BigInt(largestCoin.balance) - estimatedGasFee;
+      const stakeAmountSui = Number(stakeAmountMist) / 1_000_000_000;
+      const gasSui = Number(estimatedGasFee) / 1_000_000_000;
+
+      return {
+        transaction: tx,
+        success: false,
+        error: `Insufficient funds for this stake plus gas fees. Your largest coin has ${
+          Number(largestCoin.balance) / 1_000_000_000
+        } SUI, but you need ${
+          stakeAmountSui + gasSui
+        } SUI (${stakeAmountSui} SUI for stake + ${gasSui} SUI for gas). Try merging your coins first.`,
+      };
+    }
+
+    // Split the exact amount needed for the stake
+    const stakeCoin = tx.splitCoins(tx.object(largestCoin.coinObjectId), [
+      tx.pure.u64(stakeAmountMist.toString()),
+    ]);
+
+    // Build the stake transaction
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::stake_on_listing`,
+      arguments: [
+        tx.object(marketplaceObjectId),
+        tx.pure.address(listingId),
+        stakeCoin[0],
+      ],
+    });
+
+    return { transaction: tx, success: true };
+  } catch (error) {
+    console.error("Error building stake transaction:", error);
     return {
       transaction: new Transaction(),
       success: false,
