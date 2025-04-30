@@ -119,7 +119,8 @@ export const Header = () => {
                       </DropdownMenuTrigger>
                     )}
                     <DropdownMenuContent>
-                      <DropdownMenuLabel className="cursor-pointer">My Account</DropdownMenuLabel>
+                      
+                      <DropdownMenuLabel className="cursor-pointer">{profile?.data?.name ? profile.data.name : 'My Account'}</DropdownMenuLabel>
                       <DropdownMenuLabel>
                         <div className="flex items-center gap-2 bg-background py-0 rounded-full">
                           <div className="bg-white rounded-full flex items-center justify-center">
@@ -190,7 +191,7 @@ export const Header = () => {
                         </DropdownMenuTrigger>
                       )}
                       <DropdownMenuContent>
-                        <DropdownMenuLabel className="cursor-pointer">My Account</DropdownMenuLabel>
+                        <DropdownMenuLabel className="cursor-pointer">{profile?.data?.name ? profile.data.name : 'My Account'}</DropdownMenuLabel>
                         <DropdownMenuLabel>
                           <div className="flex items-center gap-2 bg-background py-0 rounded-full">
                             <div className="bg-white rounded-full flex items-center justify-center">
