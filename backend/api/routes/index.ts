@@ -11,6 +11,9 @@ router.post('/authenticate', verifySession, upload.single('image'), imageAuthCon
 // POST /profile - Update user profile
 router.post('/profile', verifySession, imageAuthController.updateProfile);
 
+// GET /profile - Get user profile
+router.get('/profile', verifySession, imageAuthController.getProfile);
+
 // POST /mint - Mint an image
 router.post('/blockchain', imageAuthController.blockchain);
 
