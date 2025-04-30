@@ -22,6 +22,7 @@ import {
 } from "../ui/dropdown-menu";
 import { useGetProfile } from "@/hooks/useProfile";
 import Image from "next/image";
+import axiosInstance from "@/lib/axios";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -35,6 +36,15 @@ export const Header = () => {
     return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);
   };
 
+  const disconnectWallet = () => {
+    disconnect()
+    axiosInstance.post('/clear-session', {}, {
+      withCredentials: true
+    }).then((res) => {
+    }).catch(err => {
+      console.log(err)
+    })
+  }
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -65,7 +75,7 @@ export const Header = () => {
             href="/"
             className="flex bg-black items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
           >
-            <Image alt="Sigillum"  width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
+            <Image alt="Sigillum" width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
           </Link>
 
           {/* Desktop nav */}
@@ -100,7 +110,7 @@ export const Header = () => {
                 {address && (
                   <DropdownMenu>
                     {profile?.data?.name ? (
-                      <DropdownMenuTrigger className="flex justify-around rounded-full items-center text-sm px-2 outline-none py-2 cursor-pointer border border-gray-100 hover:bg-gray-100 transition-all">
+                      <DropdownMenuTrigger className="flex md:ml-3 justify-around rounded-full items-center text-sm px-2 outline-none py-2 cursor-pointer border border-gray-100 hover:bg-gray-100 transition-all">
                         <User size={20} className="text-gray-700" />
                       </DropdownMenuTrigger>
                     ) : (
@@ -132,7 +142,7 @@ export const Header = () => {
                       <Link href={"/profile"}>
                         <DropdownMenuItem className="cursor-pointer" >Profile</DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => disconnect()}>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => disconnectWallet()}>
                         Disconnect
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -203,7 +213,7 @@ export const Header = () => {
                         <Link href={"/profile"}>
                           <DropdownMenuItem className="cursor-pointer" >Profile</DropdownMenuItem>
                         </Link>
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => disconnect()}>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => disconnectWallet()}>
                           Disconnect
                         </DropdownMenuItem>
                       </DropdownMenuContent>

@@ -10,7 +10,7 @@ import { useGetProfile } from '@/hooks/useProfile'
 const WalletSelector = () => {
   const { connected, connecting, address, configuredWallets, allAvailableWallets, detectedWallets, select } = useWallet()
   const { data, isPending, isSuccess, mutate: createWalletSession } = useWalletSession()
-  const { isError: sessionFailed } = useGetProfile()
+  const { isError: sessionFailed, error: sessionError } = useGetProfile()
   const [nonce, setNonce] = useState<any>()
 
   const handleWalletClick = async (wallet: any) => {
@@ -28,8 +28,9 @@ const WalletSelector = () => {
   }
 
   useEffect(() => {
-    if (address && connected) {
-      if (sessionFailed) {
+    if (sessionError) {
+      if (address && connected) {
+        console.log("Session Failed")
         axiosInstance.get(`/nonce/${address}`)
           .then((res) => {
             setNonce(res.data);
@@ -40,7 +41,7 @@ const WalletSelector = () => {
           });
       }
     }
-  }, [address, connected, sessionFailed]);
+  }, [address, connected, sessionFailed, sessionError]);
 
 
   useEffect(() => {
