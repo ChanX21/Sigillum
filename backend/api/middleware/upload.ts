@@ -1,5 +1,4 @@
 import multer from 'multer';
-import { Request } from 'express';
 
 // Configure storage
 const storage = multer.memoryStorage();

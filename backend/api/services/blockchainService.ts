@@ -14,6 +14,12 @@ const suiClient = new SuiClient({
 
 const walrusClient = new WalrusClient({
 	network: 'testnet',
+  storageNodeClientOptions:{
+    timeout: 100000,
+    onError: (error) => {
+      console.error('Error writing blob:', error);
+    },
+  },
 	suiRpcUrl: rpcUrl,
 });
 
@@ -98,11 +104,12 @@ export const mintNFT = async (
     // Convert Blob to Uint8Array
     const arrayBuffer = await vectorBlob.arrayBuffer();
     const vectorData = new Uint8Array(arrayBuffer);
-    
-    /*const { blobId } = await walrusClient.writeBlob({
-      blob: vectorData,
+    const file = new TextEncoder().encode('Hello from the TS SDK!!!\n');
+ 
+   /* const { blobId } = await walrusClient.writeBlob({
+      blob: file,
       deletable: false,
-      epochs: 45,
+      epochs: 3,
       signer: keypair,
     });*/
     const blobId = Date.now().toString();
