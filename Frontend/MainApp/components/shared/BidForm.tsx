@@ -138,7 +138,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
 
       <div className="w-full flex gap-2">
         <Button
-          className="w-[49%] py-6 text-lg "
+          className="w-[49%] py-6 text-lg rounded-none"
           size="lg"
           onClick={handlePlaceBid}
           disabled={submitting || !address || !bidAmount}
@@ -146,7 +146,7 @@ export const BidForm = ({ nft }: BIDFormProps) => {
           {submitting ? "Processing..." : "Place a Bid"}
         </Button>
         <Button
-          className="w-[49%] py-6 text-lg border text-primary "
+          className="w-[49%] py-6 text-lg border text-primary rounded-none"
           size="lg"
           onClick={handlePlaceBid}
           variant="outline"
