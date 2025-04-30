@@ -1,10 +1,14 @@
 "use client";
-import { NFTCardFeatured } from "@/components/nft/NFTCardFeatured";
-import { NFTCardBrowse } from "@/components/nft/NFTCardBrowse";
-import { Footer } from "@/components/shared/Footer";
+
+import { LandingHero } from "../components/LandingHero";
+import { ImageCarouselShowcase } from "../components/ImageCarouselShowcase";
+import { HowItWorks } from "../components/HowItWorks";
+import { LandingCta } from "../components/LandingCta";
 import { MediaRecord, NFTCard } from "@/types";
-import { Header } from "@/components/shared/Header";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
+import ImageCarousel from "@/components/hero/carousel";
+import { Header } from "@/components/shared/Header";
+import { Footer } from "@/components/shared/Footer";
 
 export default function Home() {
   const featuredNFTs: NFTCard[] = [
@@ -48,32 +52,12 @@ export default function Home() {
   return (
     <>
       <Header />
-
-      <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10">
-        <section
-          className="min-h-[50vh] grid grid-cols-1 md:grid-cols-2 gap-10 mb-10"
-          aria-label="Featured NFTs"
-        >
-          {data?.slice(-2).map((nft: MediaRecord, index: number) => (
-            <NFTCardFeatured key={index} nft={nft} />
-          ))}
-        </section>
-
-        <section
-          aria-label="Browse NFTs"
-          className="pt-10 border-t border-stone-400"
-        >
-          <h1 className="text-3xl font-bold mb-8">Browse</h1>
-          <div className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-            {data?.map((nft: MediaRecord, index: number) => (
-              <div key={index} className="snap-start">
-                <NFTCardBrowse nft={nft} idx={index} />
-              </div>
-            ))}
-          </div>
-        </section>
+      <main className="flex flex-col w-full min-h-screen pt-24 px-0 bg-white">
+        <LandingHero />
+        <ImageCarousel />
+        <HowItWorks />
+        <LandingCta />
       </main>
-
       <Footer />
     </>
   );
