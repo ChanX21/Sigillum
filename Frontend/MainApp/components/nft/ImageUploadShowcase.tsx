@@ -7,117 +7,109 @@ import { X } from "lucide-react";
 import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
+import SecureCarousel from "./SecureCarousel";
 // Dummy images for the carousel; replace with real image URLs as needed
+
 const carouselImages = [
-  "/image.png",
-  "/image2.png",
-  "/image.png",
-  "/image2.png",
-  "/image.png",
-  "/image2.png",
-  "/image.png",
-  "/image2.png",
+  "/image1.jpg",
+  "/image2.jpg",
+  "/image3.jpg",
+  "/image4.jpg",
+  "/image5.jpg",
 ];
 
 export function ImageUploadShowcase({
   setStep,
-  setStepLoading
+  setStepLoading,
 }: {
   setStep: (step: number) => void;
-  setStepLoading: React.Dispatch<React.SetStateAction<Boolean>>
+  setStepLoading: React.Dispatch<React.SetStateAction<Boolean>>;
 }) {
-
-  // TODO: Implement drag-and-drop and file input logic
-  const [image, setImage] = useState<string | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const { address, connected } = useWallet()
-  const { error, isSuccess, isError, isPending, mutate: authenticateImage } = useAuthenticateImage()
+  const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { address, connected } = useWallet();
+  const {
+    error,
+    isSuccess,
+    isError,
+    isPending,
+    mutate: authenticateImage,
+  } = useAuthenticateImage();
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string)
-        setImageFile(file)
-      }
-      reader.readAsDataURL(file)
+        setImage(event.target?.result as string);
+        setImageFile(file);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
+    e.preventDefault();
+    setIsDragging(false);
+  };
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
+    e.preventDefault();
+    setIsDragging(false);
 
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader()
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string)
-        setImageFile(file)
-      }
-      reader.readAsDataURL(file)
+        setImage(event.target?.result as string);
+        setImageFile(file);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
   const handleMint = () => {
     if (!connected) {
-      toast.error("Please Connect Wallet")
+      toast.error("Please Connect Wallet");
     }
     if (!imageFile) {
-      toast.error("Could not find any media")
+      toast.error("Could not find any media");
     }
     if (imageFile && connected) {
-      authenticateImage({ image: imageFile })
+      authenticateImage({ image: imageFile });
     }
-  }
+  };
 
   useEffect(() => {
     if (isPending) {
-      setStepLoading(true)
+      setStepLoading(true);
     } else {
-      setStepLoading(false)
+      setStepLoading(false);
     }
     if (isError) {
-      toast.error(error.message)
+      toast.error(error.message);
     }
     if (isSuccess) {
-      toast.success("Image Authenticated Successfully")
-      setStep(1)
+      toast.success("Image Authenticated Successfully");
+      setStep(1);
     }
-  }, [error, isSuccess, isPending])
-
+  }, [error, isSuccess, isPending]);
 
   return (
-    <div className={`${image ? '' : 'flex flex-col items-center w-full h-[80vh] justify-end relative'}`}>
-
+    <div
+      className={`${
+        image
+          ? ""
+          : "flex flex-col items-center w-full h-[80vh] justify-end relative"
+      }`}
+    >
       {!image ? (
         <>
-          <div className="flex gap-4 mb-8 w-full justify-center overflow-auto">
-            {carouselImages.map((src, idx) => (
-              <div
-                key={idx}
-                className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-52 md:h-52 lg:w-60 lg:h-60 rounded-xl overflow-hidden shadow-md flex-shrink-0"
-              >
-                <Image
-                  src={src}
-                  alt="carousel"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            ))}
-          </div>
+          <SecureCarousel />
           <div className="flex flex-col items-center absolute top-1/3 md:top-1/2   left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <h1 className="text-3xl font-bold text-center mb-2">
               Protect What You Create
@@ -131,12 +123,14 @@ export function ImageUploadShowcase({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`${isDragging && 'backdrop-blur-[11px]'} rounded-xl w-64 h-72 flex flex-col items-center justify-center cursor-pointer transition  hover:backdrop-blur-[11px] bg-[rgba(255,255,255,0.2)] backdrop-blur-[10px] border-[1px] border-dashed border-[#8e8e8e]`}
+              className={`${
+                isDragging && "backdrop-blur-[11px]"
+              } rounded-xl w-64 h-72 flex flex-col items-center justify-center cursor-pointer transition  hover:backdrop-blur-[11px] bg-[rgba(255,255,255,0.2)] backdrop-blur-[10px] border-[1px] border-dashed border-[#8e8e8e]`}
             >
               <span className="text-4xl text-gray-400 mb-2">
-                <IoIosAddCircleOutline size={24} color="white" />
+                <IoIosAddCircleOutline size={24} color="black" />
               </span>
-              <span className="text-white">Upload Image</span>
+              <span className="text-black">Upload Image</span>
               <input
                 id="img-upload"
                 type="file"
@@ -152,31 +146,41 @@ export function ImageUploadShowcase({
         <>
           <div className="w-full flex justify-center relative ">
             <div className="relative md:w-[35%] w-full aspect-square">
-              <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
+              <Image
+                src={image || "/placeholder.svg"}
+                alt="Uploaded image"
+                fill
+                className="object-cover"
+              />
             </div>
             <Button
               onClick={() => {
-                setImage(null)
-                setImageFile(null)
+                setImage(null);
+                setImageFile(null);
               }}
-              variant={'secondary'} className="absolute top-0 md:-top-5 right-0">
+              variant={"secondary"}
+              className="absolute top-0 md:-top-5 right-0"
+            >
               <X />
             </Button>
           </div>
           <div className="text-right mt-10 mb-10">
-            <Button onClick={handleMint} className="rounded-none" variant="default">
+            <Button
+              onClick={handleMint}
+              className="rounded-none"
+              variant="default"
+            >
               {isPending ? (
                 <div className="relative w-6 h-6 bg-[#1b263b] rounded-full">
                   <div className="absolute inset-0 border-2 border-[#1b263b]  border-t-[#fff] rounded-full animate-spin m-0.5"></div>
                 </div>
               ) : (
-                'Secure & Mint'
+                "Secure & Mint"
               )}
             </Button>
           </div>
         </>
       )}
-
     </div>
   );
 }

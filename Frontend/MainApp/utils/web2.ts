@@ -65,20 +65,17 @@ export function getTimeRemaining(endTime: number | undefined): string {
   const nowMs = Date.now(); // current time in ms
   const endTimeMs = endTime < 1e12 ? endTime * 1000 : endTime; // normalize to ms
 
-  console.log("Current time (ms):", nowMs);
-  console.log("End time (ms):", endTimeMs);
-
   const timeLeftMs = endTimeMs - nowMs;
-
-  if (timeLeftMs <= 0) return "Auction ended";
+  if (timeLeftMs <= 0) return "Ended";
 
   const timeLeftSec = Math.floor(timeLeftMs / 1000);
   const hours = Math.floor(timeLeftSec / 3600);
   const minutes = Math.floor((timeLeftSec % 3600) / 60);
+  const seconds = timeLeftSec % 60;
 
   // Show time left if less than a day
   if (timeLeftSec < 86400) {
-    return `Auction ends in ${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   }
 
   // Otherwise, show the exact end time
@@ -91,7 +88,7 @@ export function getTimeRemaining(endTime: number | undefined): string {
     minute: "2-digit",
   };
 
-  return `Auction ends on ${endDate.toLocaleString(undefined, options)}`;
+  return endDate.toLocaleString(undefined, options);
 }
 
 // Format SUI amount (convert from MIST to SUI)

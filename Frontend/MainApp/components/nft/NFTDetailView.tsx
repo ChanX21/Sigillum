@@ -19,9 +19,14 @@ import { Button } from "../ui/button";
 interface NFTDetailViewProps {
   nft: MediaRecord;
   metadata: NFTMetadata | null;
+  metadataCID: string;
 }
 
-export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
+export const NFTDetailView = ({
+  nft,
+  metadata,
+  metadataCID,
+}: NFTDetailViewProps) => {
   const [listingDetails, setListingDetails] =
     useState<ListingDataResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -65,7 +70,7 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  console.log(listingDetails);
+  console.log(metadata);
 
   const handleCopy = async (text: string) => {
     if (!text) return;
@@ -228,7 +233,12 @@ export const NFTDetailView = ({ nft, metadata }: NFTDetailViewProps) => {
           {listingDetails && (
             <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
               <span className="text-gray-600">Metadata</span>
-              <span className="underline cursor-pointer">IPFS</span>
+              <Link
+                href={`${process.env.NEXT_PUBLIC_PINATA_URL}${metadataCID}`}
+                target="_blank"
+              >
+                <span className="underline cursor-pointer">IPFS</span>
+              </Link>
             </div>
           )}
         </div>
