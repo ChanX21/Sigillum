@@ -9,7 +9,8 @@ import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { useWallet } from "@suiet/wallet-kit";
-import { formatSuiAmount, getTimeRemaining } from "@/utils/web2";
+import { formatSuiAmount } from "@/utils/web2";
+import { useCountdown } from "@/hooks/useCountdown";
 import { BidAcceptanceForm } from "../shared/BidAcceptanceForm";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ export const NFTDetailView = ({
   const [error, setError] = useState<string | null>(null);
   const wallet = useWallet();
   const { address } = wallet;
+  const timeRemaining = useCountdown(Number(listingDetails?.endTime));
 
   const fetchListingDetails = async () => {
     if (!nft.blockchain.listingId) return;
@@ -70,7 +72,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  console.log(listingDetails);
+  console.log(nft, listingDetails);
   const sold =
     !listingDetails?.active &&
     listingDetails?.highestBidder == listingDetails?.owner;
@@ -120,7 +122,7 @@ export const NFTDetailView = ({
           <p className="text-sm font-semibold">
             {loading
               ? "Loading..."
-              : getTimeRemaining(Number(listingDetails?.endTime))}
+              : timeRemaining}
           </p>
         </div>
       </div>
@@ -248,6 +250,16 @@ export const NFTDetailView = ({
               </Link>
             </div>
           )}
+
+          <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
+            <span className="text-gray-600">Metadata</span>
+            <Link
+              href={`${process.env.NEXT_PUBLIC_PINATA_URL}${metadataCID}`}
+              target="_blank"
+            >
+              <span className=" cursor-pointer">Walrus</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

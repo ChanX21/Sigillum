@@ -1,5 +1,6 @@
 import { MediaRecord, NFTMetadata } from "@/types";
-import { fetchMetadata, formatSuiAmount, getTimeRemaining } from "@/utils/web2";
+import { fetchMetadata, formatSuiAmount } from "@/utils/web2";
+import { useCountdown } from "@/hooks/useCountdown";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ export const NftAuctionCardPreview = ({
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
   const [listingDetails, setListingDetails] =
     useState<ListingDataResponse | null>(null);
+  const timeRemaining = useCountdown(Number(listingDetails?.endTime));
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const wallet = useWallet();
@@ -101,7 +103,7 @@ export const NftAuctionCardPreview = ({
   const listPriceNumber = Number(listPrice);
   const isReserve = listPriceNumber > 0;
 
-  console.log(listingDetails);
+  // console.log(listingDetails);
   return (
     <div
       className={`w-[320px] bg-white border-2  overflow-hidden flex flex-col`}
@@ -165,7 +167,7 @@ export const NftAuctionCardPreview = ({
             <div className="flex flex-col items-center py-3">
               <span className="mb-1 text-gray-400">Ending in</span>
               <span className="font-semibold">
-                {getTimeRemaining(Number(listingDetails?.endTime))}
+                {timeRemaining}
               </span>
             </div>
           </div>

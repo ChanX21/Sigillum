@@ -62,7 +62,8 @@ export default function Detail() {
               alt={metadata?.name || ""}
               src={metadata?.image || "/fallback.png"}
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="rounded-4xl"
+              fill
+              className="rounded-4xl "
             />
           </div>
         </div>
