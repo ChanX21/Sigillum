@@ -313,7 +313,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       const result = await mintNFT(authenticatedImage.user.walletAddress, authenticatedImage.original, vectorResponse[0].vector as number[], authenticatedImage.watermarked, authenticatedImage.metadataCID);
       await AuthenticatedImage.findByIdAndUpdate(
         authenticatedImage._id,
-        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId, blobId: result.blobId } }
+        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId }, vector: { ...authenticatedImage.vector, blobId: result.blobId } }
       );
       await axios.post(`${process.env.BASE_URL}/blockchain`, {
         action: 'soft-list',
