@@ -15,9 +15,14 @@ import { ListingDataResponse, MediaRecord } from "@/types";
 interface BIDFormProps {
   nft: MediaRecord;
   setOpen?: (open: boolean) => void;
+  fetchListingDetails?: () => Promise<void>;
 }
 
-export const BidForm = ({ nft, setOpen }: BIDFormProps) => {
+export const BidForm = ({
+  nft,
+  setOpen,
+  fetchListingDetails,
+}: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
   const [bidding, setBidding] = useState<boolean>(false);
   const [staking, setStaking] = useState<boolean>(false);
@@ -87,6 +92,7 @@ export const BidForm = ({ nft, setOpen }: BIDFormProps) => {
 
         if (result) {
           setBidAmount("");
+          fetchListingDetails?.();
           setOpen?.(false);
           toast.success("Bid placed successfully!");
         }
@@ -181,6 +187,7 @@ export const BidForm = ({ nft, setOpen }: BIDFormProps) => {
 
         if (result) {
           setBidAmount("");
+          fetchListingDetails?.();
           setOpen?.(false);
           toast.success("Stake placed successfully!");
         }

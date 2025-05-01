@@ -10,17 +10,16 @@ export function LandingHero() {
       <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-center mb-4 tracking-tight">
         CELEBRATING
         <br className="hidden sm:block" />
-        AUTHENTIC MOMENTS<span className="">_</span>
+        AUTHENTIC MOMENTS<span className="animate-pulse inline-block">_</span>
       </h1>
+
       <p className="text-gray-500 text-center max-w-[600px] mb-6 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl">
         A new home for real photos.
         <br className="hidden sm:block" />
         Where authenticity is valued and every image tells its true story.
       </p>
       <div className="flex items-center justify-center space-x-4  ">
-
-        <Link href={'https://sigillum-verifier.vercel.app'} target="_blank">
-        
+        <Link href={"https://sigillum-verifier.vercel.app"} target="_blank">
           <Button
             className="bg-black text-white font-medium px-4 py-2 rounded-none shadow hover:bg-gray-900 transition text-sm flex items-center gap-2"
             style={{ width: "150px" }}
