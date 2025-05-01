@@ -9,10 +9,10 @@ export function useAuthenticateImage() {
     const setError = useImageAuthStore((s) => s.setError);
     return useMutation({
         mutationKey: ["authenticate-image"],
-        mutationFn: ({ image }: { image: File }) => {
+        mutationFn: ({ image, name, description }: { image: File, name: string, description: string }) => {
             const formData = new FormData();
             formData.append("image", image);
-            formData.append('metadata', JSON.stringify({ name: 'Furkan', "description": "know something about tech" }));
+            formData.append('metadata', JSON.stringify({ name, description }));
 
             return axiosInstance
                 .post(`/authenticate`, formData, {
