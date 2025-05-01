@@ -184,7 +184,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
  */
 export const uploadImage = async (req: FileRequest, res: Response): Promise<void> => {
   try {
-    if (!req.file) {
+      if (!req.file) {
       res.status(400).json({
         message: 'No image file uploaded',
         hint: 'Make sure you are sending a multipart/form-data request with an image field'
@@ -310,23 +310,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
         return;
       }
       
-      // Handle different possible vector formats and convert to flat array
-      let vectorData: number[] = [];
-      const vector = vectorResponse[0].vector;
-      
-      if (Array.isArray(vector)) {
-        // If it's a flat array, use it directly
-        if (typeof vector[0] === 'number') {
-          vectorData = vector as number[];
-        } 
-        // If it's an array of arrays, flatten it
-        else if (Array.isArray(vector[0])) {
-          vectorData = (vector as number[][]).flat();
-        }
-      }
-      
-      const vectorBlob = new Blob([new Float32Array(vectorData)], {type: 'application/octet-stream'});
-      const result = await mintNFT(authenticatedImage.user.walletAddress, authenticatedImage.original, vectorBlob, authenticatedImage.watermarked, authenticatedImage.metadataCID);
+      const result = await mintNFT(authenticatedImage.user.walletAddress, authenticatedImage.original, vectorResponse[0].vector as number[], authenticatedImage.watermarked, authenticatedImage.metadataCID);
       await AuthenticatedImage.findByIdAndUpdate(
         authenticatedImage._id,
         { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId, blobId: result.blobId } }
@@ -384,6 +368,7 @@ interface VerifyRequest extends Request {
  */
 export const verify = async (req: Request, res: Response): Promise<void> => {
   try {
+
     if (!req.file) {
       res.status(400).json({ message: 'No image file uploaded' });
       return;

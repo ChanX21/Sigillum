@@ -1,5 +1,5 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { WalrusClient } from '@mysten/walrus';
+import { RetryableWalrusClientError, WalrusClient } from '@mysten/walrus';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { bcs } from '@mysten/sui/bcs';
@@ -12,15 +12,16 @@ const suiClient = new SuiClient({
 	url: rpcUrl,
 });
 
+
 const walrusClient = new WalrusClient({
 	network: 'testnet',
+	suiRpcUrl: rpcUrl,
   storageNodeClientOptions:{
-    timeout: 100000,
+    timeout: 1000000,
     onError: (error) => {
       console.error('Error writing blob:', error);
     },
   },
-	suiRpcUrl: rpcUrl,
 });
 
 // Sui contract configuration - extract package ID and module name from the fully qualified name
@@ -71,7 +72,7 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
- * @param {Blob} vectorBlob - Vector blob of the image
+ * @param {number[]} vector - Vector of the image
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
@@ -79,14 +80,14 @@ export interface VerificationResult {
 export const mintNFT = async (
   creatorAddress: string,
   imageUrl: string,
-  vectorBlob: Blob,
+  vector: number[],
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !imageUrl || !vectorBlob || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, vector blob, watermark CID, and metadata CID are required');
+    if (!creatorAddress || !imageUrl || !vector || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, vector, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -100,27 +101,30 @@ export const mintNFT = async (
 
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-
-    // Convert Blob to Uint8Array
-    const arrayBuffer = await vectorBlob.arrayBuffer();
-    const vectorData = new Uint8Array(arrayBuffer);
-    const file = new TextEncoder().encode('Hello from the TS SDK!!!\n');
- 
-   /* const { blobId } = await walrusClient.writeBlob({
-      blob: file,
-      deletable: false,
-      epochs: 3,
-      signer: keypair,
-    });*/
-    const blobId = Date.now().toString();
-    console.log(blobId);
+    let id = '';
+      // Try to use Walrus storage nodes
+      try {
+        const { blobId } = await walrusClient.writeBlob({
+          blob: new Uint8Array(new Float32Array(vector)),
+          deletable: false,
+          epochs: 3,
+          signer: keypair,
+        });
+        id = blobId;
+      } catch (error) {
+        if (error instanceof RetryableWalrusClientError) {
+          walrusClient.reset();
+          // Could retry the operation here
+        }
+        throw error;
+      }
 
     // Serialize data for transaction
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
       vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId)),
+      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(id)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
       metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
@@ -157,7 +161,7 @@ export const mintNFT = async (
     return {
       transactionHash: result.digest,
       tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || '',
-      blobId: blobId
+      blobId: id
     };
   } catch (error) {
     console.error('Error minting NFT:', error);

@@ -217,10 +217,10 @@
   dependencies:
     "@scure/base" "^1.2.4"
 
-"@mysten/sui@1.28.2":
-  version "1.28.2"
-  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.28.2.tgz#ded2ae122c53ac3bb6f05d731b5847e447512eb2"
-  integrity sha512-d+lSp3rAtuOX0taIiIv0KNILDsbmAB9koNGHBinfREraGnE9tUFW315UByuyvuZ9K53ji4i2risdtwxCQ1a8Zw==
+"@mysten/sui@1.29.0":
+  version "1.29.0"
+  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.29.0.tgz#cd277e8299cf4cdafad4e9dcff4e0d44af96cd9a"
+  integrity sha512-0rOGYy97DZaD+TocjKOgqPalPh/IZnbMYVI1ncAKYGR59SMeunuk7RCWL6rGA8hN//JBor4nVkXpId6FlbhEeA==
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
     "@mysten/bcs" "1.6.0"
@@ -264,13 +264,13 @@
   resolved "https://registry.yarnpkg.com/@mysten/walrus-wasm/-/walrus-wasm-0.0.6.tgz#f0c3cf3fdcc0aaaa433f3639a628cd462b64e063"
   integrity sha512-rqXopgWqALp8jdVaHeW64P5I7MmzEGy8gCFbfzK8xGgWGpSjKtvVeHJ9EguRVOxALaYtDBVlmMPnoySJi+bLjA==
 
-"@mysten/walrus@^0.0.19":
-  version "0.0.19"
-  resolved "https://registry.yarnpkg.com/@mysten/walrus/-/walrus-0.0.19.tgz#7311d47251f7e5e145494b91373e81c3ead9268c"
-  integrity sha512-xcN7tgz9fUdbjxz5e3/TIz9eZxJLfJxjZlQejYP5MdiD6jqM5Gr0nM6af1IF9gBRpx6N3IHmw0U29M+11oMm8Q==
+"@mysten/walrus@^0.0.20":
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/@mysten/walrus/-/walrus-0.0.20.tgz#f1f401f22a9550b0c4151e20f0ef27241dba36d8"
+  integrity sha512-DSyVruibXhWSntU90VzJ0q1jEbuhgkRwEOrwwd4tGQ36vEDWbskzuCPIbaYHmJA7N9rcK9P0mqte3+wlTQINew==
   dependencies:
     "@mysten/bcs" "1.6.0"
-    "@mysten/sui" "1.28.2"
+    "@mysten/sui" "1.29.0"
     "@mysten/utils" "0.0.0"
     "@mysten/walrus-wasm" "0.0.6"
     dataloader "^2.2.3"

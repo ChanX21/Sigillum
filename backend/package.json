@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@mysten/sui": "^1.26.1",
-    "@mysten/walrus": "^0.0.19",
+    "@mysten/walrus": "^0.0.20",
     "@qdrant/js-client-rest": "^1.13.0",
     "axios": "^1.8.4",
     "cookie-parser": "^1.4.7",
