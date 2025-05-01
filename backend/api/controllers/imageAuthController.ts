@@ -406,7 +406,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
     }
     const verifications: any[] = [];
     for(let i = 0; i < filteredSimilarImages.length; i++) {
-      let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications').lean();
+      let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications user').lean();
       if(authenticatedImage) {
         // Create a new verification record
         const verification = new Verification({
