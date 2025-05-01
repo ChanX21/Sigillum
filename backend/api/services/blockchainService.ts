@@ -1,5 +1,5 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { RetryableWalrusClientError, WalrusClient } from '@mysten/walrus';
+import { WalrusClient } from '@mysten/walrus';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { bcs } from '@mysten/sui/bcs';
@@ -9,19 +9,14 @@ const rpcUrl = getFullnodeUrl('testnet');
 
 // Create a client connected to testnet
 const suiClient = new SuiClient({
+  network: 'testnet',
 	url: rpcUrl,
 });
 
 
 const walrusClient = new WalrusClient({
 	network: 'testnet',
-	suiRpcUrl: rpcUrl,
-  storageNodeClientOptions:{
-    timeout: 1000000,
-    onError: (error) => {
-      console.error('Error writing blob:', error);
-    },
-  },
+  suiRpcUrl: rpcUrl,
 });
 
 // Sui contract configuration - extract package ID and module name from the fully qualified name
@@ -101,30 +96,21 @@ export const mintNFT = async (
 
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-    let id = '';
-      // Try to use Walrus storage nodes
-      try {
+    
         const { blobId } = await walrusClient.writeBlob({
           blob: new Uint8Array(new Float32Array(vector)),
           deletable: false,
           epochs: 3,
           signer: keypair,
         });
-        id = blobId;
-      } catch (error) {
-        if (error instanceof RetryableWalrusClientError) {
-          walrusClient.reset();
-          // Could retry the operation here
-        }
-        throw error;
-      }
+
 
     // Serialize data for transaction
     const txData = {
       registryId: REGISTRY_ID,
       imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
       vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(id)),
+      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId)),
       watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
       metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
     };
@@ -161,7 +147,7 @@ export const mintNFT = async (
     return {
       transactionHash: result.digest,
       tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || '',
-      blobId: id
+      blobId: blobId
     };
   } catch (error) {
     console.error('Error minting NFT:', error);
