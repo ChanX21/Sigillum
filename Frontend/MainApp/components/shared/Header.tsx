@@ -73,7 +73,7 @@ export const Header = () => {
           {/* Logo */}
           <Link
             href="/"
-            className="flex bg-black items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
+            className="flex items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
           >
             <Image alt="Sigillum" width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
           </Link>
