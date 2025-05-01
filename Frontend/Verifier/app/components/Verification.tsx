@@ -42,10 +42,17 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
         return response.data
     }
+    const fetchDetail= async (id:string) => {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}${id}`)
+        console.log(response)
+        return response.data
+    }
     useEffect(() => {
         if (verificationData && verificationData.verifications) {
+            console.log(verificationData)
             fetchMetadata().then((res) => {
                 setAuthenticImage(res.image)
+                // fetchDetail(verificationData.verifications[0]._id) Fetcing Provenance History
             }).catch(err => {
                 console.log(err)
             }) 
@@ -95,7 +102,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.verifications[0]?.user)}</p>
+                                            <p className="text-sm font-medium">{shortenAddress(verificationData?.verifications[0]?.user?.name)}</p>
                                             <p className="text-xs text-[#616161]">Creator</p>
                                         </div>
 
@@ -165,9 +172,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creator Information</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg flex justify-between items-center">
-                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.verifications[0]?.user)}</p>
+                                                    <p className="text-xs text-[#616161] mt-1">{shortenAddress(verificationData?.verifications[0]?.user?.walletAddress)}</p>
                                                     <Button variant='ghost' onClick={async () => {
-                                                        await navigator.clipboard.writeText(verificationData?.verifications[0]?.user)
+                                                        await navigator.clipboard.writeText(verificationData?.verifications[0]?.user?.walletAddress)
                                                         toast.success("Copied to Clipboard")
                                                     }}>
                                                         <Copy />

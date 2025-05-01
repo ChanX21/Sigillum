@@ -145,7 +145,7 @@ export function ImageUploadShowcase({
       ) : (
         <>
           <div className="w-full flex justify-center relative ">
-            <div className="relative md:w-[35%] w-full aspect-square">
+            <div className="relative md:max-w-[43%] md:mt-0 mt-20 w-full aspect-square">
               <Image
                 src={image || "/placeholder.svg"}
                 alt="Uploaded image"
@@ -171,8 +171,8 @@ export function ImageUploadShowcase({
               variant="default"
             >
               {isPending ? (
-                <div className="relative w-6 h-6 bg-[#1b263b] rounded-full">
-                  <div className="absolute inset-0 border-2 border-[#1b263b]  border-t-[#fff] rounded-full animate-spin m-0.5"></div>
+                <div className="relative w-6 h-6 bg-[#000] rounded-full">
+                  <div className="absolute inset-0 border-2 border-[#000]  border-t-[#fff] rounded-full animate-spin m-0.5"></div>
                 </div>
               ) : (
                 "Secure & Mint"
