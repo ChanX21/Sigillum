@@ -136,7 +136,7 @@ export const NftAuctionCardPreview = ({
           />
           <span className={`text-xs  text-gray-800`}>
             {" "}
-            {shortenAddress(nft.user.walletAddress) || ""}
+            {nft.user.name || shortenAddress(nft.user.walletAddress) || ""}
           </span>
         </div>
         <Link href={`/detail/${nft._id}`}>
@@ -166,9 +166,7 @@ export const NftAuctionCardPreview = ({
             </div>
             <div className="flex flex-col items-center py-3">
               <span className="mb-1 text-gray-400">Ending in</span>
-              <span className="font-semibold">
-                {timeRemaining}
-              </span>
+              <span className="font-semibold">{timeRemaining}</span>
             </div>
           </div>
         ))}

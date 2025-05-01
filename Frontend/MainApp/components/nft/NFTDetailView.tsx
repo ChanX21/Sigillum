@@ -1,4 +1,5 @@
 import { SiSui } from "react-icons/si";
+import { GiWalrusHead } from "react-icons/gi";
 import { UserAvatar } from "../shared/UserAvatar";
 import { ListingDataResponse, MediaRecord, NFTMetadata } from "@/types";
 import { shortenAddress } from "@/utils/shortenAddress";
@@ -72,7 +73,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  console.log(nft, listingDetails);
+  //console.log(nft);
   const sold =
     !listingDetails?.active &&
     listingDetails?.highestBidder == listingDetails?.owner;
@@ -89,9 +90,9 @@ export const NFTDetailView = ({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold mb-4 border-b border-stone-300">
+        {/* <h1 className="text-2xl font-semibold mb-4 border-b border-stone-300">
           {metadata?.name || ""}
-        </h1>
+        </h1> */}
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
           <div className=" text-primary px-3 py-1  text-sm">
@@ -120,9 +121,7 @@ export const NFTDetailView = ({
         <div>
           <p className="text-sm text-gray-500">Ends in</p>
           <p className="text-sm font-semibold">
-            {loading
-              ? "Loading..."
-              : timeRemaining}
+            {loading ? "Loading..." : timeRemaining}
           </p>
         </div>
       </div>
@@ -188,7 +187,7 @@ export const NFTDetailView = ({
           </div>
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Token ID</span>
-            <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center justify-end gap-2">
               <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
               <button
                 onClick={() => handleCopy(nft?.blockchain?.tokenId)}
@@ -252,12 +251,14 @@ export const NFTDetailView = ({
           )}
 
           <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
-            <span className="text-gray-600">Metadata</span>
+            <span className="text-gray-600">Walrus</span>
             <Link
-              href={`${process.env.NEXT_PUBLIC_PINATA_URL}${metadataCID}`}
+              href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
               target="_blank"
+              className="flex items-center gap-2 cursor-pointer"
             >
-              <span className=" cursor-pointer">Walrus</span>
+              <GiWalrusHead />
+              <span>{shortenAddress(nft.vector.blobId)}</span>
             </Link>
           </div>
         </div>

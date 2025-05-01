@@ -203,7 +203,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
             <div>
               <p className="font-medium">
                 {" "}
-                {shortenAddress(nft.user.walletAddress) || ""}
+                {nft.user.name || shortenAddress(nft.user.walletAddress) || ""}
               </p>
               <p className="text-sm text-gray-500">Owner</p>
             </div>
