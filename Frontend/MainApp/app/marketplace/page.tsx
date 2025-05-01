@@ -3,6 +3,7 @@ import NftAuctionCard from "@/components/nft/nftAuctionCard";
 import NftAuctionCardPreview from "@/components/nft/NftAuctionCardPreview";
 import { Footer } from "@/components/shared/Footer";
 import { Header } from "@/components/shared/Header";
+import InfiniteScrollingCarousel from "@/components/shared/InfiniteScrollingCarousel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
@@ -32,13 +33,24 @@ export default function MarketplacePage() {
             </span>
           </div>
         ) : (
-          <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+          // <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+          //   {data.map((nft: MediaRecord, index: number) => (
+          //     <div key={index} className="snap-start">
+          //       <NftAuctionCardPreview nft={nft} idx={index} />
+          //     </div>
+          //   ))}
+          // </section>
+
+          <InfiniteScrollingCarousel carouselData={data}>
             {data.map((nft: MediaRecord, index: number) => (
-              <div key={index} className="snap-start">
+              <div
+                key={`explore-${nft._id || index}`}
+                className="snap-start px-2"
+              >
                 <NftAuctionCardPreview nft={nft} idx={index} />
               </div>
             ))}
-          </section>
+          </InfiniteScrollingCarousel>
         )}
 
         <h2 className="text-2xl font-bold mb-8">Featured Drops</h2>
