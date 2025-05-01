@@ -147,7 +147,6 @@ const processImageForAuthentication = async (
       creator: options.creatorId || 'Sigillum',
       timestamp: processingTimestamp,
       id: processingId,
-      vector: vector,
       version: '1.0'
     });
     
