@@ -3,13 +3,14 @@ import NftAuctionCard from "@/components/nft/nftAuctionCard";
 import NftAuctionCardPreview from "@/components/nft/NftAuctionCardPreview";
 import { Footer } from "@/components/shared/Footer";
 import { Header } from "@/components/shared/Header";
+import InfiniteScrollingCarousel from "@/components/shared/InfiniteScrollingCarousel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
 import { MediaRecord } from "@/types";
 
 export default function MarketplacePage() {
-  const { data } = useGetAllImages();
+  const { data, isLoading } = useGetAllImages();
   console.log(data);
 
   return (
@@ -24,21 +25,51 @@ export default function MarketplacePage() {
         </section>
 
         <h2 className="text-2xl font-bold mb-8">Explore</h2>
-        <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          {data?.map((nft: MediaRecord, index: number) => (
-            <div key={index} className="snap-start">
-              <NftAuctionCardPreview nft={nft} idx={index} />
-            </div>
-          ))}
-        </section>
+        {isLoading || !data ? (
+          <div className="flex justify-center items-center w-full h-48">
+            <span className="animate-spin rounded-full h-10 w-10 border-4 border-black border-t-transparent"></span>
+            <span className="ml-4 text-black text-lg font-semibold">
+              Loading...
+            </span>
+          </div>
+        ) : (
+          // <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+          //   {data.map((nft: MediaRecord, index: number) => (
+          //     <div key={index} className="snap-start">
+          //       <NftAuctionCardPreview nft={nft} idx={index} />
+          //     </div>
+          //   ))}
+          // </section>
+
+          <InfiniteScrollingCarousel carouselData={data}>
+            {data.map((nft: MediaRecord, index: number) => (
+              <div
+                key={`explore-${nft._id || index}`}
+                className="snap-start px-2"
+              >
+                <NftAuctionCardPreview nft={nft} idx={index} />
+              </div>
+            ))}
+          </InfiniteScrollingCarousel>
+        )}
+
         <h2 className="text-2xl font-bold mb-8">Featured Drops</h2>
-        <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          {data?.map((nft: MediaRecord, index: number) => (
-            <div key={index} className="snap-start">
-              <NftAuctionCardPreview nft={nft} idx={index} />
-            </div>
-          ))}
-        </section>
+        {isLoading || !data ? (
+          <div className="flex justify-center items-center w-full h-48">
+            <span className="animate-spin rounded-full h-10 w-10 border-4 border-black border-t-transparent"></span>
+            <span className="ml-4 text-black text-lg font-semibold">
+              Loading...
+            </span>
+          </div>
+        ) : (
+          <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+            {data.map((nft: MediaRecord, index: number) => (
+              <div key={index} className="snap-start">
+                <NftAuctionCardPreview nft={nft} idx={index} />
+              </div>
+            ))}
+          </section>
+        )}
 
         <section className="w-full my-16 flex flex-col items-center">
           <div className="w-full max-w-4xl min-h-[200px] border-2 rounded-lg p-8 flex flex-col md:flex-row items-center gap-6">

@@ -155,7 +155,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
             </Button>
           </div> */}
 
-          <ContractForm nft={nft} />
+          <ContractForm nft={nft} listingDetails={listingDetails} />
 
           {/* Description */}
           <div className="mb-6">

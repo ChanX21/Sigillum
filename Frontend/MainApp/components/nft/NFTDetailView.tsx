@@ -34,43 +34,46 @@ export const NFTDetailView = ({
   const wallet = useWallet();
   const { address } = wallet;
 
-  useEffect(() => {
-    const fetchListingDetails = async () => {
-      if (!nft.blockchain.listingId) return;
+  const fetchListingDetails = async () => {
+    if (!nft.blockchain.listingId) return;
 
-      try {
-        setLoading(true);
-        setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
-        const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
 
-        const details = await getObjectDetails(
-          provider,
-          PACKAGE_ID,
-          MODULE_NAME,
-          MARKETPLACE_ID,
-          nft.blockchain.listingId,
-          address
-        );
+      const details = await getObjectDetails(
+        provider,
+        PACKAGE_ID,
+        MODULE_NAME,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        address
+      );
 
-        if (details) {
-          // Cast the details to match our interface
-          setListingDetails(details as unknown as ListingDataResponse);
-          //console.log("Listing details:", details);
-        }
-      } catch (err) {
-        console.error("Error fetching listing details:", err);
-        setError("Failed to fetch listing details");
-      } finally {
-        setLoading(false);
+      if (details) {
+        // Cast the details to match our interface
+        setListingDetails(details as unknown as ListingDataResponse);
+        //console.log("Listing details:", details);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching listing details:", err);
+      setError("Failed to fetch listing details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchListingDetails();
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  console.log(metadata);
+  console.log(listingDetails);
+  const sold =
+    !listingDetails?.active &&
+    listingDetails?.highestBidder == listingDetails?.owner;
 
   const handleCopy = async (text: string) => {
     if (!text) return;
@@ -122,7 +125,7 @@ export const NFTDetailView = ({
         </div>
       </div>
 
-      <BidForm nft={nft} />
+      {!sold && <BidForm nft={nft} fetchListingDetails={fetchListingDetails} />}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -156,7 +159,11 @@ export const NFTDetailView = ({
         )}
         {(() => {
           const { owner, highestBid } = listingDetails || {};
-          return owner === address && highestBid && highestBid > 0 ? (
+          return owner === address &&
+            highestBid &&
+            highestBid > 0 &&
+            listingDetails?.active &&
+            !sold ? (
             <BidAcceptanceForm nft={nft} />
           ) : null;
         })()}
