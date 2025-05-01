@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["gold-capitalist-bison-622.mypinata.cloud", "api.dicebear.com"],
+    domains: ["gray-academic-grouse-23.mypinata.cloud", "api.dicebear.com"],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "gold-capitalist-bison-622.mypinata.cloud",
+        hostname: "gray-academic-grouse-23.mypinata.cloud",
         pathname: "/ipfs/**",
       },
       {

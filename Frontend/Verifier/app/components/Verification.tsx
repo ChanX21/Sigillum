@@ -82,10 +82,11 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                 >
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div className="relative aspect-square">
-                            {verificationData?.verifications && (
+                            {verificationData?.verifications.length !== 0 ? (
                                 <BeforeAfterSlide afterImage={image as string} beforeImage={authenticImage as string} />
+                            ): (
+                                 <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
                             )}
-                            {/* <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" /> */}
                         </div>
                         {!verificationError && !isVerifying && (
                             <div className="p-4 border-t border-[#f1f3f5]">
@@ -110,7 +111,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
                                     <div className="text-right">
                                         <p className="text-xs text-[#616161]">Created</p>
-                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
+                                        {/* <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p> */}
                                     </div>
 
                                 </div>
@@ -190,7 +191,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
+                                                    {/* <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p> */}
                                                 </div>
                                             </div>
                                         </div>
