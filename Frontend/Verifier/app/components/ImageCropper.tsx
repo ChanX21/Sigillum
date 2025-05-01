@@ -51,7 +51,7 @@ function ImageCropper({ imageSrc, onCropComplete }: Props) {
 
             <button
                 onClick={getCroppedImage}
-                className="mt-4  text-white px-4 py-2 bg-[#1b263b] hover:bg-[#2d3748] transition-colors rounded disabled:opacity-50"
+                className="mt-4  text-white px-4 py-2 bg-[#000] hover:bg-gray-950 transition-colors rounded-none disabled:opacity-50"
                 disabled={!isImageReady}
             >
                 Crop & Continue

@@ -5,7 +5,6 @@ export function shortenAddress(
 ): string {
   // Handle null, undefined, empty strings
   if (!address) return "";
-
   // Remove whitespace and validate minimum length
   const trimmedAddress = address.trim();
 

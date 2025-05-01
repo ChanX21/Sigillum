@@ -27,12 +27,16 @@ export interface DatabaseRecord {
         tokenId: string;
         transactionHash: string
     };
-    user:string
+    user:{
+        walletAddress:string,
+        name:string
+    }
     createdAt: string;
     metadataCID: string;
     original: string;
     score: number;
     status: string;
+    _id:string
 }
 
 export interface VerificationResponse {
