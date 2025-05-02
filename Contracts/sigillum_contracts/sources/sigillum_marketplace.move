@@ -118,6 +118,17 @@ module sigillum_contracts::sigillum_marketplace {
         end_time: u64,
     }
 
+    public struct RelistingCreated has copy, drop {
+        listing_id: address,
+        nft_id: address,
+        owner: address,
+        listing_type: u8,
+        price: u64,
+        min_bid: u64,
+        start_time: u64,
+        end_time: u64,
+    }
+
     // Emitted when a bid is placed
     public struct BidPlaced has copy, drop {
         listing_id: address,
@@ -689,6 +700,70 @@ module sigillum_contracts::sigillum_marketplace {
         bid_pool.bid_count
     }
 
+    public fun get_stake_amount(
+        marketplace: &Marketplace, 
+        listing_id: address
+    ): u64 {
+        let bid_pool = table::borrow(&marketplace.bid_pools, listing_id);
+        bid_pool.bid_count
+    }
+
+    // Check if a user has staked on a listing and return the staked amount
+    public fun get_user_stake(
+        marketplace: &Marketplace, 
+        listing_id: address,
+        staker: address
+    ): (bool, u64) {
+        // Check if the staking pool exists
+        if (!table::contains(&marketplace.staking_pools, listing_id)) {
+            return (false, 0)
+        };
+        
+        let staking_pool = table::borrow(&marketplace.staking_pools, listing_id);
+        
+        // Check if user has staked
+        if (vec_map::contains(&staking_pool.stakes, &staker)) {
+            let stake_amount = *vec_map::get(&staking_pool.stakes, &staker);
+            (true, stake_amount)
+        } else {
+            (false, 0)
+        }
+    }
+
+    // Get the number of stakers for a listing
+    public fun get_stake_count(
+        marketplace: &Marketplace, 
+        listing_id: address
+    ): u64 {
+        // Check if the staking pool exists
+        if (!table::contains(&marketplace.staking_pools, listing_id)) {
+            return 0
+        };
+        
+        let staking_pool = table::borrow(&marketplace.staking_pools, listing_id);
+        
+        // Return the count of unique stakers by getting the length of the keys
+        let stakers = vec_map::keys(&staking_pool.stakes);
+        vector::length(&stakers)
+    }
+
+    //list of stakers
+      public fun get_staker(
+        marketplace: &Marketplace, 
+        listing_id: address
+    ): vector<address> {
+        // Check if the staking pool exists
+        if (!table::contains(&marketplace.staking_pools, listing_id)) {
+            return vector::empty()
+        };
+        
+        let staking_pool = table::borrow(&marketplace.staking_pools, listing_id);
+        
+        // Return the count of unique stakers by getting the length of the keys
+        let stakers = vec_map::keys(&staking_pool.stakes);
+        (stakers)
+    }
+
     // Get the platform fee percentage
     public fun get_fee_percentage(marketplace: &Marketplace): u64 {
         marketplace.fee_percentage
@@ -868,6 +943,98 @@ module sigillum_contracts::sigillum_marketplace {
             staking_pool.rewards_rate = new_rate;
         };
     }
+
+    // Relist an NFT using the same listing ID it was purchased from
+public entry fun relist_on_same_listing<T: key + store>(
+    marketplace: &mut Marketplace,
+    listing_id: address,
+    nft: T,
+    new_price: u64,
+    new_min_bid: u64,
+    new_end_time: u64,
+    ctx: &mut TxContext
+) {
+    let sender = tx_context::sender(ctx);
+    let nft_id = object::id_address(&nft);
+    
+    // Verify listing exists
+    assert!(table::contains(&marketplace.listings, listing_id), ENotListed);
+    
+    // Get the listing
+    let listing = table::borrow_mut(&mut marketplace.listings, listing_id);
+    
+    // Make sure listing is inactive (a completed sale)
+    assert!(!listing.active, EListingNotActive);
+    
+    // Verify sender was the buyer of this listing
+    assert!(listing.highest_bidder == sender, ENotOwner);
+    
+    // CRITICAL: Verify this is the same NFT that was sold in the previous listing
+    assert!(listing.nft_id == nft_id, EInvalidListing);
+    
+    // Validate price inputs
+    assert!(new_price > 0, EInvalidPrice);
+    assert!(new_min_bid > 0, EInvalidBid);
+    
+    // Update listing details for new sale
+    listing.owner = sender;                   // Previous buyer is now the seller
+    listing.list_price = new_price;           // Set new sale price
+    listing.listing_type = REAL_LISTING;      // Always a real listing
+    listing.min_bid = new_min_bid;            // Set new minimum bid
+    listing.highest_bid = 0;                  // Reset highest bid
+    listing.highest_bidder = @0x0;            // Reset highest bidder
+    listing.active = true;                    // Make listing active again
+    listing.start_time = tx_context::epoch(ctx); // Current time as start time
+    listing.end_time = new_end_time;          // Set new end time
+    
+    // Clear old bids
+    let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
+    bid_pool.bids = vec_map::empty();
+    bid_pool.bid_count = 0;
+    
+    // Add NFT to marketplace escrow
+    dof::add(&mut marketplace.id, nft_id, nft);
+    
+    // Ensure the listing is in active_listing_ids
+    let mut found = false;
+    let len = vector::length(&marketplace.active_listing_ids);
+    let mut i = 0;
+    
+    while (i < len) {
+        if (*vector::borrow(&marketplace.active_listing_ids, i) == listing_id) {
+            found = true;
+            break
+        };
+        i = i + 1;
+    };
+    
+    if (!found) {
+        vector::push_back(&mut marketplace.active_listing_ids, listing_id);
+    };
+    
+    // Emit listing created event
+    event::emit(ListingCreated {
+        listing_id,
+        nft_id,
+        owner: sender,
+        listing_type: REAL_LISTING,
+        price: new_price,
+        min_bid: new_min_bid,
+        start_time: tx_context::epoch(ctx),
+        end_time: new_end_time,
+    });
+
+     event::emit(RelistingCreated {
+        listing_id,
+        nft_id,
+        owner: sender,
+        listing_type: REAL_LISTING,
+        price: new_price,
+        min_bid: new_min_bid,
+        start_time: tx_context::epoch(ctx),
+        end_time: new_end_time,
+    });
+   }
 
     // === Test Helper Functions ===
     
