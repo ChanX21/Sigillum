@@ -1,16 +1,18 @@
 import { Shield } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
 const Header = () => {
     return (
         <header className="top-0 z-10 flex items-center justify-between shadow-sm">
-            <Link href="/" className="flex items-center gap-2 font-bold text-[#0d0d0d] bg-white px-5 rounded-full">
-                <div className="flex items-center justify-center w-6 h-6 bg-[#1b263b] rounded-full">
-                    <Shield className="w-3 h-3 text-white" />
-                </div>
-                SIGILLUM
-            </Link>
+            <Link
+            href="/"
+            target='_blank'
+            className="flex items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
+          >
+            <Image alt="Sigillum" width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
+          </Link>
 
 
 

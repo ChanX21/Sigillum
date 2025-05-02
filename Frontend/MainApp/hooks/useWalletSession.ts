@@ -1,11 +1,11 @@
 import { useWallet } from '@suiet/wallet-kit';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCreateSession, useGetNonce } from './useSessionAuth';
 
 export function useWalletSession() {
     const { connected, address, signPersonalMessage } = useWallet();
     const { mutate: createSessionMutation } = useCreateSession();
-
+    const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ['wallet-session'],
         mutationFn: async ({ nonce }: { nonce: string }) => {
@@ -34,6 +34,9 @@ export function useWalletSession() {
                 console.error('❌ Session creation failed:', err.response?.data || err.message);
                 return false;
             }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['get-profile'], exact: false })
         }
     });
 }

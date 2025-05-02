@@ -31,6 +31,7 @@ interface VerificationProps {
     resetState: () => void,
     setSubmittedForVerification: React.Dispatch<React.SetStateAction<boolean>>
 }
+const PINATA_URI = process.env.NEXT_PUBLIC_PINATA_URL
 const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
@@ -38,7 +39,7 @@ const formatDate = (dateString: string) => {
 const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState, setSubmittedForVerification }: VerificationProps) => {
     const [authenticImage, setAuthenticImage] = useState('')
     const fetchMetadata = async () => {
-        const response = await axios.get(`https://gold-capitalist-bison-622.mypinata.cloud/ipfs/${verificationData.verifications[0].metadataCID}`)
+        const response = await axios.get(`${PINATA_URI}${verificationData.verifications[0].metadataCID}`)
 
         return response.data
     }
@@ -111,7 +112,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
                                     <div className="text-right">
                                         <p className="text-xs text-[#616161]">Created</p>
-                                        {/* <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p> */}
+                                        <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                     </div>
 
                                 </div>
@@ -191,7 +192,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                             <div className="flex-1">
                                                 <h4 className="text-base font-medium mb-2">Creation Date</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
-                                                    {/* <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p> */}
+                                                    <p className="text-sm">{verificationData ? format(new Date(verificationData?.verifications[0]?.createdAt), 'dd MMM yyyy, HH:mm') : null}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -201,12 +202,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                 <FileWarning className="w-5 h-5 text-[#52c41a]" />
                                             </div>
                                             <div className="flex-1">
-                                                <h4 className="text-base font-medium mb-2">Modifications</h4>
+                                                <h4 className="text-base font-medium mb-2">Sigillum Score</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <p className="text-sm">
-                                                        {verificationResult?.modified
-                                                            ? "Image has been modified"
-                                                            : "No modifications detected"}
+                                                        {parseFloat(verificationData?.verifications[0].score.toFixed(4)) * 100} %
                                                     </p>
                                                 </div>
                                             </div>
