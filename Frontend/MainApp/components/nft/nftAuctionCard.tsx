@@ -22,6 +22,7 @@ import { useWallet } from "@suiet/wallet-kit";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
+import { SiSui } from "react-icons/si";
 
 interface NFTCardFeaturedProps {
   nft: MediaRecord;
@@ -133,13 +134,19 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
           </Link>
 
           {/* Current Bid */}
-          <div className="mb-6">
-            <p className="text-gray-600 mb-1">Current Bid</p>
-            <p className="text-xl font-semibold">
-              {listingDetails && hasHighestBid
-                ? `${formatSuiAmount(Number(listingDetails.highestBid))} SUI`
-                : "0 SUI"}
-            </p>
+          <div className="mb-6 min-h-[40px]">
+            {wallet.connected && wallet.address && (
+              <>
+                <p className="text-gray-600 mb-1">Current Bid</p>
+                <p className="text-xl font-semibold">
+                  {listingDetails && hasHighestBid
+                    ? `${formatSuiAmount(
+                        Number(listingDetails.highestBid)
+                      )} SUI`
+                    : "0 SUI"}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -156,7 +163,9 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
             </Button>
           </div> */}
 
-          <ContractForm nft={nft} listingDetails={listingDetails} />
+          {wallet.connected && wallet.address && (
+            <ContractForm nft={nft} listingDetails={listingDetails} />
+          )}
 
           {/* Description */}
           <div className="mb-6">
@@ -180,7 +189,12 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">metadata</span>
                 </div>
-                <span className="text-gray-600">metadata</span>
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`}
+                  target="_blank"
+                >
+                  <span className="underline cursor-pointer">IPFS</span>
+                </Link>
               </div>
 
               {/* Blockchain */}
@@ -189,7 +203,10 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">blockchain</span>
                 </div>
-                <span className="text-gray-600">SUI</span>
+                <span className="text-gray-600 flex items-center gap-1">
+                  <SiSui />
+                  <span>SUI</span>
+                </span>
               </div>
             </div>
           </div>
