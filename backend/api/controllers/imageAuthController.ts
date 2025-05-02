@@ -385,10 +385,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       limit: 5,
     });
     const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.85);
-    if(filteredSimilarImages.length === 0) {
-      res.status(400).json({ message: 'No similar images found' });
-      return;
-    }
+    
     const verifications: any[] = [];
     for(let i = 0; i < filteredSimilarImages.length; i++) {
       let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications user').lean();
@@ -411,10 +408,15 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
         verifications[i].score = filteredSimilarImages[i].score;
       }
     }
-        res.status(200).json({
-          message: 'Image verification successful',
+    if(verifications.length > 0) {
+      res.status(200).json({
+        message: 'Image verification successful',
         verifications: verifications
       });
+    }
+    else {
+      res.status(400).json({ message: 'No similar images found' });
+    }
   } catch (error) {
     console.error('Error verifying image by hash:', error);
     res.status(500).json({
