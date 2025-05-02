@@ -54,10 +54,10 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
 
     return (
         <Dialog>
-            <DialogTrigger asChild>
+            <DialogTrigger asChild className='border-t'>
                 <Button
-                    variant="outline"
-                    className="rounded-md w-[49%] cursor-pointer border border-primary bg-white"
+                    variant="default"
+                    className="flex rounded-none flex-col items-center py-5 bg-black text-white hover:text-white text-xs"
                 >
                     New Listing
                 </Button>

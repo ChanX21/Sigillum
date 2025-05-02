@@ -12,6 +12,7 @@ import { useWallet } from "@suiet/wallet-kit";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
+import ListNFTButton from "./ListNFTButton";
 
 interface NftAuctionCardPreviewProps {
   active?: boolean;
@@ -146,6 +147,9 @@ export const NftAuctionCardPreview = ({
         </Link>
       </div>
 
+      {status === 'soft-listed' && (
+        <ListNFTButton listingId={nft?.blockchain?.listingId} tokenId={nft?.blockchain?.tokenId} nftId={nft._id} />
+      )}
       {listingDetails?.listPrice !== undefined &&
         (isReserve ? (
           <div className="flex flex-col items-center py-3 border-t border-gray-300 bg-primary text-xs">
