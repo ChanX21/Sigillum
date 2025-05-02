@@ -202,12 +202,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                 <FileWarning className="w-5 h-5 text-[#52c41a]" />
                                             </div>
                                             <div className="flex-1">
-                                                <h4 className="text-base font-medium mb-2">Modifications</h4>
+                                                <h4 className="text-base font-medium mb-2">Sigillum Score</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <p className="text-sm">
-                                                        {verificationResult?.modified
-                                                            ? "Image has been modified"
-                                                            : "No modifications detected"}
+                                                        {parseFloat(verificationData?.verifications[0].score.toFixed(4)) * 100} %
                                                     </p>
                                                 </div>
                                             </div>
