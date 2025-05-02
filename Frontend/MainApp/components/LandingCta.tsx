@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 
 export function LandingCta() {
   return (
-    <section className="flex flex-col items-center mt-24 mb-12 w-full">
+    <section className="flex flex-col items-center mt-24 mb-12 md:mb-20 w-full">
       <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center">
         Ready to Secure Your Digital Assets?
       </h2>
@@ -19,7 +19,7 @@ export function LandingCta() {
             Get Started Now
           </Button>
         </Link>
-        <Link href="https://sigillum-verifier.vercel.app/" target="_blank">
+        <Link href="https://verifier.sigillum.digital/" target="_blank">
           <Button className="bg-white border border-gray-400 px-6 py-2 text-primary rounded-none shadow text-sm hover:bg-gray-100">
             Verify Your Vision
           </Button>

@@ -22,7 +22,7 @@ export function HowItWorks() {
   return (
     <section className="w-full flex flex-col items-center my-16">
       <h2 className="text-2xl md:text-3xl font-bold mb-10">HOW IT WORKS</h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-5xl px-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-6xl px-3">
         {steps.map((step, idx) => (
           <div
             key={idx}

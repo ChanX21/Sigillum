@@ -31,7 +31,7 @@ export default function ProfilePage() {
     const { mutate: updateProfile, isPending, isSuccess, error, isError } = useUpdateProfile()
 
     // Wallet 
-    const { connected, address } = useWallet()
+    const { connected, address ,chain} = useWallet()
     const { balance, loading: balanceLoading } = useAccountBalance()
     
     const readableSui = (rawBalance: bigint | number) => {
@@ -69,8 +69,8 @@ export default function ProfilePage() {
 
     // Logs
     useEffect(() => {
-        console.log(profile)
-    },[profile])
+        console.log(chain)
+    },[chain])
 
     return (
         <>
@@ -196,7 +196,7 @@ export default function ProfilePage() {
                         <div className="bg-white p-4 shadow-sm border border-gray-100">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-medium text-gray-700">SUI Balance</span>
-                                <span className="text-xs text-gray-400">Mainnet</span>
+                                <span className="text-xs text-gray-400">{chain?.name ?? "Sui Mainnet"}</span>
                             </div>
                             <div className="text-lg font-medium">{balance && readableSui(balance)} SUI</div>
                         </div>
