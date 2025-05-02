@@ -336,7 +336,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
         owner: authenticatedImage.user.walletAddress,
         minBid: 100,
-        endTime: Date.now() + (60 * 60 * 24 * 2),
+        endTime: Date.now() + 3600*24,
         description: 'Soft listing',
         metadataCID: authenticatedImage.metadataCID
       });
@@ -385,7 +385,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
       limit: 5,
     });
     const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.85);
-    
+
     const verifications: any[] = [];
     for(let i = 0; i < filteredSimilarImages.length; i++) {
       let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications user').lean();
