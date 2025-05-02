@@ -101,32 +101,42 @@ export const NFTDetailView = ({
         </div>
       </div>
 
-      <div className="flex gap-8">
-        <div>
-          <p className="text-sm text-gray-500">Current Bid</p>
-          <div className="flex items-center gap-2">
-            {loading ? (
-              <p className="text-sm font-semibold">Loading...</p>
-            ) : error ? (
-              <p className="text-red-500 text-sm">{error}</p>
-            ) : (
-              <p className="text-2xl font-semibold">
-                {listingDetails
-                  ? `${formatSuiAmount(Number(listingDetails.highestBid))} SUI`
-                  : "0 SUI"}
+      <div className="flex gap-8 min-h-[40px]">
+        {wallet.connected && wallet.address && (
+          <>
+            <div>
+              <p className="text-sm text-gray-500">Current Bid</p>
+              <div className="flex items-center gap-2">
+                {loading ? (
+                  <p className="text-sm font-semibold">Loading...</p>
+                ) : error ? (
+                  <p className="text-red-500 text-sm">{error}</p>
+                ) : (
+                  <p className="text-2xl font-semibold">
+                    {listingDetails
+                      ? `${formatSuiAmount(
+                          Number(listingDetails.highestBid)
+                        )} SUI`
+                      : "0 SUI"}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Ends in</p>
+              <p className="text-sm font-semibold">
+                {loading ? "Loading..." : timeRemaining}
               </p>
-            )}
-          </div>
-        </div>
-        <div>
-          <p className="text-sm text-gray-500">Ends in</p>
-          <p className="text-sm font-semibold">
-            {loading ? "Loading..." : timeRemaining}
-          </p>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {!sold && <BidForm nft={nft} fetchListingDetails={fetchListingDetails} />}
+      <div className="min-h-[40px]">
+        {!sold && wallet.connected && wallet.address && (
+          <BidForm nft={nft} fetchListingDetails={fetchListingDetails} />
+        )}
+      </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">

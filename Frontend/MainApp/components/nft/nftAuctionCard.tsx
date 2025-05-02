@@ -134,13 +134,19 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
           </Link>
 
           {/* Current Bid */}
-          <div className="mb-6">
-            <p className="text-gray-600 mb-1">Current Bid</p>
-            <p className="text-xl font-semibold">
-              {listingDetails && hasHighestBid
-                ? `${formatSuiAmount(Number(listingDetails.highestBid))} SUI`
-                : "0 SUI"}
-            </p>
+          <div className="mb-6 min-h-[40px]">
+            {wallet.connected && wallet.address && (
+              <>
+                <p className="text-gray-600 mb-1">Current Bid</p>
+                <p className="text-xl font-semibold">
+                  {listingDetails && hasHighestBid
+                    ? `${formatSuiAmount(
+                        Number(listingDetails.highestBid)
+                      )} SUI`
+                    : "0 SUI"}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -157,7 +163,9 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
             </Button>
           </div> */}
 
-          <ContractForm nft={nft} listingDetails={listingDetails} />
+          {wallet.connected && wallet.address && (
+            <ContractForm nft={nft} listingDetails={listingDetails} />
+          )}
 
           {/* Description */}
           <div className="mb-6">
