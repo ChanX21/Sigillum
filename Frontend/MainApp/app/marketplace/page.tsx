@@ -4,6 +4,7 @@ import NftAuctionCardPreview from "@/components/nft/NftAuctionCardPreview";
 import { Footer } from "@/components/shared/Footer";
 import { Header } from "@/components/shared/Header";
 import InfiniteScrollingCarousel from "@/components/shared/InfiniteScrollingCarousel";
+import InfiniteScrollingCarouselReverse from "@/components/shared/InfiniteScrollingCarouselReverse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
@@ -62,13 +63,24 @@ export default function MarketplacePage() {
             </span>
           </div>
         ) : (
-          <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+          // <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
+          //   {data.map((nft: MediaRecord, index: number) => (
+          //     <div key={index} className="snap-start">
+          //       <NftAuctionCardPreview nft={nft} idx={index} />
+          //     </div>
+          //   ))}
+          // </section>
+
+          <InfiniteScrollingCarouselReverse carouselData={data}>
             {data.map((nft: MediaRecord, index: number) => (
-              <div key={index} className="snap-start">
+              <div
+                key={`explore-${nft._id || index}`}
+                className="snap-start px-2"
+              >
                 <NftAuctionCardPreview nft={nft} idx={index} />
               </div>
             ))}
-          </section>
+          </InfiniteScrollingCarouselReverse>
         )}
 
         <section className="w-full my-16 flex flex-col items-center">
