@@ -73,7 +73,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  //console.log(nft);
+  console.log(listingDetails);
   const sold =
     !listingDetails?.active &&
     listingDetails?.highestBidder == listingDetails?.owner;
