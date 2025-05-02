@@ -237,7 +237,7 @@ module sigillum_contracts::sigillum_marketplace {
             highest_bidder: @0x0,
             active: true,
             verification_score: 0,
-            start_time: tx_context::epoch(ctx),
+            start_time: tx_context::epoch_timestamp_ms(ctx),
             end_time,
             description,
             metadata,
@@ -272,7 +272,7 @@ module sigillum_contracts::sigillum_marketplace {
             listing_type: SOFT_LISTING,
             price: 0,
             min_bid,
-            start_time: tx_context::epoch(ctx),
+            start_time: tx_context::epoch_timestamp_ms(ctx),
             end_time,
         });
         
@@ -320,7 +320,7 @@ module sigillum_contracts::sigillum_marketplace {
             listing_type: REAL_LISTING,
             price: list_price,
             min_bid: listing.min_bid,
-            start_time: tx_context::epoch(ctx),
+            start_time: tx_context::epoch_timestamp_ms(ctx),
             end_time: listing.end_time,
         });
     }
@@ -342,7 +342,7 @@ module sigillum_contracts::sigillum_marketplace {
         
         // Check if end time has passed 
         if (listing.end_time > 0) {
-            assert!(tx_context::epoch(ctx) <= listing.end_time, EListingNotActive);
+            assert!(tx_context::epoch_timestamp_ms(ctx) <= listing.end_time, EListingNotActive);
         };
         
         let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
@@ -731,7 +731,7 @@ module sigillum_contracts::sigillum_marketplace {
     }
 
     // Get the number of stakers for a listing
-    public fun get_stake_count(
+    public fun get_stakers_count(
         marketplace: &Marketplace, 
         listing_id: address
     ): u64 {
@@ -748,7 +748,7 @@ module sigillum_contracts::sigillum_marketplace {
     }
 
     //list of stakers
-      public fun get_staker(
+      public fun get_stakers(
         marketplace: &Marketplace, 
         listing_id: address
     ): vector<address> {
@@ -891,7 +891,7 @@ module sigillum_contracts::sigillum_marketplace {
         let listing = table::borrow(&marketplace.listings, listing_id);
         
         // Can only withdraw if listing is inactive or expired
-        assert!(!listing.active || (listing.end_time > 0 && tx_context::epoch(ctx) > listing.end_time), 
+        assert!(!listing.active || (listing.end_time > 0 && tx_context::epoch_timestamp_ms(ctx) > listing.end_time), 
                EListingNotActive);
         
         // Ensure staking pool exists and user has staked
@@ -984,7 +984,7 @@ public entry fun relist_on_same_listing<T: key + store>(
     listing.highest_bid = 0;                  // Reset highest bid
     listing.highest_bidder = @0x0;            // Reset highest bidder
     listing.active = true;                    // Make listing active again
-    listing.start_time = tx_context::epoch(ctx); // Current time as start time
+    listing.start_time = tx_context::epoch_timestamp_ms(ctx); // Current time as start time
     listing.end_time = new_end_time;          // Set new end time
     
     // Clear old bids
@@ -1020,7 +1020,7 @@ public entry fun relist_on_same_listing<T: key + store>(
         listing_type: REAL_LISTING,
         price: new_price,
         min_bid: new_min_bid,
-        start_time: tx_context::epoch(ctx),
+        start_time: tx_context::epoch_timestamp_ms(ctx),
         end_time: new_end_time,
     });
 
@@ -1031,7 +1031,7 @@ public entry fun relist_on_same_listing<T: key + store>(
         listing_type: REAL_LISTING,
         price: new_price,
         min_bid: new_min_bid,
-        start_time: tx_context::epoch(ctx),
+        start_time: tx_context::epoch_timestamp_ms(ctx),
         end_time: new_end_time,
     });
    }
