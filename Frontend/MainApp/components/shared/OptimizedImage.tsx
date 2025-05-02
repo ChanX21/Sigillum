@@ -52,7 +52,7 @@ function OptimizedImage({
         sizes={sizes}
         loading={loading}
         quality={quality}
-        className={`object-cover rounded-4xl transition-opacity duration-500 ${className} ${
+        className={` rounded-4xl transition-opacity duration-500 ${className} ${
           loaded ? "opacity-100" : "opacity-0"
         }`}
         onLoadingComplete={handleLoadingComplete}

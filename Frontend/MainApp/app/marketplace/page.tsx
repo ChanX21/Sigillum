@@ -53,7 +53,7 @@ export default function MarketplacePage() {
           </InfiniteScrollingCarousel>
         )}
 
-        <h2 className="text-2xl font-bold mb-8">Featured Drops</h2>
+        <h2 className="text-2xl font-bold mb-8 mt-14">Featured Drops</h2>
         {isLoading || !data ? (
           <div className="flex justify-center items-center w-full h-48">
             <span className="animate-spin rounded-full h-10 w-10 border-4 border-black border-t-transparent"></span>
