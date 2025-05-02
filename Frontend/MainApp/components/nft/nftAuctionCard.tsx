@@ -22,6 +22,7 @@ import { useWallet } from "@suiet/wallet-kit";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
+import { SiSui } from "react-icons/si";
 
 interface NFTCardFeaturedProps {
   nft: MediaRecord;
@@ -180,7 +181,12 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">metadata</span>
                 </div>
-                <span className="text-gray-600">metadata</span>
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`}
+                  target="_blank"
+                >
+                  <span className="underline cursor-pointer">IPFS</span>
+                </Link>
               </div>
 
               {/* Blockchain */}
@@ -189,7 +195,10 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   <span className="text-gray-500 mr-1">•</span>
                   <span className="text-gray-700">blockchain</span>
                 </div>
-                <span className="text-gray-600">SUI</span>
+                <span className="text-gray-600 flex items-center gap-1">
+                  <SiSui />
+                  <span>SUI</span>
+                </span>
               </div>
             </div>
           </div>
