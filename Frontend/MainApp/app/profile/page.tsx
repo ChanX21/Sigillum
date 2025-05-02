@@ -15,6 +15,7 @@ import { Header } from "@/components/shared/Header"
 import { useGetProfile, useUpdateProfile } from "@/hooks/useProfile"
 import { shortenAddress } from "@/utils/shortenAddress"
 import { useAccountBalance, useWallet } from "@suiet/wallet-kit"
+import { UserAvatar } from "@/components/shared/UserAvatar"
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -112,7 +113,10 @@ export default function ProfilePage() {
                                         <CardDescription className="text-gray-500">Update your blockchain identity</CardDescription>
                                     </div>
                                     <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-                                        <User size={20} className="text-gray-700" />
+                                    <UserAvatar
+                                        walletAddress={profile?.data?.walletAddress}
+                                        alt={profile?.data?.walletAddress || "Creator"}
+                                    />
                                     </div>
                                 </div>
                             </CardHeader>

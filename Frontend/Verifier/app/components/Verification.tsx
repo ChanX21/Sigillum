@@ -9,6 +9,7 @@ import { shortenAddress } from '@/lib/shortenAddress'
 import { toast } from 'sonner'
 import BeforeAfterSlide from './BeforeAfterSlide'
 import axios from 'axios'
+import { UserAvatar } from './UserAvatar'
 
 interface VerificationProps {
     image: string | null
@@ -43,7 +44,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
         return response.data
     }
-    const fetchDetail= async (id:string) => {
+    const fetchDetail = async (id: string) => {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}${id}`)
         console.log(response)
         return response.data
@@ -56,7 +57,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                 // fetchDetail(verificationData.verifications[0]._id) Fetcing Provenance History
             }).catch(err => {
                 console.log(err)
-            }) 
+            })
         }
     }, [verificationData])
 
@@ -85,8 +86,8 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                         <div className="relative aspect-square">
                             {verificationData?.verifications.length !== 0 ? (
                                 <BeforeAfterSlide afterImage={image as string} beforeImage={authenticImage as string} />
-                            ): (
-                                 <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
+                            ) : (
+                                <Image src={image || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
                             )}
                         </div>
                         {!verificationError && !isVerifying && (
@@ -94,12 +95,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-[#f1f3f5] flex items-center justify-center">
-                                            <Image
-                                                src="/placeholder.svg?height=24&width=24"
-                                                alt="Creator"
-                                                width={24}
-                                                height={24}
-                                                className="rounded-full"
+                                            <UserAvatar
+                                                walletAddress={verificationData?.verifications[0]?.user?.walletAddress}
+                                                alt={verificationData?.verifications[0]?.user?.walletAddress || "Creator"}
                                             />
                                         </div>
 
