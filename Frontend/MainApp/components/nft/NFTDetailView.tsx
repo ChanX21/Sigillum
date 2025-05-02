@@ -16,7 +16,6 @@ import { BidAcceptanceForm } from "../shared/BidAcceptanceForm";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FaRegCopy } from "react-icons/fa";
-import { Button } from "../ui/button";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -87,6 +86,12 @@ export const NFTDetailView = ({
   // Check if there's a highest bid
   const hasHighestBid = listingDetails && Number(listingDetails.highestBid) > 0;
 
+  //check if ended
+  const isTimeEnded =
+    timeRemaining === "Ended" ||
+    timeRemaining === "No deadline" ||
+    timeRemaining === "00h 00m 00s";
+
   return (
     <div className="space-y-8">
       <div>
@@ -133,7 +138,7 @@ export const NFTDetailView = ({
       </div>
 
       <div className="min-h-[40px]">
-        {!sold && wallet.connected && wallet.address && (
+        {!sold && wallet.connected && wallet.address && !isTimeEnded && (
           <BidForm nft={nft} fetchListingDetails={fetchListingDetails} />
         )}
       </div>
@@ -171,6 +176,7 @@ export const NFTDetailView = ({
         {(() => {
           const { owner, highestBid } = listingDetails || {};
           return owner === address &&
+            !isTimeEnded &&
             highestBid &&
             highestBid > 0 &&
             listingDetails?.active &&

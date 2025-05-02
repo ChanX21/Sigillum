@@ -93,6 +93,13 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
 
   // Check if there's a highest bid
   const hasHighestBid = listingDetails && Number(listingDetails.highestBid) > 0;
+
+  //check if ended
+  const isTimeEnded =
+    timeRemaining === "Ended" ||
+    timeRemaining === "No deadline" ||
+    timeRemaining === "00h 00m 00s";
+
   return (
     <div className="col-span-1  bg-white  border-2 p-3  overflow-hidden">
       <div className="flex flex-col md:flex-row">
@@ -163,7 +170,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
             </Button>
           </div> */}
 
-          {wallet.connected && wallet.address && (
+          {wallet.connected && wallet.address && !isTimeEnded && (
             <ContractForm nft={nft} listingDetails={listingDetails} />
           )}
 

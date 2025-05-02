@@ -74,7 +74,7 @@ export default function Detail() {
                 {metadata.name}
               </h2>
               {/* Responsive container with aspect ratio */}
-              <div className="relative w-full rounded-4xl aspect-square md:aspect-[4/3] lg:aspect-[16/10] ">
+              <div className="relative w-full rounded-4xl aspect-square md:aspect-[4/3] lg:aspect-[16/10] py-10 ">
                 <OptimizedImage
                   src={getImageUrl()}
                   alt={metadata?.name || "NFT Image"}
