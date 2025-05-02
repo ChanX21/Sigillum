@@ -10,6 +10,20 @@ const albertSans = Albert_Sans({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "SIGILLUM - Image Verification",
   description: "Verify the authenticity and provenance of images",
+  icons: [
+    {
+      rel: 'icon',
+      type: 'image/x-icon',
+      url: 'icons/light/favicon.ico',
+      media: '(prefers-color-scheme: light)',
+    },
+    {
+      rel: 'icon',
+      type: 'image/x-icon',
+      url: 'icons/dark/favicon.ico',
+      media: '(prefers-color-scheme: dark)',
+    },
+  ],
 }
 
 export default function RootLayout({
