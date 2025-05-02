@@ -147,7 +147,7 @@ export const NftAuctionCardPreview = ({
         </Link>
       </div>
 
-      {status === 'soft-listed' && (
+      {status === 'soft-listed' && listingDetails?.listPrice == undefined && (
         <ListNFTButton listingId={nft?.blockchain?.listingId} tokenId={nft?.blockchain?.tokenId} nftId={nft._id} />
       )}
       {listingDetails?.listPrice !== undefined &&
