@@ -28,6 +28,26 @@ export const buildAcceptBidTx = (
 
   return tx;
 };
+export const buildWithdrawStakeTx = (
+  marketplaceObjectId: string,
+  listingId: string,
+  packageId: string,
+  moduleName: string
+): Transaction => {
+  const tx = new Transaction();
+
+  // Set reasonable gas budget
+  const estimatedGasFee = BigInt(30000000); // 0.03 SUI
+  tx.setGasBudget(Number(estimatedGasFee));
+
+  // Building the move call with type arguments
+  tx.moveCall({
+    target: `${packageId}::${moduleName}::withdraw_stake`,
+    arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
+  });
+
+  return tx;
+};
 
 function bytesToHex(bytes: number[]): string {
   return "0x" + bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
