@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import BeforeAfterSlide from './BeforeAfterSlide'
 import axios from 'axios'
 import { UserAvatar } from './UserAvatar'
+import { displayNftEvents } from '@/utils/blockchainServices'
 
 interface VerificationProps {
     image: string | null
@@ -32,6 +33,46 @@ interface VerificationProps {
     resetState: () => void,
     setSubmittedForVerification: React.Dispatch<React.SetStateAction<boolean>>
 }
+interface Provenance {
+    ListingCreated: Array<{
+        timestampMs: string,
+        Transaction: string,
+        sender: string,
+        Data: {
+            enf_time: string,
+            listing_id: string,
+            listing_type: number,
+            min_bid: string,
+            nft_id: string,
+            owner: string,
+            price: string,
+            start_time: Date
+        }
+    }>,
+    ListingCompleted: Array<{
+        timestampMs: string,
+        Transaction: string,
+        sender: string,
+        Data: {
+            buyer: string,
+            final_price: string,
+            listing_id: string,
+            listing_type: number,
+            nft_id: string,
+            seller: string,
+            success: boolean
+        }
+    }>,
+
+}
+function hasAnyProvenance(obj: any): obj is Partial<Provenance> {
+    return (
+        obj &&
+        typeof obj === 'object' &&
+        (Array.isArray(obj.ListingCreated) || Array.isArray(obj.ListingCompleted))
+    );
+}
+
 const PINATA_URI = process.env.NEXT_PUBLIC_PINATA_URL
 const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -39,6 +80,7 @@ const formatDate = (dateString: string) => {
 }
 const Verification = ({ image, verificationError, verificationData, isVerifying, verificationResult, resetState, setSubmittedForVerification }: VerificationProps) => {
     const [authenticImage, setAuthenticImage] = useState('')
+    const [provenance, setProvenance] = useState<Provenance | {}>({})
     const fetchMetadata = async () => {
         const response = await axios.get(`${PINATA_URI}${verificationData.verifications[0].metadataCID}`)
 
@@ -54,6 +96,10 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
             console.log(verificationData)
             fetchMetadata().then((res) => {
                 setAuthenticImage(res.image)
+                displayNftEvents(verificationData.verifications[0].blockchain.tokenId).then(res => {
+                    console.log("res : ", res)
+                    setProvenance(res)
+                })
                 // fetchDetail(verificationData.verifications[0]._id) Fetcing Provenance History
             }).catch(err => {
                 console.log(err)
@@ -61,7 +107,9 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
         }
     }, [verificationData])
 
-
+    useEffect(() => {
+        console.log(hasAnyProvenance(provenance))
+    }, [provenance])
     return (
         <div className="max-w-5xl mx-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-6">
@@ -217,10 +265,30 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                 <h4 className="text-base font-medium mb-2">Provenance History</h4>
                                                 <div className="bg-[#f9f9f9] p-3 rounded-lg">
                                                     <ul className="space-y-3">
+                                                        {hasAnyProvenance(provenance) && (
+                                                            <>
+                                                                {provenance.ListingCreated?.map((event, index) => (
+                                                                    <li key={`created-${index}`} className="relative pl-6">
+                                                                        <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
+                                                                        <p className="text-sm font-medium">Listed on the Marketplace by {shortenAddress(event.sender)}</p>
+                                                                        <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
+                                                                    </li>
+                                                                ))}
+
+                                                                {provenance.ListingCompleted?.map((event, index) => (
+                                                                    <li key={`completed-${index}`} className="relative pl-6">
+                                                                        <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
+                                                                        <p className="text-sm font-medium">Image Purchased </p>
+                                                                        <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
+                                                                    </li>
+                                                                ))}
+                                                            </>
+                                                        )}
+
                                                         {[
-                                                            { date: "2023-09-15T14:30:22Z", event: "Created by Alex Johnson" },
-                                                            { date: "2023-09-15T15:45:10Z", event: "Registered on blockchain" },
-                                                            { date: "2023-10-02T09:12:45Z", event: "Verified by SIGILLUM" },
+                                                            { date: verificationData.verifications[0].updatedAt, event: `Verified by Sigillum` },
+                                                            { date: verificationData.verifications[0].createdAt, event: `Registered on The Sui Chain` },
+                                                            { date: verificationData.verifications[0].createdAt, event: `Created by ${verificationData.verifications[0].user.name ? verificationData.verifications[0].user.name : 'Anonymous'}` },
                                                         ].map((event: any, index: number) => (
                                                             <li key={index} className="relative pl-6">
                                                                 <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>

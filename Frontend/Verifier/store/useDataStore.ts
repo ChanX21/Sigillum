@@ -32,6 +32,7 @@ export interface DatabaseRecord {
         name:string
     }
     createdAt: string;
+    updatedAt: string;
     metadataCID: string;
     original: string;
     score: number;
