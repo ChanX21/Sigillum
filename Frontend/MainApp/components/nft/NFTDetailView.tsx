@@ -204,7 +204,7 @@ export const NFTDetailView = ({
   // console.log("stakersCount", stakersCount);
   // console.log("bidCount", bidCount);
 
-  console.log("userStake", userStake);
+  // console.log("userStake", userStake);
 
   const sold =
     !listingDetails?.active &&
