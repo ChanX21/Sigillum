@@ -336,7 +336,7 @@ export const blockchain = async (req: Request, res: Response): Promise<void> => 
       const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
         owner: authenticatedImage.user.walletAddress,
         minBid: 100,
-        endTime: Math.floor(Date.now() / 1000) + (24 * 3600),
+        endTime: Date.now() + (24 * 60 * 60 * 1000),
         description: 'Soft listing',
         metadataCID: authenticatedImage.metadataCID
       });
