@@ -5,7 +5,12 @@ import { ListingDataResponse, MediaRecord, NFTMetadata } from "@/types";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { BidForm } from "../shared/BidForm";
 import { useEffect, useState } from "react";
-import { getObjectDetails } from "@/utils/blockchainServices";
+import {
+  buildWithdrawStakeTx,
+  getBidCount,
+  getObjectDetails,
+  getUserStake,
+} from "@/utils/blockchainServices";
 import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
@@ -16,6 +21,8 @@ import { BidAcceptanceForm } from "../shared/BidAcceptanceForm";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FaRegCopy } from "react-icons/fa";
+import { getStakersCount } from "@/utils/blockchainServices";
+import { Button } from "../ui/button";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -35,9 +42,19 @@ export const NFTDetailView = ({
   const wallet = useWallet();
   const { address } = wallet;
   const timeRemaining = useCountdown(Number(listingDetails?.endTime));
+  const [unstaking, setUnstaking] = useState<boolean>(false);
+  const [stakersCount, setStakersCount] = useState<number>(0);
+  const [bidCount, setBidCount] = useState<number>(0);
+  const [userStake, setUserStake] = useState<{
+    hasStaked: boolean;
+    stakeAmount: number;
+  }>({
+    hasStaked: false,
+    stakeAmount: 0,
+  });
 
   const fetchListingDetails = async () => {
-    if (!nft.blockchain.listingId) return;
+    if (!nft.blockchain.listingId || !address) return;
 
     try {
       setLoading(true);
@@ -54,6 +71,46 @@ export const NFTDetailView = ({
         address
       );
 
+      const stakersCount = await getStakersCount(
+        provider,
+        PACKAGE_ID,
+        MODULE_NAME,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        address
+      );
+
+      const bidCount = await getBidCount(
+        provider,
+        PACKAGE_ID,
+        MODULE_NAME,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        address
+      );
+
+      const userStake = await getUserStake(
+        provider,
+        PACKAGE_ID,
+        MODULE_NAME,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        address,
+        address
+      );
+
+      if (stakersCount) {
+        setStakersCount(stakersCount);
+      }
+
+      if (bidCount) {
+        setBidCount(bidCount);
+      }
+
+      if (userStake) {
+        setUserStake(userStake);
+      }
+
       if (details) {
         // Cast the details to match our interface
         setListingDetails(details as unknown as ListingDataResponse);
@@ -67,12 +124,88 @@ export const NFTDetailView = ({
     }
   };
 
+  // Handle unstake placement
+  const handleUnstake = async () => {
+    if (!address || !nft.blockchain.listingId) {
+      toast.error("Please enter a valid unstake data");
+      return;
+    }
+
+    try {
+      setUnstaking(true);
+
+      // Log information for debugging
+      console.log("Unstaking with:", {
+        address,
+        listingId: nft.blockchain.listingId,
+        marketplaceId: MARKETPLACE_ID,
+        packageId: PACKAGE_ID,
+        moduleName: MODULE_NAME,
+      });
+
+      // Use the new helper function to build the transaction
+      const transaction = buildWithdrawStakeTx(
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        PACKAGE_ID,
+        MODULE_NAME
+      );
+
+      // Execute the transaction
+      try {
+        const result = await wallet.signAndExecuteTransaction({
+          transaction,
+        });
+
+        console.log(result);
+
+        if (result) {
+          fetchListingDetails?.();
+          toast.success("Unstaked successfully!");
+        }
+      } catch (txError: any) {
+        console.error("Transaction execution error:", txError);
+
+        // Extract more detailed error information
+        const errorMessage = txError?.message || "Unknown error";
+
+        if (
+          errorMessage.includes("dynamic_field") &&
+          errorMessage.includes("borrow_child_object_mut")
+        ) {
+          toast.error(
+            "Failed to unstake: The listing may not exist or you don't have permission to stake on it."
+          );
+        } else if (errorMessage.includes("Dry run failed")) {
+          toast.error(
+            "Failed to unstake: Transaction simulation failed. The listing may not be active."
+          );
+        } else {
+          toast.error(
+            `Failed to unstake: ${errorMessage.substring(0, 100)}...`
+          );
+        }
+        return;
+      }
+    } catch (error: any) {
+      console.error("Error unstaking:", error);
+      toast.error("Failed to unstake. Please try again.");
+    } finally {
+      setUnstaking(false);
+    }
+  };
+
   useEffect(() => {
     fetchListingDetails();
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  console.log(listingDetails);
+  // console.log(listingDetails);
+  // console.log("stakersCount", stakersCount);
+  // console.log("bidCount", bidCount);
+
+  // console.log("userStake", userStake);
+
   const sold =
     !listingDetails?.active &&
     listingDetails?.highestBidder == listingDetails?.owner;
@@ -139,16 +272,43 @@ export const NFTDetailView = ({
 
       <div className="min-h-[40px]">
         {!sold && wallet.connected && wallet.address && !isTimeEnded && (
-          <BidForm nft={nft} fetchListingDetails={fetchListingDetails} />
+          <BidForm
+            nft={nft}
+            fetchListingDetails={fetchListingDetails}
+            userStake={userStake}
+          />
         )}
       </div>
 
+      {userStake &&
+        userStake.hasStaked &&
+        !isTimeEnded &&
+        !listingDetails?.active && (
+          <Button
+            className="w-full py-6 text-lg border text-primary rounded-none"
+            size="lg"
+            onClick={handleUnstake}
+            variant="outline"
+            disabled={unstaking || !address}
+          >
+            {unstaking
+              ? "Unstaking..."
+              : `Unstake ${formatSuiAmount(userStake.stakeAmount)} SUI`}
+          </Button>
+        )}
+
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between ">
           <h2 className="font-medium text-xs">
             All Bids{" "}
             <span className="text-xs bg-primary/10 px-1.5 py-0.5 rounded-full">
-              {hasHighestBid ? "1" : "0"}
+              {bidCount}
+            </span>
+          </h2>
+          <h2 className="font-medium text-xs">
+            All Stakes{" "}
+            <span className="text-xs bg-primary/10 px-1.5 py-0.5 rounded-full">
+              {stakersCount}
             </span>
           </h2>
         </div>
