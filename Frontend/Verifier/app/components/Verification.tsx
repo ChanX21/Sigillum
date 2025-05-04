@@ -53,7 +53,7 @@ interface Provenance {
         timestampMs: string,
         Transaction: string,
         sender: string,
-        Data: {
+        parsedJson: {
             buyer: string,
             final_price: string,
             listing_id: string,
@@ -267,18 +267,18 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                     <ul className="space-y-3">
                                                         {hasAnyProvenance(provenance) && (
                                                             <>
-                                                                {provenance.ListingCreated?.map((event, index) => (
-                                                                    <li key={`created-${index}`} className="relative pl-6">
-                                                                        <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
-                                                                        <p className="text-sm font-medium">Listed on the Marketplace by {shortenAddress(event.sender)}</p>
-                                                                        <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
-                                                                    </li>
-                                                                ))}
 
                                                                 {provenance.ListingCompleted?.map((event, index) => (
                                                                     <li key={`completed-${index}`} className="relative pl-6">
                                                                         <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
-                                                                        <p className="text-sm font-medium">Image Purchased by {shortenAddress(event.Data.buyer)} </p>
+                                                                        <p className="text-sm font-medium">Image Purchased by {shortenAddress(event.parsedJson.buyer)} </p>
+                                                                        <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
+                                                                    </li>
+                                                                ))}
+                                                                {provenance.ListingCreated?.map((event, index) => (
+                                                                    <li key={`created-${index}`} className="relative pl-6">
+                                                                        <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
+                                                                        <p className="text-sm font-medium">Listed on the Marketplace by {shortenAddress(event.sender)}</p>
                                                                         <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
                                                                     </li>
                                                                 ))}
