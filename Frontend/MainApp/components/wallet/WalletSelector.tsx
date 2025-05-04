@@ -36,7 +36,7 @@ const WalletSelector = () => {
   }, [isSuccess])
   return (
     <div className='relative mt-10 md:px-10 px-15 flex flex-col overflow-y-scroll md:max-h-[85%]'>
-      {[...configuredWallets, ...allAvailableWallets, ...detectedWallets].map((wallet, index) => (
+      {[...configuredWallets].map((wallet, index) => (
         <Button
           key={index}
           onClick={() => handleWalletClick(wallet)}
