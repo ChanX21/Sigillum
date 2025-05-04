@@ -26,7 +26,7 @@ export default function WalletWatcher() {
       }
     }
 
-  }, [connected]);
+  }, [connected,sessionFailed]);
 
   useEffect(() => {
     if (isSuccess) {
