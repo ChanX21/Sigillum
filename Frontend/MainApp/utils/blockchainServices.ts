@@ -3,7 +3,7 @@ import { Transaction } from "@mysten/sui/transactions";
 
 import { EventId, SuiClient, SuiEvent } from "@mysten/sui/client";
 import { MODULE_NAME, PACKAGE_ID } from "@/lib/suiConfig";
-
+const nftTypeArg = `${PACKAGE_ID}::sigillum_nft::PhotoNFT`
 export const buildAcceptBidTx = (
   marketplaceObjectId: string,
   listingId: string,
@@ -16,9 +16,6 @@ export const buildAcceptBidTx = (
   const estimatedGasFee = BigInt(30000000); // 0.03 SUI
   tx.setGasBudget(Number(estimatedGasFee));
 
-  // NFT type parameter that was missing
-  const nftTypeArg =
-    "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
 
   // Building the move call with type arguments
   tx.moveCall({
@@ -781,8 +778,6 @@ export async function listNft(
   try {
     const tx = new Transaction();
     tx.setGasBudget(50000000); // 50M gas
-    const nftTypeArg =
-      "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       typeArguments: [nftTypeArg],
