@@ -9,10 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
 import { MediaRecord } from "@/types";
+import { useWallet } from "@suiet/wallet-kit";
+import { useAuth } from "@/hooks/useAuth";
+import { Loading } from "@/components/shared/Loading";
 
 export default function MarketplacePage() {
-  const { data, isLoading } = useGetAllImages();
-  console.log(data);
+  const wallet = useWallet();
+  const { isAuthenticated, isLoading } = useAuth();
+  const { data, isLoading: imagesLoading } = useGetAllImages(
+    true,
+    wallet.address
+  );
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <>
