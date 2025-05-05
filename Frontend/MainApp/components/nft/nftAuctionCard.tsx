@@ -44,7 +44,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         const response = await fetchMetadata(
           `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
         );
-        // console.log(response)
+    
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
@@ -135,9 +135,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         {/* Right side - Details */}
         <div className="w-full md:w-1/2 p-6">
           <Link href={`/detail/${nft._id}`}>
-            <h2 className="text-2xl font-bold mb-4">
-              {metadata?.name || "Human Austrian Briar Art"}
-            </h2>
+            <h2 className="text-2xl font-bold mb-4">{metadata?.name || ""}</h2>
           </Link>
 
           {/* Current Bid */}

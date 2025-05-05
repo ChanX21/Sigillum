@@ -31,20 +31,26 @@ export const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const { connected: walletConnected, address, disconnect } = useWallet();
   const { balance, loading } = useAccountBalance();
-  const { data: profile } = useGetProfile()
+  const { data: profile } = useGetProfile();
   const readableSui = (rawBalance: bigint | number) => {
     return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);
   };
 
   const disconnectWallet = () => {
-    disconnect()
-    axiosInstance.post('/clear-session', {}, {
-      withCredentials: true
-    }).then((res) => {
-    }).catch(err => {
-      console.log(err)
-    })
-  }
+    disconnect();
+    axiosInstance
+      .post(
+        "/clear-session",
+        {},
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {})
+      .catch((err) => {
+        console.log(err);
+      });
+  };
   // Close search if clicked outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -65,7 +71,11 @@ export const Header = () => {
   return (
     <>
       {/* Wallet Modal */}
-      <header className={`fixed top-0 z-50 w-full h-12 ${walletConnected && profile?.data?.name ? 'md:pr-3' : 'md:px-0'} bg-background border-b border-stone-300`}>
+      <header
+        className={`fixed top-0 z-50 w-full h-12 ${
+          walletConnected && profile?.data?.name ? "md:pr-3" : "md:px-0"
+        } bg-background border-b border-stone-300`}
+      >
         {showWalletModal && (
           <WalletModal setShowWalletModal={setShowWalletModal} />
         )}
@@ -75,7 +85,12 @@ export const Header = () => {
             href="/"
             className="flex items-center gap-2 px-3 h-full font-bold text-[#0d0d0d]"
           >
-            <Image alt="Sigillum" width={140} height={30} src={'/icons/SIGILLUM_LOGO.png'} />
+            <Image
+              alt="Sigillum"
+              width={140}
+              height={30}
+              src={"/icons/SIGILLUM_LOGO.png"}
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -110,7 +125,7 @@ export const Header = () => {
                 {address && (
                   <DropdownMenu>
                     {profile?.data?.name ? (
-                      <DropdownMenuTrigger className="flex md:ml-3 justify-around rounded-full items-center text-sm px-2 outline-none py-2 cursor-pointer border border-gray-100 hover:bg-gray-100 transition-all">
+                      <DropdownMenuTrigger className="flex md:ml-3  justify-around rounded-full items-center text-sm px-2 outline-none py-2 cursor-pointer border border-gray-100 hover:bg-gray-100 transition-all">
                         <User size={20} className="text-gray-700" />
                       </DropdownMenuTrigger>
                     ) : (
@@ -118,9 +133,10 @@ export const Header = () => {
                         {shortenAddress(address)}
                       </DropdownMenuTrigger>
                     )}
-                    <DropdownMenuContent>
-                      
-                      <DropdownMenuLabel className="cursor-pointer">{profile?.data?.name ? profile.data.name : 'My Account'}</DropdownMenuLabel>
+                    <DropdownMenuContent className="w-[200px]">
+                      <DropdownMenuLabel className="cursor-pointer">
+                        {profile?.data?.name ? profile.data.name : "My Account"}
+                      </DropdownMenuLabel>
                       <DropdownMenuLabel>
                         <div className="flex items-center gap-2 bg-background py-0 rounded-full">
                           <div className="bg-white rounded-full flex items-center justify-center">
@@ -138,12 +154,24 @@ export const Header = () => {
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <Link href={"/my-nfts/unlisted"}>
-                        <DropdownMenuItem className="cursor-pointer">My Nft's</DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          My Nft's
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href={"/marketplace"}>
+                        <DropdownMenuItem className="cursor-pointer">
+                          Marketplace
+                        </DropdownMenuItem>
                       </Link>
                       <Link href={"/profile"}>
-                        <DropdownMenuItem className="cursor-pointer" >Profile</DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          Profile
+                        </DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => disconnectWallet()}>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => disconnectWallet()}
+                      >
                         Disconnect
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -191,7 +219,11 @@ export const Header = () => {
                         </DropdownMenuTrigger>
                       )}
                       <DropdownMenuContent>
-                        <DropdownMenuLabel className="cursor-pointer">{profile?.data?.name ? profile.data.name : 'My Account'}</DropdownMenuLabel>
+                        <DropdownMenuLabel className="cursor-pointer">
+                          {profile?.data?.name
+                            ? profile.data.name
+                            : "My Account"}
+                        </DropdownMenuLabel>
                         <DropdownMenuLabel>
                           <div className="flex items-center gap-2 bg-background py-0 rounded-full">
                             <div className="bg-white rounded-full flex items-center justify-center">
@@ -209,12 +241,19 @@ export const Header = () => {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <Link href={"/my-nfts/unlisted"}>
-                          <DropdownMenuItem className="cursor-pointer">My Nft's</DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer">
+                            My Nft's
+                          </DropdownMenuItem>
                         </Link>
                         <Link href={"/profile"}>
-                          <DropdownMenuItem className="cursor-pointer" >Profile</DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer">
+                            Profile
+                          </DropdownMenuItem>
                         </Link>
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => disconnectWallet()}>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => disconnectWallet()}
+                        >
                           Disconnect
                         </DropdownMenuItem>
                       </DropdownMenuContent>

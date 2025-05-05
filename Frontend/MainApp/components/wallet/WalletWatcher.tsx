@@ -10,16 +10,13 @@ export default function WalletWatcher() {
   const { isError: sessionFailed, error: sessionError } = useGetProfile()
   const { data, isPending, isSuccess, mutate: createWalletSession } = useWalletSession()
   
-  
-  const [nonce, setNonce] = useState<any>()
 
   useEffect(() => {
-    if (sessionError) {
-      if (account && connected) {
+    if (sessionFailed && !isSuccess) {
+      if (connected) {
         console.log("Session Failed")
         axiosInstance.get(`/nonce/${address}`)
           .then((res) => {
-            setNonce(res.data);
             createWalletSession({ nonce: res.data.nonce })
           })
           .catch((error) => {
@@ -27,8 +24,7 @@ export default function WalletWatcher() {
           });
       }
     }
-
-  }, [connected, account, sessionError, sessionFailed]);
+  }, [connected, sessionFailed, isSuccess]);
 
   useEffect(() => {
     if (isSuccess) {

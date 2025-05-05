@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { CheckCircle, User, Wallet, Shield } from "lucide-react"
+import { CheckCircle, User} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,8 +32,8 @@ export default function ProfilePage() {
     const { mutate: updateProfile, isPending, isSuccess, error, isError } = useUpdateProfile()
 
     // Wallet 
-    const { connected, address ,chain} = useWallet()
-    const { balance, loading: balanceLoading } = useAccountBalance()
+    const { connected ,chain} = useWallet()
+    const { balance } = useAccountBalance()
     
     const readableSui = (rawBalance: bigint | number) => {
         return (Number(rawBalance) / MIST_PER_SUI).toFixed(2);

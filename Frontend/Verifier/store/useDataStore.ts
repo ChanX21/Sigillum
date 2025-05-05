@@ -32,6 +32,7 @@ export interface DatabaseRecord {
         name:string
     }
     createdAt: string;
+    updatedAt: string;
     metadataCID: string;
     original: string;
     score: number;
@@ -63,7 +64,7 @@ export const useDataStore = create((set) => ({
             set({ data, loading: false });
         } catch (error: any) {
             set({ error: error.message, loading: false });
-            console.log(error)
+        
         }
     },
 }));

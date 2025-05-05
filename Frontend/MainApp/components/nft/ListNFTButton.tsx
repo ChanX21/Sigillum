@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@suiet/wallet-kit';
 
-import { useListNft } from '@/hooks/useListNft';
 import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
 import { toast } from 'sonner';
 import { useUpdateNftDets } from '@/hooks/useUpdateNftDets';
@@ -27,7 +26,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
     const { signAndExecuteTransaction, address } = useWallet()
     // const { data, mutate: listNft, isPending, isSuccess, isError, error } = useListNft()
     const queryClient = useQueryClient()
-    const { data: nftDetUpdate, mutate: updateNftDet } = useUpdateNftDets()
+    const { mutate: updateNftDet } = useUpdateNftDets()
     const handleListing = async () => {
         const price = Math.floor(parseFloat(listPrice) * 10 ** 9)
         if (!isNaN(price) && address) {

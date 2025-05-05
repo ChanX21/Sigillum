@@ -1,7 +1,8 @@
 // CONSTANTS
 import { Transaction } from "@mysten/sui/transactions";
 
-import { SuiClient } from "@mysten/sui/client";
+import { EventId, SuiClient, SuiEvent } from "@mysten/sui/client";
+import { MODULE_NAME, PACKAGE_ID } from "@/lib/suiConfig";
 
 export const buildAcceptBidTx = (
   marketplaceObjectId: string,
@@ -17,7 +18,7 @@ export const buildAcceptBidTx = (
 
   // NFT type parameter that was missing
   const nftTypeArg =
-    "0xaa557c1f174c247585b42de60e35fb46fe103b47552ba05c4532fb0f0f8f68a0::sigillum_nft::PhotoNFT";
+    "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
 
   // Building the move call with type arguments
   tx.moveCall({
@@ -170,21 +171,165 @@ export async function getBidCount(
     arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
   });
 
-  const result = await provider.devInspectTransactionBlock({
-    sender: address,
-    transactionBlock: tx,
+  try {
+    const result = await provider.devInspectTransactionBlock({
+      sender: address,
+      transactionBlock: tx,
+    });
+
+    console.log("Raw Result:", JSON.stringify(result, null, 2));
+
+    // Check if we have valid results
+    if (
+      !result?.results?.[0]?.returnValues ||
+      !Array.isArray(result.results[0].returnValues)
+    ) {
+      throw new Error("Unexpected result format");
+    }
+
+    // The structure appears to have each return value as [valueArray, typeString]
+    // Iterate through return values to find the bid count (likely a u64 value)
+    // We're looking for a small u64 value that represents a count
+    const returnValues = result.results[0].returnValues;
+
+    // Log all return values for debugging
+    console.log("Return values:");
+    returnValues.forEach((val, idx) => {
+      console.log(`Value ${idx}:`, val);
+    });
+
+    // Based on the provided data structure, bid count is likely to be in one of these positions
+    // Try the most likely candidates first:
+
+    // Assuming the bid count is the third return value (index 2) of type "u64"
+    if (returnValues[2] && returnValues[2][1] === "u64") {
+      const bidCountArray = returnValues[2][0];
+      // Convert the u64 byte array to a number
+      return parseU64FromByteArray(bidCountArray);
+    }
+
+    // Fallback: Search through all u64 values
+    for (let i = 0; i < returnValues.length; i++) {
+      const [value, type] = returnValues[i];
+      if (type === "u64") {
+        // Look for small values that could represent counts
+        const num = parseU64FromByteArray(value);
+        if (num >= 0 && num < 1000) {
+          // Assuming bid count is reasonably small
+          console.log(`Found potential bid count at index ${i}: ${num}`);
+          return num;
+        }
+      }
+    }
+
+    throw new Error("Could not identify bid count in response");
+  } catch (error: unknown) {
+    console.error("Error getting bid count:", error);
+    throw new Error(
+      `Failed to get bid count: ${
+        error instanceof Error ? error.message : "Unknown error occurred"
+      }`
+    );
+  }
+}
+// Function to get stakers count
+export async function getStakersCount(
+  provider: SuiClient,
+  packageId: string,
+  moduleName: string,
+  marketplaceObjectId: string,
+  listingId: string,
+  address: string | null = null
+) {
+  if (!address) return null;
+  const tx = new Transaction();
+
+  tx.moveCall({
+    target: `${packageId}::${moduleName}::get_stakers_count`,
+    arguments: [tx.object(marketplaceObjectId), tx.pure.address(listingId)],
   });
 
-  if (
-    result &&
-    result.results &&
-    result.results[0] &&
-    result.results[0].returnValues
-  ) {
-    return Number(result.results[0].returnValues[0][0]);
+  try {
+    const result = await provider.devInspectTransactionBlock({
+      sender: address,
+      transactionBlock: tx,
+    });
+
+    console.log("Raw Result:", JSON.stringify(result, null, 2));
+
+    // Check if we have valid results
+    if (
+      !result?.results?.[0]?.returnValues ||
+      !Array.isArray(result.results[0].returnValues)
+    ) {
+      throw new Error("Unexpected result format");
+    }
+
+    // The structure appears to have each return value as [valueArray, typeString]
+    // Iterate through return values to find the bid count (likely a u64 value)
+    // We're looking for a small u64 value that represents a count
+    const returnValues = result.results[0].returnValues;
+
+    // Log all return values for debugging
+    console.log("Return values:");
+    returnValues.forEach((val, idx) => {
+      console.log(`Value ${idx}:`, val);
+    });
+
+    // Based on the provided data structure, bid count is likely to be in one of these positions
+    // Try the most likely candidates first:
+
+    // Assuming the bid count is the third return value (index 2) of type "u64"
+    if (returnValues[2] && returnValues[2][1] === "u64") {
+      const bidCountArray = returnValues[2][0];
+      // Convert the u64 byte array to a number
+      return parseU64FromByteArray(bidCountArray);
+    }
+
+    // Fallback: Search through all u64 values
+    for (let i = 0; i < returnValues.length; i++) {
+      const [value, type] = returnValues[i];
+      if (type === "u64") {
+        // Look for small values that could represent counts
+        const num = parseU64FromByteArray(value);
+        if (num >= 0 && num < 1000) {
+          // Assuming bid count is reasonably small
+          console.log(`Found potential bid count at index ${i}: ${num}`);
+          return num;
+        }
+      }
+    }
+
+    throw new Error("Could not identify bid count in response");
+  } catch (error: unknown) {
+    console.error("Error getting bid count:", error);
+    throw new Error(
+      `Failed to get bid count: ${
+        error instanceof Error ? error.message : "Unknown error occurred"
+      }`
+    );
+  }
+}
+
+// Helper function to parse a u64 from a byte array
+function parseU64FromByteArray(byteArray: number[]): number {
+  if (!Array.isArray(byteArray) || byteArray.length !== 8) {
+    throw new Error(`Invalid u64 byte array: ${JSON.stringify(byteArray)}`);
   }
 
-  throw new Error("Failed to get bid count");
+  // Little-endian conversion of byte array to number
+  let value = BigInt(0);
+  for (let i = 7; i >= 0; i--) {
+    value = (value << BigInt(8)) | BigInt(byteArray[i]);
+  }
+
+  // Convert to Number if within safe integer range
+  if (value <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(value);
+  }
+
+  // Otherwise return as string to prevent precision loss
+  return Number(value);
 }
 
 // Function to get fee percentage
@@ -636,12 +781,11 @@ export async function listNft(
   try {
     const tx = new Transaction();
     tx.setGasBudget(50000000); // 50M gas
-
+    const nftTypeArg =
+      "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
-      typeArguments: [
-        "0xaa557c1f174c247585b42de60e35fb46fe103b47552ba05c4532fb0f0f8f68a0::sigillum_nft::PhotoNFT",
-      ],
+      typeArguments: [nftTypeArg],
       arguments: [
         tx.object(marketplaceObjectId),
         tx.pure.address(softListingId),
@@ -658,5 +802,97 @@ export async function listNft(
       success: false,
       error: "Failed to build convert_to_real_listing transaction",
     };
+  }
+}
+
+/**
+ * Get a user's stake on a listing
+ * @param provider - Sui client
+ * @param packageId - Package ID containing the module
+ * @param moduleName - Module name
+ * @param marketplaceObjectId - Marketplace object ID
+ * @param listingId - Listing ID (as address)
+ * @param stakerAddress - Address of the staker to check
+ * @param callerAddress - Address that will send the transaction
+ * @returns Object containing whether user has staked and the stake amount
+ */
+export async function getUserStake(
+  provider: SuiClient,
+  packageId: string,
+  moduleName: string,
+  marketplaceObjectId: string,
+  listingId: string,
+  stakerAddress: string,
+  callerAddress: string | null = null
+) {
+  if (!callerAddress) return { hasStaked: false, stakeAmount: 0 };
+  const tx = new Transaction();
+
+  tx.moveCall({
+    target: `${packageId}::${moduleName}::get_user_stake`,
+    arguments: [
+      tx.object(marketplaceObjectId),
+      tx.pure.address(listingId),
+      tx.pure.address(stakerAddress),
+    ],
+  });
+
+  try {
+    const result = await provider.devInspectTransactionBlock({
+      sender: callerAddress,
+      transactionBlock: tx,
+    });
+
+    // For debugging (can be removed in production)
+    console.log("Raw Result:", JSON.stringify(result, null, 2));
+
+    const returnValues = result?.results?.[0]?.returnValues;
+    if (!returnValues || !Array.isArray(returnValues)) {
+      return { hasStaked: false, stakeAmount: 0 };
+    }
+
+    // Let's find the boolean (hasStaked) and the u64 (stakeAmount) in the results
+    let hasStaked = false;
+    let stakeAmount = 0;
+
+    // Find the boolean value first
+    const boolValues = returnValues.filter(
+      ([value, type]) => type === "bool" && Array.isArray(value)
+    );
+
+    if (boolValues.length > 0) {
+      hasStaked = boolValues[0][0][0] === 1;
+    }
+
+    // Find the stake amount - we need to be smart about this
+    // There might be multiple u64 values, but we want the one that represents the stake
+    const u64Values = returnValues.filter(
+      ([value, type]) =>
+        type === "u64" && Array.isArray(value) && value.length === 8
+    );
+
+    if (u64Values.length > 0) {
+      // If hasStaked is false, the stake amount should be 0
+      // If hasStaked is true, the stake amount should be > 0
+      for (const [valueArray] of u64Values) {
+        const amount = parseU64FromByteArray(valueArray);
+
+        // If we find a value that matches our expectation based on hasStaked, use it
+        if ((!hasStaked && amount === 0) || (hasStaked && amount > 0)) {
+          stakeAmount = amount;
+          break;
+        }
+
+        // Otherwise, just take the first u64 as a fallback
+        if (stakeAmount === 0) {
+          stakeAmount = amount;
+        }
+      }
+    }
+
+    return { hasStaked, stakeAmount };
+  } catch (error) {
+    console.error("Error getting user stake:", error);
+    return { hasStaked: false, stakeAmount: 0 };
   }
 }

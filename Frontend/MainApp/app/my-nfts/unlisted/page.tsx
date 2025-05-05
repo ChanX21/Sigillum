@@ -1,6 +1,5 @@
 'use client'
 
-import { NFTCardBrowse } from '@/components/nft/NFTCardBrowse';
 import { Footer } from '@/components/shared/Footer';
 import { Header } from '@/components/shared/Header';
 import { useGetMyNfts } from '@/hooks/useGetMyNfts';
@@ -11,7 +10,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import NftAuctionCardPreview from '@/components/nft/NftAuctionCardPreview';
+import NftListingCard from '@/components/nft/NftListingCard';
 
 const UnlistedNfts = () => {
     const { connected, address } = useWallet()
@@ -22,7 +21,6 @@ const UnlistedNfts = () => {
     });
     useEffect(() => {
         if (data) {
-            console.log("Data", data)
             setFilteredNfts(data)
             if (filterType) {
                 filterNft(filterType as string)
@@ -36,7 +34,7 @@ const UnlistedNfts = () => {
         setFilterType(filterType)
 
         const filtered = filterType === 'all' ? source : source.filter(nft => nft.status === filterType);
-        console.log(filtered)
+
         setFilteredNfts(filtered);
     }
 
@@ -70,7 +68,7 @@ const UnlistedNfts = () => {
                                             <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
                                                 {filteredNfts?.map((nft: MediaRecord, index: number) => (
                                                     <div key={index} className="snap-start">
-                                                        <NftAuctionCardPreview nft={nft} idx={index} status={nft.status} />
+                                                        <NftListingCard nft={nft} idx={index} status={nft.status} />
                                                     </div>
                                                 ))}
                                             </div>
@@ -108,7 +106,7 @@ const UnlistedNfts = () => {
                                             <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
                                                 {filteredNfts?.map((nft: MediaRecord, index: number) => (
                                                     <div key={index} className="snap-start">
-                                                        <NftAuctionCardPreview nft={nft} idx={index} status={nft.status} />
+                                                        <NftListingCard nft={nft} idx={index} status={nft.status} />
                                                     </div>
                                                 ))}
                                             </div>
@@ -138,7 +136,7 @@ const UnlistedNfts = () => {
                                             <div className='grid md:grid-cols-4 grid-cols-1 gap-x-10 gap-y-5 justify-items-center'>
                                                 {filteredNfts?.map((nft: MediaRecord, index: number) => (
                                                     <div key={index} className="snap-start">
-                                                        <NftAuctionCardPreview nft={nft} idx={index} status={nft.status} />
+                                                        <NftListingCard nft={nft} idx={index} status={nft.status} />
                                                     </div>
                                                 ))}
                                             </div>
