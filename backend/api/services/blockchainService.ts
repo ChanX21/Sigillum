@@ -102,6 +102,7 @@ export const mintNFT = async (
           deletable: false,
           epochs: 3,
           signer: keypair,
+          owner: creatorAddress
         });
 
 
