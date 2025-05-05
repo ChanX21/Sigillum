@@ -98,7 +98,7 @@ export const mintNFT = async (
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
     
         const { blobId } = await walrusClient.writeBlob({
-          blob: new Uint8Array(new Float32Array(vector)),
+          blob: new TextEncoder().encode(JSON.stringify(vector)),
           deletable: false,
           epochs: 3,
           signer: keypair,

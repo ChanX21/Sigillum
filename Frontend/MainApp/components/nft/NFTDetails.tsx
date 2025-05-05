@@ -3,7 +3,7 @@ import { shortenAddress } from "@/utils/shortenAddress";
 import { FaRegCopy } from "react-icons/fa";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGetImageById } from "@/hooks/useGetImageById";
 import { IoMdCloudUpload } from "react-icons/io";
 
@@ -13,39 +13,42 @@ interface NFTDetailsProps {
 
 export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   const { result } = useImageAuthStore() as AuthState;
+
+  const [imageId, setImageId] = useState<string>('')
+
   const {
-    data: nftDetail,
-    refetch,
-    isLoading: nftDetailLoading,
-  } = useGetImageById(result?.image?.id as string);
+    data,refetch
+  } = useGetImageById(imageId);
 
   useEffect(() => {
     if (result?.image?.id) {
-      refetch();
+      setImageId(result.image.id)      
     }
-  }, [result?.image?.id]);
+  }, [result?.image.id]);
+
   useEffect(() => {
-    if (nftDetail) {
-      console.log(nftDetail);
+    if (data) {
+      console.log("Nft Detail", data);
     }
-  }, [nftDetail]);
+  }, [data]);
+  
   const details = compact
     ? [{ label: "NFT Id", value: "#52" }]
     : [
-        { label: "NFT Id", value: result?.image?.id },
-        {
-          label: "IPFS URL",
-          value: `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.originalIpfsCid}`,
-        },
-        {
-          label: "Status",
-          value: result?.image.status,
-        },
-        {
-          label: "Vector Url",
-          value: `${process.env.NEXT_PUBLIC_PINATA_URL}${nftDetail?.vector?.ipfsCid}`,
-        },
-      ];
+      { label: "NFT Id", value: result?.image?.id },
+      {
+        label: "IPFS URL",
+        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.originalIpfsCid}`,
+      },
+      {
+        label: "Status",
+        value: result?.image.status,
+      },
+      {
+        label: "Vector Url",
+        value: `https://walrusscan.com/testnet/blob/${data?.vector?.blobId}`,
+      },
+    ];
   const handleCopy = async (text: string, label: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
@@ -60,7 +63,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
           Your image is now secured on the blockchain
         </p>
       </div>
-      {nftDetailLoading ? (
+      {false ? (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="relative w-20 h-20">
             <div className="absolute inset-0 border-4 border-t-[#1b263b] border-[#f1f3f5] rounded-full animate-spin"></div>
