@@ -16,17 +16,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loading } from "@/components/shared/Loading";
 
 export default function Detail() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
   const id = useParams().id as string;
-  const { data } = useGetImageById(id);
+  const { isAuthenticated, isLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { data, error: imageDataError } = useGetImageById(id);
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
 
   useEffect(() => {
@@ -37,11 +30,10 @@ export default function Detail() {
         const response = await fetchMetadata(
           `${process.env.NEXT_PUBLIC_PINATA_URL}${data.metadataCID}`
         );
-
         setMetadata(response);
-        console.log("Metadata loaded:", response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
+        setError("Failed to load NFT metadata");
       }
     };
 
@@ -49,6 +41,23 @@ export default function Detail() {
       fetchData();
     }
   }, [data]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (error || imageDataError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h2 className="text-xl font-semibold mb-4">Error</h2>
+        <p className="text-gray-600">{error || String(imageDataError)}</p>
+      </div>
+    );
+  }
 
   // Format image URL properly
   const getImageUrl = () => {
