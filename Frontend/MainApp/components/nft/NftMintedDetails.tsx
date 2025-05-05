@@ -1,9 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
-import { IoMdDownload } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
-import { useRouter } from "next/navigation";
 import { GoDownload } from "react-icons/go";
 import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
 import { NFTDetails } from "./NFTDetails";
@@ -13,7 +11,6 @@ export function NftMintedDetails({
 }: {
   setStep: (step: number) => void;
 }) {
-  const router = useRouter();
   const { result } = useImageAuthStore() as AuthState
 
   const handleDownload = () => {
@@ -59,44 +56,7 @@ export function NftMintedDetails({
         </div>
         {/* NFT Details */}
         <NFTDetails />
-        {/* <div className="flex flex-col gap-10 w-full md:w-[45%] p-8 pt-6">
-          <div>
-            <h2 className="font-semibold text-base mb-1">NFT Details</h2>
-            <div className="text-gray-500 text-xs mb-4">
-              Your image is now secured on the blockchain
-            </div>
-          </div>
-          <div className="text-xs mb-2 font-semibold">
-            <div className="mb-2 flex flex-col gap-2">
-              <span className="text-gray-500">NFT ID</span>
-              <span className=" font-bold text-black">{nftId}</span>
-            </div>
-            <div className="mb-2 flex flex-col gap-2">
-              <span className="text-gray-500">IPFS URL</span>
-              <span className=" text-black  truncate max-w-[220px] align-middle">
-                {ipfsUrl}
-              </span>
-            </div>
-            <div className="mb-2 flex flex-col gap-2">
-              <span className="text-gray-500">Transaction Hash</span>
-              <span className=" text-black  truncate max-w-[220px] align-middle">
-                {txHash}
-              </span>
-            </div>
-            <div className="mb-2 flex flex-col gap-2">
-              <span className="text-gray-500">SHA-256 Hash</span>
-              <span className=" text-black  truncate max-w-[220px] align-middle">
-                {sha256}
-              </span>
-            </div>
-            <div className="mb-2 flex flex-col gap-2">
-              <span className="text-gray-500">Perceptual Hash</span>
-              <span className=" text-black  truncate max-w-[220px] align-middle">
-                {perceptualHash}
-              </span>
-            </div>
-          </div>
-        </div> */}
+        
       </div>
       {/* Green Info Box */}
       <div className="w-full max-w-4xl mt-8">

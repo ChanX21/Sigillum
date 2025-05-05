@@ -7,7 +7,7 @@ const WalletModal = ({ setShowWalletModal }: { setShowWalletModal: React.Dispatc
     return (
         <div className="absolute w-full z-10 h-screen left-0 top-0 flex justify-center items-center">
             <div className="w-full h-full absolute top-0 ring-0 bg-black opacity-20" />
-            <div className="relative md:w-[30%] bg-white rounded-sm md:h-[70%] w-[95%] h-[95%] z-10">
+            <div className="relative md:w-[30%] bg-white rounded-sm md:h-[60%] w-[95%] h-[65%] z-10 flex justify-center md:items-start items-start">
                 <Button variant={'ghost'} className='absolute right-3 top-3' onClick={() => setShowWalletModal(false)}>
                     <X />
                 </Button>
