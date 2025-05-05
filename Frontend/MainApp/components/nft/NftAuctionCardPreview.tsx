@@ -13,6 +13,7 @@ import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import ListNFTButton from "./ListNFTButton";
+import { client } from "@/lib/suiClient";
 
 interface NftAuctionCardPreviewProps {
   active?: boolean;
@@ -71,7 +72,7 @@ export const NftAuctionCardPreview = ({
         setLoading(true);
         setError(null);
 
-        const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+        const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
         const details = await getObjectDetails(
           provider,
@@ -141,8 +142,15 @@ export const NftAuctionCardPreview = ({
           </span>
         </div>
         <Link href={`/detail/${nft._id}`}>
-          <h3 className={`text-lg font-bold text-center text-primary`}>
-            {metadata?.name || ""}
+          <h3
+            className={`text-lg font-bold text-center text-primary`}
+            title={metadata?.name || ""}
+          >
+            {metadata?.name
+              ? metadata.name.length > 20
+                ? `${metadata.name.slice(0, 20)}...`
+                : metadata.name
+              : ""}
           </h3>
         </Link>
       </div>

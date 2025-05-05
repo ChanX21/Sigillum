@@ -10,6 +10,7 @@ import { getFullnodeUrl } from "@mysten/sui/client";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
 import { MediaRecord } from "@/types";
+import { client } from "@/lib/suiClient";
 
 interface BIDFormProps {
   nft: MediaRecord;
@@ -68,7 +69,7 @@ export const BidForm = ({
       );
 
       // Create a SuiClient instance
-      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
       // Use the new helper function to build the transaction
       const { transaction, success, error } =
@@ -163,7 +164,7 @@ export const BidForm = ({
       );
 
       // Create a SuiClient instance
-      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
       // Use the new helper function to build the transaction
       const { transaction, success, error } =

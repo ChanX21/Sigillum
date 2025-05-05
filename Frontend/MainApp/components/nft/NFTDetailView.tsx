@@ -25,6 +25,7 @@ import { getStakersCount } from "@/utils/blockchainServices";
 import { Button } from "../ui/button";
 import { RelistForm } from "../shared/RelistForm";
 import { RelistModal } from "../shared/RelistModal";
+import { client } from "@/lib/suiClient";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -62,7 +63,7 @@ export const NFTDetailView = ({
       setLoading(true);
       setError(null);
 
-      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
       const details = await getObjectDetails(
         provider,

@@ -1,7 +1,6 @@
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client'
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
-const rpcUrl = getFullnodeUrl('testnet')
+const rpcUrl = "https://rpc-testnet.suiscan.xyz"; //getFullnodeUrl("testnet");
 
 // SUI CLIENT
-export const client = new SuiClient({ url: rpcUrl })
-
+export const client = new SuiClient({ url: rpcUrl });
