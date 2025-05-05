@@ -7,7 +7,11 @@ import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
 import { useGetProfile } from "@/hooks/useProfile";
 
-const WalletSelector = () => {
+const WalletSelector = ({
+  setShowWalletModal,
+}: {
+  setShowWalletModal: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
   const {
     connected,
     connecting,
@@ -25,7 +29,6 @@ const WalletSelector = () => {
     if (wallet.installed) {
       await select(wallet.name);
     } else {
-
       // Redirect to wallet website or show a message
       if (wallet.downloadUrl?.browserExtension) {
         window.open(wallet.downloadUrl.browserExtension, "_blank");
@@ -33,6 +36,7 @@ const WalletSelector = () => {
         toast(`Please install ${wallet.name} wallet.`);
       }
     }
+    setShowWalletModal(false);
   };
 
   useEffect(() => {
@@ -41,16 +45,19 @@ const WalletSelector = () => {
     }
   }, [isSuccess]);
   return (
-
-    <div className='relative mt-10 md:px-10 px-15 flex flex-col overflow-y-scroll md:max-h-[85%]'>
+    <div className="relative mt-10 md:px-10 px-15 flex flex-col overflow-y-scroll md:max-h-[85%]">
       {[...configuredWallets].map((wallet, index) => (
         <Button
           key={index}
           onClick={() => handleWalletClick(wallet)}
-          variant={'ghost'}
+          variant={"ghost"}
           className="w-full z-50"
         >
-          <img src={wallet?.iconUrl} alt={wallet.name} className="inline-block w-5 h-5 mr-2" />
+          <img
+            src={wallet?.iconUrl}
+            alt={wallet.name}
+            className="inline-block w-5 h-5 mr-2"
+          />
           {wallet.name}
         </Button>
       ))}

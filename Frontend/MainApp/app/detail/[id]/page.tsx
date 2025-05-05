@@ -12,8 +12,19 @@ import { useGetImageById } from "@/hooks/useGetImageById";
 import { NFTDetailView } from "@/components/nft/NFTDetailView";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { shortenAddress } from "@/utils/shortenAddress";
+import { useAuth } from "@/hooks/useAuth";
+import { Loading } from "@/components/shared/Loading";
 
 export default function Detail() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
   const id = useParams().id as string;
   const { data } = useGetImageById(id);
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
