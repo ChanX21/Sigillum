@@ -2,7 +2,6 @@ import { Button } from "../ui/button";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { useEffect, useState } from "react";
 import {
-  getListingIds,
   buildPlaceBidTxWithCoinSelection,
   buildPlaceStakeTxWithCoinSelection,
 } from "@/utils/blockchainServices";
@@ -10,22 +9,28 @@ import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
-import { ListingDataResponse, MediaRecord } from "@/types";
+import { MediaRecord } from "@/types";
 
 interface BIDFormProps {
   nft: MediaRecord;
   setOpen?: (open: boolean) => void;
   fetchListingDetails?: () => Promise<void>;
+  userStake?: {
+    hasStaked: boolean;
+    stakeAmount: number;
+  };
 }
 
 export const BidForm = ({
   nft,
   setOpen,
   fetchListingDetails,
+  userStake,
 }: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
   const [bidding, setBidding] = useState<boolean>(false);
   const [staking, setStaking] = useState<boolean>(false);
+
   const wallet = useWallet();
   const { address, signAndExecuteTransaction } = wallet;
 
@@ -247,6 +252,7 @@ export const BidForm = ({
         >
           {bidding ? "Bidding..." : "Place a Bid"}
         </Button>
+        {/* {userStake && !userStake.hasStaked && ( */}
         <Button
           className="w-[49%] py-6 text-lg border text-primary rounded-none"
           size="lg"
@@ -256,6 +262,7 @@ export const BidForm = ({
         >
           {staking ? "Staking..." : "Stake"}
         </Button>
+        {/* )} */}
       </div>
 
       {/* {debugInfo && (

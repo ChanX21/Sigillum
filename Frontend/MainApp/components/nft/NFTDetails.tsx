@@ -5,48 +5,52 @@ import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { useEffect } from "react";
 import { useGetImageById } from "@/hooks/useGetImageById";
-
+import { IoMdCloudUpload } from "react-icons/io";
 
 interface NFTDetailsProps {
   compact?: boolean;
 }
 
 export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
-  const { result } = useImageAuthStore() as AuthState
-  const { data: nftDetail, refetch, isLoading: nftDetailLoading } = useGetImageById(result?.image?.id as string)
+  const { result } = useImageAuthStore() as AuthState;
+  const {
+    data: nftDetail,
+    refetch,
+    isLoading: nftDetailLoading,
+  } = useGetImageById(result?.image?.id as string);
 
   useEffect(() => {
     if (result?.image?.id) {
-      refetch()
+      refetch();
     }
-  }, [result?.image?.id])
+  }, [result?.image?.id]);
   useEffect(() => {
     if (nftDetail) {
-      console.log(nftDetail)
+      console.log(nftDetail);
     }
-  }, [nftDetail])
+  }, [nftDetail]);
   const details = compact
     ? [{ label: "NFT Id", value: "#52" }]
     : [
-      { label: "NFT Id", value: result?.image?.id },
-      {
-        label: "IPFS URL",
-        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.originalIpfsCid}`,
-      },
-      {
-        label: "Status",
-        value: result?.image.status,
-      },
-      {
-        label: "Vector Url",
-        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${nftDetail?.vector?.ipfsCid}`,
-      },
-    ];
+        { label: "NFT Id", value: result?.image?.id },
+        {
+          label: "IPFS URL",
+          value: `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.originalIpfsCid}`,
+        },
+        {
+          label: "Status",
+          value: result?.image.status,
+        },
+        {
+          label: "Vector Url",
+          value: `${process.env.NEXT_PUBLIC_PINATA_URL}${nftDetail?.vector?.ipfsCid}`,
+        },
+      ];
   const handleCopy = async (text: string, label: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
-    toast.success(`Copied ${label} Successfully`)
-  }
+    toast.success(`Copied ${label} Successfully`);
+  };
 
   return (
     <div className="flex flex-col gap-10 w-full md:w-[45%] p-8 pt-6">
@@ -67,12 +71,33 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
         <div className="flex pt-4 flex-1 flex-col gap-3">
           {details.map((detail) => (
             <div key={detail.label} className="flex flex-col">
-              <p className="font-semibold text-gray-500 text-md">{detail.label}</p>
+              <p className="font-semibold text-gray-500 text-md">
+                {detail.label}
+              </p>
               <p className="text-sm font-medium flex items-center gap-2">
-                <span>{['IPFS URL', 'SHA-256 Hash', 'Perceptual Hash','Vector Url'].includes(detail.label) ? shortenAddress(detail.value) : detail.value}</span>
-                <Button onClick={() => handleCopy(detail.value as string, detail.label as string)}>
-                  <FaRegCopy size={12} className="cursor-pointer" />
-                </Button>
+                <span>
+                  {[
+                    "IPFS URL",
+                    "SHA-256 Hash",
+                    "Perceptual Hash",
+                    "Vector Url",
+                  ].includes(detail.label)
+                    ? shortenAddress(detail.value, 10, 10)
+                    : detail.value}
+                </span>
+                {detail.value !== "uploaded" ? (
+                  <Button
+                    onClick={() =>
+                      handleCopy(detail.value as string, detail.label as string)
+                    }
+                  >
+                    <FaRegCopy size={12} className="cursor-pointer" />
+                  </Button>
+                ) : (
+                  <Button onClick={() => toast("NFT uploaded successfully.")}>
+                    <IoMdCloudUpload size={12} className="cursor-pointer" />
+                  </Button>
+                )}
               </p>
             </div>
           ))}

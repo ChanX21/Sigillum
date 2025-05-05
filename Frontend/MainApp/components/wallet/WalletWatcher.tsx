@@ -12,12 +12,11 @@ export default function WalletWatcher() {
   
 
   useEffect(() => {
-    if (sessionFailed) {
+    if (sessionFailed && !isSuccess) {
       if (connected) {
         console.log("Session Failed")
         axiosInstance.get(`/nonce/${address}`)
           .then((res) => {
-
             createWalletSession({ nonce: res.data.nonce })
           })
           .catch((error) => {
@@ -25,8 +24,7 @@ export default function WalletWatcher() {
           });
       }
     }
-
-  }, [connected,sessionFailed]);
+  }, [connected, sessionFailed, isSuccess]);
 
   useEffect(() => {
     if (isSuccess) {
