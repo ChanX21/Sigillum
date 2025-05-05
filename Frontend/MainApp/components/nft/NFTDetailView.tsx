@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { FaRegCopy } from "react-icons/fa";
 import { getStakersCount } from "@/utils/blockchainServices";
 import { Button } from "../ui/button";
+import { RelistForm } from "../shared/RelistForm";
+import { RelistModal } from "../shared/RelistModal";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -342,6 +344,12 @@ export const NFTDetailView = ({
             listingDetails?.active &&
             !sold ? (
             <BidAcceptanceForm nft={nft} />
+          ) : null;
+        })()}
+        {(() => {
+          const { owner } = listingDetails || {};
+          return owner === address && sold ? (
+            <RelistModal nft={nft} listingDetails={listingDetails} />
           ) : null;
         })()}
       </div>

@@ -80,7 +80,7 @@ export async function getObjectDetails(
       sender: senderAddress,
       transactionBlock: tx,
     });
-    console.log("Result:", result);
+    // console.log("Result:", result);
 
     //Check for dynamic_field error
     if (
@@ -177,7 +177,7 @@ export async function getBidCount(
       transactionBlock: tx,
     });
 
-    console.log("Raw Result:", JSON.stringify(result, null, 2));
+    // console.log("Raw Result:", JSON.stringify(result, null, 2));
 
     // Check if we have valid results
     if (
@@ -255,7 +255,7 @@ export async function getStakersCount(
       transactionBlock: tx,
     });
 
-    console.log("Raw Result:", JSON.stringify(result, null, 2));
+    // console.log("Raw Result:", JSON.stringify(result, null, 2));
 
     // Check if we have valid results
     if (
@@ -780,7 +780,9 @@ export async function listNft(
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
-    tx.setGasBudget(50000000); // 50M gas
+    const estimatedGasFee = BigInt(50000000); // 0.05 SUI
+    tx.setGasBudget(Number(estimatedGasFee));
+
     const nftTypeArg =
       "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
     tx.moveCall({
@@ -805,17 +807,46 @@ export async function listNft(
   }
 }
 
-/**
- * Get a user's stake on a listing
- * @param provider - Sui client
- * @param packageId - Package ID containing the module
- * @param moduleName - Module name
- * @param marketplaceObjectId - Marketplace object ID
- * @param listingId - Listing ID (as address)
- * @param stakerAddress - Address of the staker to check
- * @param callerAddress - Address that will send the transaction
- * @returns Object containing whether user has staked and the stake amount
- */
+export const buildRelistNftTx = async (
+  marketplaceObjectId: string,
+  listingId: string,
+  nftId: string,
+  newPrice: number,
+  newMinBid: number,
+  newEndTime: number,
+  packageId: string,
+  moduleName: string
+): Promise<Transaction> => {
+  try {
+    const tx = new Transaction();
+    const estimatedGasFee = BigInt(50000000); // 0.05 SUI
+    tx.setGasBudget(Number(estimatedGasFee));
+
+    // Use the same NFT type as in your existing code
+    // This should match the type of your NFT - update if necessary
+    const nftTypeArg =
+      "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
+
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::relist_on_same_listing`,
+      typeArguments: [nftTypeArg],
+      arguments: [
+        tx.object(marketplaceObjectId),
+        tx.pure.address(listingId),
+        tx.object(nftId),
+        tx.pure.u64(newPrice.toString()),
+        tx.pure.u64(newMinBid.toString()),
+        tx.pure.u64(newEndTime.toString()),
+      ],
+    });
+
+    return tx;
+  } catch (error) {
+    console.error("Error building relist transaction:", error);
+    throw new Error("Failed to build relist_on_same_listing transaction");
+  }
+};
+
 export async function getUserStake(
   provider: SuiClient,
   packageId: string,
@@ -844,7 +875,7 @@ export async function getUserStake(
     });
 
     // For debugging (can be removed in production)
-    console.log("Raw Result:", JSON.stringify(result, null, 2));
+    // console.log("Raw Result:", JSON.stringify(result, null, 2));
 
     const returnValues = result?.results?.[0]?.returnValues;
     if (!returnValues || !Array.isArray(returnValues)) {
