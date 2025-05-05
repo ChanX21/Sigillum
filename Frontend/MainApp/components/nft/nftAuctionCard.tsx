@@ -23,6 +23,7 @@ import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { SiSui } from "react-icons/si";
+import { client } from "@/lib/suiClient";
 
 interface NFTCardFeaturedProps {
   nft: MediaRecord;
@@ -44,7 +45,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         const response = await fetchMetadata(
           `${process.env.NEXT_PUBLIC_PINATA_URL}${nft.metadataCID}`
         );
-    
+
         setMetadata(response);
       } catch (error) {
         console.error("Error fetching metadata:", error);
@@ -64,7 +65,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         setLoading(true);
         setError(null);
 
-        const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+        const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
         const details = await getObjectDetails(
           provider,

@@ -8,6 +8,7 @@ import { getFullnodeUrl } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { ListingDataResponse } from "@/types";
+import { client } from "@/lib/suiClient";
 
 export function useGetMyNfts(
   owner: string,
@@ -17,7 +18,8 @@ export function useGetMyNfts(
     queryKey: ["unlisted-nfts", owner],
     queryFn: async ({ queryKey }) => {
       const [_, owner] = queryKey;
-      const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client;
+      new SuiClient({ url: getFullnodeUrl("testnet") });
 
       // First get all NFTs from backend
       const response = await axiosInstance.get("/all");

@@ -6,9 +6,10 @@ import { getFullnodeUrl } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { ListingDataResponse, MediaRecord } from "@/types";
+import { client } from "@/lib/suiClient";
 
 export async function getActiveNfts(owner: string): Promise<MediaRecord[]> {
-  const provider = new SuiClient({ url: getFullnodeUrl("testnet") });
+  const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
 
   // First get all NFTs from backend
   const response = await axiosInstance.get("/all");
