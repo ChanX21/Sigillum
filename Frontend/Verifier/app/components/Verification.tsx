@@ -86,21 +86,16 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
         return response.data
     }
-    const fetchDetail = async (id: string) => {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}${id}`)
-        console.log(response)
-        return response.data
-    }
+  
     useEffect(() => {
         if (verificationData && verificationData.verifications) {
             console.log(verificationData)
             fetchMetadata().then((res) => {
                 setAuthenticImage(res.image)
                 displayNftEvents(verificationData.verifications[0].blockchain.tokenId).then(res => {
-                    console.log("res : ", res)
+                  
                     setProvenance(res)
                 })
-                // fetchDetail(verificationData.verifications[0]._id) Fetcing Provenance History
             }).catch(err => {
                 console.log(err)
             })

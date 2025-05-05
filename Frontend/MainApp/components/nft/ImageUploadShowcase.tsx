@@ -43,7 +43,7 @@ export function ImageUploadShowcase({
   const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { address, connected } = useWallet();
+  const {  connected } = useWallet();
   const {
     error,
     isSuccess,

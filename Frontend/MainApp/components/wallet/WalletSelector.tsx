@@ -17,7 +17,6 @@ const WalletSelector = () => {
     if (wallet.installed) {
       await select(wallet.name)
     } else {
-      console.log(wallet)
       // Redirect to wallet website or show a message
       if (wallet.downloadUrl?.browserExtension) {
         window.open(wallet.downloadUrl.browserExtension, '_blank')
