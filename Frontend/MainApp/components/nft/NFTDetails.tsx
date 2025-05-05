@@ -46,7 +46,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
       },
       {
         label: "Vector Url",
-        value: `${process.env.NEXT_PUBLIC_PINATA_URL}${data?.vector?.blobId}`,
+        value: `https://walrusscan.com/testnet/blob/${data?.vector?.blobId}`,
       },
     ];
   const handleCopy = async (text: string, label: string) => {
