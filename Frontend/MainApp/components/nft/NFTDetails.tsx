@@ -17,7 +17,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   const [imageId, setImageId] = useState<string>('')
 
   const {
-    data,refetch
+    data,refetch,isLoading:nftDetailLoading
   } = useGetImageById(imageId);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
           Your image is now secured on the blockchain
         </p>
       </div>
-      {false ? (
+      {nftDetailLoading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="relative w-20 h-20">
             <div className="absolute inset-0 border-4 border-t-[#1b263b] border-[#f1f3f5] rounded-full animate-spin"></div>
@@ -85,7 +85,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
                     "Perceptual Hash",
                     "Vector Url",
                   ].includes(detail.label)
-                    ? shortenAddress(detail.value, 10, 10)
+                    ? !data && detail.label === "Vector Url" ? "Loading... " : shortenAddress(detail.value, 10, 10) 
                     : detail.value}
                 </span>
                 {detail.value !== "uploaded" ? (
