@@ -61,6 +61,7 @@ export function Loading() {
                 alt="Sigillum"
                 width={140}
                 height={30}
+                priority={true}
                 src={"/icons/SIGILLUM_LOGO.png"}
               />
             </div>
