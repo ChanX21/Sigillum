@@ -175,7 +175,9 @@ export const NftAuctionCardPreview = ({
             </div>
             <div className="flex flex-col items-center py-3">
               <span className="mb-1 text-gray-400">Ending in</span>
-              <span className="font-semibold">{timeRemaining}</span>
+              <span className="font-semibold">
+                {timeRemaining === "No deadline" ? "loading..." : timeRemaining}
+              </span>
             </div>
           </div>
         ))}

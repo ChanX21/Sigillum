@@ -464,6 +464,47 @@ export const buildPlaceBidTx = (
   return tx;
 };
 
+export async function buildPrepareCoinsTx(
+  provider: SuiClient,
+  address: string,
+  estimatedGasFee: bigint = BigInt(30_000_000)
+): Promise<{ transaction: Transaction; success: boolean; reason?: string }> {
+  const { data: coinData } = await provider.getCoins({
+    owner: address,
+    coinType: "0x2::sui::SUI",
+  });
+
+  if (!coinData || coinData.length === 0) {
+    return {
+      transaction: new Transaction(),
+      success: false,
+      reason: "No coins found",
+    };
+  }
+
+  const sorted = [...coinData].sort((a, b) =>
+    Number(BigInt(b.balance) - BigInt(a.balance))
+  );
+
+  const mainCoin = sorted[0];
+  if (BigInt(mainCoin.balance) < estimatedGasFee * BigInt(2)) {
+    return {
+      transaction: new Transaction(),
+      success: false,
+      reason: "Not enough balance to split a second coin for gas.",
+    };
+  }
+
+  const tx = new Transaction();
+  const coinObj = tx.object(mainCoin.coinObjectId);
+  const splitCoin = tx.splitCoins(coinObj, [
+    tx.pure.u64(estimatedGasFee.toString()),
+  ]);
+  tx.transferObjects([splitCoin[0]], tx.pure.address(address)); // Transfer to self (creates new coin object)
+
+  return { transaction: tx, success: true };
+}
+
 export async function buildPlaceBidTxWithCoinSelection(
   provider: SuiClient,
   address: string,
@@ -472,17 +513,13 @@ export async function buildPlaceBidTxWithCoinSelection(
   bidAmountMist: bigint,
   packageId: string,
   moduleName: string
-): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
+): Promise<{
+  transaction: Transaction;
+  success: boolean;
+  needsPreparation?: boolean;
+  error?: string;
+}> {
   try {
-    console.log("Starting to build bid transaction with params:", {
-      address,
-      marketplaceObjectId,
-      listingId,
-      bidAmountMist: bidAmountMist.toString(),
-      packageId,
-      moduleName,
-    });
-
     const { data: coinData } = await provider.getCoins({
       owner: address,
       coinType: "0x2::sui::SUI",
@@ -517,11 +554,9 @@ export async function buildPlaceBidTxWithCoinSelection(
       };
     }
 
-    // Try to find separate gas and bid coins
     let gasCoin = null;
     let bidCoin = null;
 
-    // First find a coin for gas (preferably a smaller one)
     for (const coin of sortedCoins) {
       if (
         BigInt(coin.balance) >= estimatedGasFee &&
@@ -532,7 +567,6 @@ export async function buildPlaceBidTxWithCoinSelection(
       }
     }
 
-    // If no small coin found, just use any coin that covers gas
     if (!gasCoin) {
       for (const coin of sortedCoins) {
         if (BigInt(coin.balance) >= estimatedGasFee) {
@@ -542,7 +576,6 @@ export async function buildPlaceBidTxWithCoinSelection(
       }
     }
 
-    // Now find a separate coin for the bid
     if (gasCoin) {
       for (const coin of sortedCoins) {
         if (
@@ -555,22 +588,19 @@ export async function buildPlaceBidTxWithCoinSelection(
       }
     }
 
-    // If we don't have separate coins, report that we need to split
     if (!gasCoin || !bidCoin) {
       return {
         transaction: new Transaction(),
         success: false,
+        needsPreparation: true,
         error:
-          "Need to split coins first. Cannot use the same coin for gas and bid.",
+          "Need to split coin first. Cannot use same coin for gas and bid.",
       };
     }
 
-    // If we have separate coins, build the transaction
     const tx = new Transaction();
     tx.setSender(address);
     tx.setGasBudget(Number(estimatedGasFee));
-
-    // Set the gas payment
     tx.setGasPayment([
       {
         objectId: gasCoin.coinObjectId,
@@ -579,11 +609,9 @@ export async function buildPlaceBidTxWithCoinSelection(
       },
     ]);
 
-    // Use the bid coin for the bid
     const bidCoinObj = tx.object(bidCoin.coinObjectId);
 
     if (BigInt(bidCoin.balance) > bidAmountMist) {
-      // Split if needed
       const splitBidCoins = tx.splitCoins(bidCoinObj, [
         tx.pure.u64(bidAmountMist.toString()),
       ]);
@@ -597,7 +625,6 @@ export async function buildPlaceBidTxWithCoinSelection(
         ],
       });
     } else {
-      // Use full coin
       tx.moveCall({
         target: `${packageId}::${moduleName}::place_bid`,
         arguments: [
@@ -610,7 +637,6 @@ export async function buildPlaceBidTxWithCoinSelection(
 
     return { transaction: tx, success: true };
   } catch (error) {
-    console.error("Error building bid transaction:", error);
     return {
       transaction: new Transaction(),
       success: false,
@@ -621,6 +647,54 @@ export async function buildPlaceBidTxWithCoinSelection(
   }
 }
 
+export async function prepareAndBuildBidTransaction(
+  provider: SuiClient,
+  address: string,
+  marketplaceObjectId: string,
+  listingId: string,
+  bidAmountMist: bigint,
+  packageId: string,
+  moduleName: string
+): Promise<{
+  transaction: Transaction;
+  success: boolean;
+  preparationNeeded?: boolean;
+  message?: string;
+}> {
+  const result = await buildPlaceBidTxWithCoinSelection(
+    provider,
+    address,
+    marketplaceObjectId,
+    listingId,
+    bidAmountMist,
+    packageId,
+    moduleName
+  );
+
+  if (result.success) return result;
+
+  if (result.needsPreparation) {
+    const prep = await buildPrepareCoinsTx(provider, address);
+    if (prep.success) {
+      return {
+        transaction: prep.transaction,
+        success: false,
+        preparationNeeded: true,
+        message:
+          "Execute this preparation transaction first, then retry placing the bid.",
+      };
+    } else {
+      return {
+        transaction: new Transaction(),
+        success: false,
+        message: prep.reason || "Unknown preparation failure",
+      };
+    }
+  }
+
+  return result;
+}
+
 export async function buildPlaceStakeTxWithCoinSelection(
   provider: SuiClient,
   address: string,
@@ -629,7 +703,12 @@ export async function buildPlaceStakeTxWithCoinSelection(
   stakeAmountMist: bigint,
   packageId: string,
   moduleName: string
-): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
+): Promise<{
+  transaction: Transaction;
+  success: boolean;
+  needsPreparation?: boolean;
+  error?: string;
+}> {
   try {
     console.log("Starting to build stake transaction with params:", {
       address,
@@ -676,6 +755,7 @@ export async function buildPlaceStakeTxWithCoinSelection(
     let gasCoin = null;
     let stakeCoin = null;
 
+    // Prepare gasCoin (first step)
     for (const coin of sortedCoins) {
       if (
         BigInt(coin.balance) >= estimatedGasFee &&
@@ -695,6 +775,7 @@ export async function buildPlaceStakeTxWithCoinSelection(
       }
     }
 
+    // Prepare stakeCoin (second step)
     if (gasCoin) {
       for (const coin of sortedCoins) {
         if (
@@ -707,10 +788,12 @@ export async function buildPlaceStakeTxWithCoinSelection(
       }
     }
 
+    // If no gas or stake coin available, we need preparation
     if (!gasCoin || !stakeCoin) {
       return {
         transaction: new Transaction(),
         success: false,
+        needsPreparation: true,
         error:
           "Need to split coins first. Cannot use the same coin for gas and staking.",
       };
@@ -729,6 +812,7 @@ export async function buildPlaceStakeTxWithCoinSelection(
 
     const stakeCoinObj = tx.object(stakeCoin.coinObjectId);
 
+    // Handling coin split if necessary (for stake coin)
     if (BigInt(stakeCoin.balance) > stakeAmountMist) {
       const splitStakeCoins = tx.splitCoins(stakeCoinObj, [
         tx.pure.u64(stakeAmountMist.toString()),
@@ -765,6 +849,199 @@ export async function buildPlaceStakeTxWithCoinSelection(
     };
   }
 }
+
+export async function prepareAndBuildStakeTransaction(
+  provider: SuiClient,
+  address: string,
+  marketplaceObjectId: string,
+  listingId: string,
+  stakeAmountMist: bigint,
+  packageId: string,
+  moduleName: string
+): Promise<{
+  transaction: Transaction;
+  success: boolean;
+  preparationNeeded?: boolean;
+  message?: string;
+}> {
+  const result = await buildPlaceStakeTxWithCoinSelection(
+    provider,
+    address,
+    marketplaceObjectId,
+    listingId,
+    stakeAmountMist,
+    packageId,
+    moduleName
+  );
+
+  if (result.success) return result;
+
+  if (result.needsPreparation) {
+    const prep = await buildPrepareCoinsTx(provider, address);
+    if (prep.success) {
+      return {
+        transaction: prep.transaction,
+        success: false,
+        preparationNeeded: true,
+        message:
+          "Execute this preparation transaction first, then retry placing the stake.",
+      };
+    } else {
+      return {
+        transaction: new Transaction(),
+        success: false,
+        message: prep.reason || "Unknown preparation failure",
+      };
+    }
+  }
+
+  return result;
+}
+
+// export async function buildPlaceStakeTxWithCoinSelection(
+//   provider: SuiClient,
+//   address: string,
+//   marketplaceObjectId: string,
+//   listingId: string,
+//   stakeAmountMist: bigint,
+//   packageId: string,
+//   moduleName: string
+// ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
+//   try {
+//     console.log("Starting to build stake transaction with params:", {
+//       address,
+//       marketplaceObjectId,
+//       listingId,
+//       stakeAmountMist: stakeAmountMist.toString(),
+//       packageId,
+//       moduleName,
+//     });
+
+//     const { data: coinData } = await provider.getCoins({
+//       owner: address,
+//       coinType: "0x2::sui::SUI",
+//     });
+
+//     if (!coinData || coinData.length === 0) {
+//       return {
+//         transaction: new Transaction(),
+//         success: false,
+//         error: "No SUI coins available.",
+//       };
+//     }
+
+//     const sortedCoins = [...coinData].sort((a, b) =>
+//       Number(BigInt(b.balance) - BigInt(a.balance))
+//     );
+
+//     const estimatedGasFee = BigInt(30_000_000); // 0.03 SUI
+//     const totalBalance = sortedCoins.reduce(
+//       (sum, coin) => sum + BigInt(coin.balance),
+//       BigInt(0)
+//     );
+
+//     if (totalBalance < stakeAmountMist + estimatedGasFee) {
+//       return {
+//         transaction: new Transaction(),
+//         success: false,
+//         error: `Insufficient balance. Need ${
+//           Number(stakeAmountMist + estimatedGasFee) / 1_000_000_000
+//         } SUI, but have ${Number(totalBalance) / 1_000_000_000} SUI.`,
+//       };
+//     }
+
+//     let gasCoin = null;
+//     let stakeCoin = null;
+
+//     for (const coin of sortedCoins) {
+//       if (
+//         BigInt(coin.balance) >= estimatedGasFee &&
+//         BigInt(coin.balance) < stakeAmountMist + estimatedGasFee
+//       ) {
+//         gasCoin = coin;
+//         break;
+//       }
+//     }
+
+//     if (!gasCoin) {
+//       for (const coin of sortedCoins) {
+//         if (BigInt(coin.balance) >= estimatedGasFee) {
+//           gasCoin = coin;
+//           break;
+//         }
+//       }
+//     }
+
+//     if (gasCoin) {
+//       for (const coin of sortedCoins) {
+//         if (
+//           coin.coinObjectId !== gasCoin.coinObjectId &&
+//           BigInt(coin.balance) >= stakeAmountMist
+//         ) {
+//           stakeCoin = coin;
+//           break;
+//         }
+//       }
+//     }
+
+//     if (!gasCoin || !stakeCoin) {
+//       return {
+//         transaction: new Transaction(),
+//         success: false,
+//         error:
+//           "Need to split coins first. Cannot use the same coin for gas and staking.",
+//       };
+//     }
+
+//     const tx = new Transaction();
+//     tx.setSender(address);
+//     tx.setGasBudget(Number(estimatedGasFee));
+//     tx.setGasPayment([
+//       {
+//         objectId: gasCoin.coinObjectId,
+//         version: gasCoin.version,
+//         digest: gasCoin.digest,
+//       },
+//     ]);
+
+//     const stakeCoinObj = tx.object(stakeCoin.coinObjectId);
+
+//     if (BigInt(stakeCoin.balance) > stakeAmountMist) {
+//       const splitStakeCoins = tx.splitCoins(stakeCoinObj, [
+//         tx.pure.u64(stakeAmountMist.toString()),
+//       ]);
+
+//       tx.moveCall({
+//         target: `${packageId}::${moduleName}::stake_on_listing`,
+//         arguments: [
+//           tx.object(marketplaceObjectId),
+//           tx.pure.address(listingId),
+//           splitStakeCoins[0],
+//         ],
+//       });
+//     } else {
+//       tx.moveCall({
+//         target: `${packageId}::${moduleName}::stake_on_listing`,
+//         arguments: [
+//           tx.object(marketplaceObjectId),
+//           tx.pure.address(listingId),
+//           stakeCoinObj,
+//         ],
+//       });
+//     }
+
+//     return { transaction: tx, success: true };
+//   } catch (error) {
+//     console.error("Error building stake transaction:", error);
+//     return {
+//       transaction: new Transaction(),
+//       success: false,
+//       error: `Failed to build transaction: ${
+//         error instanceof Error ? error.message : String(error)
+//       }`,
+//     };
+//   }
+// }
 
 export async function listNft(
   softListingId: string,

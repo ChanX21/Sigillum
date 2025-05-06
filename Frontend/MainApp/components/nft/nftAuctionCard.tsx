@@ -126,7 +126,9 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
               {/* Timer overlay */}
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[160px] h-[40px] rounded-[16px] border border-white/30 bg-white/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[5px] flex items-center justify-center">
                 <span className="text-white font-semibold">
-                  {timeRemaining}
+                  {timeRemaining === "No deadline"
+                    ? "loading..."
+                    : timeRemaining}
                 </span>
               </div>
             </div>
