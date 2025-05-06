@@ -26,11 +26,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
     }
   }, [result?.image.id]);
 
-  useEffect(() => {
-    if (data) {
-      console.log("Nft Detail", data);
-    }
-  }, [data]);
+
   
   const details = compact
     ? [{ label: "NFT Id", value: "#52" }]
