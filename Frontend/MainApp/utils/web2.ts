@@ -93,5 +93,5 @@ export function getTimeRemaining(endTime: number | undefined): string {
 
 // Format SUI amount (convert from MIST to SUI)
 export function formatSuiAmount(amount: number): string {
-  return (amount / 1_000_000_000).toFixed(2);
+  return (amount / 1_000_000_000).toFixed(amount > 0 ? 4 : 2);
 }

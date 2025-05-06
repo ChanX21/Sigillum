@@ -203,7 +203,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  // console.log(listingDetails);
+  //console.log(listingDetails);
   // console.log("stakersCount", stakersCount);
   // console.log("bidCount", bidCount);
 

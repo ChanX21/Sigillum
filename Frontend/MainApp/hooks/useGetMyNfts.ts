@@ -19,7 +19,7 @@ export function useGetMyNfts(
     queryFn: async ({ queryKey }) => {
       const [_, owner] = queryKey;
       const provider = client;
-      new SuiClient({ url: getFullnodeUrl("testnet") });
+      // new SuiClient({ url: getFullnodeUrl("testnet") });
 
       // First get all NFTs from backend
       const response = await axiosInstance.get("/all");
