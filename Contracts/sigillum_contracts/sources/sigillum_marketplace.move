@@ -379,7 +379,7 @@ module sigillum_contracts::sigillum_marketplace {
             is_highest = true;
             
             // If bid matches or exceeds list price, auto-complete the listing (only for real listings);
-        // if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price && listing.list_price > 0) {
+        // if (listing.listing_type == REAL_LISTING && bid_amount >= listing.list_price ) {
         //         complete_listing<T>(marketplace, listing_id, ctx);
         // };
         };
@@ -991,6 +991,10 @@ public entry fun relist_on_same_listing<T: key + store>(
     let bid_pool = table::borrow_mut(&mut marketplace.bid_pools, listing_id);
     bid_pool.bids = vec_map::empty();
     bid_pool.bid_count = 0;
+
+    let stake_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
+    stake_pool.stakes = vec_map::empty();
+    stake_pool.total_staked = 0;
     
     // Add NFT to marketplace escrow
     dof::add(&mut marketplace.id, nft_id, nft);
