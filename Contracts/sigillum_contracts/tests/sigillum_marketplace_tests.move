@@ -1368,6 +1368,28 @@ module sigillum_contracts::marketplace_tests {
             ts::return_shared(marketplace_obj);
         };
         
+        // ADMIN stakes on the listing
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 300;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify stake was placed
+            let stakers_count = get_stakers_count(&marketplace_obj, listing_id);
+            assert!(stakers_count == 1, 0);
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
         // Seller accepts the bid
         {
             ts::next_tx(&mut scenario, SELLER);
@@ -1430,6 +1452,14 @@ module sigillum_contracts::marketplace_tests {
             assert!(highest_bid == 0, 0);        // Highest bid reset
             assert!(highest_bidder == @0x0, 0);  // Highest bidder reset
             
+            // Verify bid pool has been reset
+            let bid_count = get_bid_count(&marketplace_obj, listing_id);
+            assert!(bid_count == 0, 0);          // Bid count should be reset to 0
+            
+            // Verify stake pool has been reset
+            let stakers_count = get_stakers_count(&marketplace_obj, listing_id);
+            assert!(stakers_count == 0, 0);      // Stakers count should be reset to 0
+            
             ts::return_shared(marketplace_obj);
         };
         
@@ -1454,6 +1484,32 @@ module sigillum_contracts::marketplace_tests {
                 
             assert!(highest_bid == bid_amount, 0);
             assert!(highest_bidder == BUYER2, 0);
+            
+            // Verify bid count was incremented properly
+            let bid_count = get_bid_count(&marketplace_obj, listing_id);
+            assert!(bid_count == 1, 0);  // Should be 1 new bid after reset
+            
+            ts::return_shared(marketplace_obj);
+        };
+        
+        // New staker places a stake on the relisted item
+        {
+            ts::next_tx(&mut scenario, ADMIN);
+            let mut marketplace_obj = ts::take_shared<Marketplace>(&scenario);
+            
+            let stake_amount = 250;
+            let payment = mint_test_coin(stake_amount, ts::ctx(&mut scenario));
+            
+            marketplace::stake_on_listing(
+                &mut marketplace_obj,
+                listing_id,
+                payment,
+                ts::ctx(&mut scenario)
+            );
+            
+            // Verify stake was placed after reset
+            let stakers_count = get_stakers_count(&marketplace_obj, listing_id);
+            assert!(stakers_count == 1, 0);  // Should be 1 new staker after reset
             
             ts::return_shared(marketplace_obj);
         };
