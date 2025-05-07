@@ -14,7 +14,7 @@ export default function InfiniteScrollingCarouselReverse({
 
   // Calculate scroll speed based on data length
   const scrollDuration = carouselData?.length
-    ? Math.max(carouselData.length * 4, 20)
+    ? Math.max(carouselData.length * 10, 20)
     : 30;
 
   // Calculate width for animation
