@@ -220,7 +220,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  //console.log(listingDetails);
+  console.log(listingDetails);
   // console.log("stakersCount", stakersCount);
   // console.log("bidCount", bidCount);
 
@@ -272,9 +272,14 @@ export const NFTDetailView = ({
                 ) : error ? (
                   <p className="text-red-500 text-sm">{error}</p>
                 ) : (
-                  <p className="text-2xl font-semibold">
-                    {listingDetails ? `${converted.usd}` : "USD 0.00"}
-                  </p>
+                  <div className="flex flex-col">
+                    <p className="text-2xl font-semibold">
+                      {listingDetails ? `${converted.sui}` : "SUI 0.00"}
+                    </p>
+                    <p className="text-sm text-gray-500 font-semibold">
+                      {listingDetails ? `${converted.usd}` : "USD 0.00"}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -298,6 +303,7 @@ export const NFTDetailView = ({
               nft={nft}
               fetchListingDetails={fetchListingDetails}
               userStake={userStake}
+              highestBid={listingDetails?.highestBid}
             />
           )}
       </div>
@@ -350,7 +356,7 @@ export const NFTDetailView = ({
                 </span>
               </div>
             </div>
-            <p className="font-medium">{converted.usd}</p>
+            {/* <p className="font-medium">{converted.usd}</p> */}
           </div>
         )}
         {(() => {

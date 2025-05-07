@@ -13,6 +13,7 @@ import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
 import { MediaRecord } from "@/types";
 import { client } from "@/lib/suiClient";
+import { formatSuiAmount } from "@/utils/web2";
 
 interface BIDFormProps {
   nft: MediaRecord;
@@ -22,6 +23,7 @@ interface BIDFormProps {
     hasStaked: boolean;
     stakeAmount: number;
   };
+  highestBid?: bigint;
 }
 
 export const BidForm = ({
@@ -29,10 +31,14 @@ export const BidForm = ({
   setOpen,
   fetchListingDetails,
   userStake,
+  highestBid,
 }: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
   const [bidding, setBidding] = useState<boolean>(false);
   const [staking, setStaking] = useState<boolean>(false);
+  const [minimumBid, setMinimumBid] = useState<number>(
+    Number(formatSuiAmount(Number(highestBid))) || 0
+  );
 
   const wallet = useWallet();
   const { address, signAndExecuteTransaction } = wallet;
@@ -50,6 +56,10 @@ export const BidForm = ({
       parseFloat(bidAmount) <= 0
     ) {
       toast.error("Please enter a valid bid amount");
+      return;
+    }
+    if (parseFloat(bidAmount) < minimumBid) {
+      toast.error(`Please enter a bid higher than ${minimumBid} SUI`);
       return;
     }
 
@@ -209,6 +219,7 @@ export const BidForm = ({
     }
   };
 
+  console.log(minimumBid);
   return (
     <div className="space-y-4">
       {/* Bid input */}
@@ -223,6 +234,11 @@ export const BidForm = ({
         />
         <span className="text-lg font-medium">SUI</span>
       </div>
+      {highestBid && (
+        <div className="text-sm text-stone-500">
+          Current highest bid: {formatSuiAmount(Number(highestBid))}
+        </div>
+      )}
 
       <div className="w-full flex gap-2">
         <Button
