@@ -55,7 +55,7 @@ export default function MarketplacePage() {
         {data && <h2 className="text-2xl font-bold mb-8">Explore</h2>}
         {isLoading || !data ? (
           <section className="flex w-full gap-4 overflow-x-auto flex-nowrap">
-            {Array(5)
+            {Array(6)
               .fill(null)
               .map((_, index) => (
                 <NftPreviewSkeleton />
@@ -77,8 +77,8 @@ export default function MarketplacePage() {
           <h2 className="text-2xl font-bold mb-8 mt-14">Featured Drops</h2>
         )}
         {isLoading || !data ? (
-          <section className="flex gap-4 overflow-auto">
-            {Array(5)
+          <section className="flex gap-4 overflow-auto mt-14">
+            {Array(6)
               .fill(null)
               .map((_, index) => (
                 <NftPreviewSkeleton />
