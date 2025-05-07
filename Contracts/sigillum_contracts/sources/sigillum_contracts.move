@@ -31,6 +31,7 @@ module sigillum_contracts::sigillum_nft {
         // dhash: vector<u8>,           // Difference hash (another perceptual hash variant)
         vector_url: vector<u8>,      // Vector url of the image
         blobId: vector<u8>,          // ID of the blob
+        blob_id_updated: bool,       // Tracks if blobId has been updated after minting
         watermark_id: vector<u8>,    // ID embedded in steganographic watermark
         timestamp: u64,              // Creation timestamp
         metadata: String,            // Additional photo metadata (JSON string)
@@ -48,6 +49,15 @@ module sigillum_contracts::sigillum_nft {
         photo_id: address,
         creator: address,
         nft_owner: address,
+        timestamp: u64,
+    }
+
+    // Event emitted when blobId is updated
+    public struct BlobIdUpdated has copy, drop {
+        photo_id: address,
+        old_blob_id: vector<u8>,
+        new_blob_id: vector<u8>,
+        admin: address,
         timestamp: u64,
     }
 
@@ -100,6 +110,7 @@ module sigillum_contracts::sigillum_nft {
             // dhash,
             vector_url,
             blobId,
+            blob_id_updated: false,
             watermark_id,
             timestamp: tx_context::epoch(ctx),
             metadata,
@@ -197,5 +208,38 @@ module sigillum_contracts::sigillum_nft {
         photo.blobId
     }
     
+    // Function to update the blobId - can only be called by admin and executed once per NFT
+    public entry fun update_blob_id(
+        admin_cap: &AdminCap,
+        photo: &mut PhotoNFT,
+        new_blob_id: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        // Check if the blobId has already been updated
+        assert!(!photo.blob_id_updated, 101); // Custom error code for "blobId already updated"
+        
+        // Store the old blobId for the event
+        let old_blob_id = photo.blobId;
+        
+        // Update the blobId
+        photo.blobId = new_blob_id;
+        
+        // Mark the NFT as having had its blobId updated
+        photo.blob_id_updated = true;
+        
+        // Emit an event to track the update
+        event::emit(BlobIdUpdated {
+            photo_id: object::uid_to_address(&photo.id),
+            old_blob_id,
+            new_blob_id,
+            admin: tx_context::sender(ctx),
+            timestamp: tx_context::epoch_timestamp_ms(ctx),
+        });
+    }
+    
+    // Check if the blobId has been updated
+    public fun is_blob_id_updated(photo: &PhotoNFT): bool {
+        photo.blob_id_updated
+    }
     
 }
