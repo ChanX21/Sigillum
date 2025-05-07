@@ -95,3 +95,31 @@ export function getTimeRemaining(endTime: number | undefined): string {
 export function formatSuiAmount(amount: number): string {
   return (amount / 1_000_000_000).toFixed(amount > 0 ? 4 : 2);
 }
+
+export async function convertMistToSuiAndUsd(
+  mistAmount: number
+): Promise<{ sui: string; usd: string }> {
+  const SUI_DECIMALS = 1_000_000_000;
+
+  try {
+    const res = await fetch(
+      "https://api.diadata.org/v1/assetQuotation/Sui/0x2::sui::SUI"
+    );
+    const data = await res.json();
+
+    const pricePerSui = data.Price;
+    const suiAmount = mistAmount / SUI_DECIMALS;
+    const usdValue = suiAmount * pricePerSui;
+
+    return {
+      sui: "SUI " + suiAmount.toFixed(suiAmount > 0 ? 4 : 2),
+      usd: "USD " + usdValue.toFixed(4),
+    };
+  } catch (error) {
+    console.error("Failed to fetch SUI price:", error);
+    return {
+      sui: "SUI 0.00",
+      usd: "USD 0.00",
+    };
+  }
+}

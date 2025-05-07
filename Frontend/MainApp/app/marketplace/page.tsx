@@ -12,6 +12,8 @@ import { MediaRecord } from "@/types";
 import { useWallet } from "@suiet/wallet-kit";
 import { useAuth } from "@/hooks/useAuth";
 import { Loading } from "@/components/shared/Loading";
+import NFTCardSkeleton from "@/components/nft/NftCardSkeleton";
+import NftPreviewSkeleton from "@/components/nft/NftPreviewSkeleton";
 
 export default function MarketplacePage() {
   const wallet = useWallet();
@@ -22,7 +24,7 @@ export default function MarketplacePage() {
   );
 
   if (isLoading) {
-    return <Loading />;
+    return null;
   }
 
   if (!isAuthenticated) {
@@ -39,24 +41,27 @@ export default function MarketplacePage() {
             <NftAuctionCard key={index} nft={nft} />
           ))}
         </section>
+        {isLoading ||
+          (!data && (
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
+              {Array(2)
+                .fill(null)
+                .map((_, index) => (
+                  <NFTCardSkeleton key={index} />
+                ))}
+            </section>
+          ))}
 
-        <h2 className="text-2xl font-bold mb-8">Explore</h2>
+        {data && <h2 className="text-2xl font-bold mb-8">Explore</h2>}
         {isLoading || !data ? (
-          <div className="flex justify-center items-center w-full h-48">
-            <span className="animate-spin rounded-full h-10 w-10 border-4 border-black border-t-transparent"></span>
-            <span className="ml-4 text-black text-lg font-semibold">
-              Loading...
-            </span>
-          </div>
+          <section className="flex w-full gap-4 overflow-x-auto flex-nowrap">
+            {Array(5)
+              .fill(null)
+              .map((_, index) => (
+                <NftPreviewSkeleton />
+              ))}
+          </section>
         ) : (
-          // <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          //   {data.map((nft: MediaRecord, index: number) => (
-          //     <div key={index} className="snap-start">
-          //       <NftAuctionCardPreview nft={nft} idx={index} />
-          //     </div>
-          //   ))}
-          // </section>
-
           <InfiniteScrollingCarousel carouselData={data}>
             {data.map((nft: MediaRecord, index: number) => (
               <div
@@ -68,24 +73,18 @@ export default function MarketplacePage() {
             ))}
           </InfiniteScrollingCarousel>
         )}
-
-        <h2 className="text-2xl font-bold mb-8 mt-14">Featured Drops</h2>
+        {data && (
+          <h2 className="text-2xl font-bold mb-8 mt-14">Featured Drops</h2>
+        )}
         {isLoading || !data ? (
-          <div className="flex justify-center items-center w-full h-48">
-            <span className="animate-spin rounded-full h-10 w-10 border-4 border-black border-t-transparent"></span>
-            <span className="ml-4 text-black text-lg font-semibold">
-              Loading...
-            </span>
-          </div>
+          <section className="flex gap-4 overflow-auto">
+            {Array(5)
+              .fill(null)
+              .map((_, index) => (
+                <NftPreviewSkeleton />
+              ))}
+          </section>
         ) : (
-          // <section className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory">
-          //   {data.map((nft: MediaRecord, index: number) => (
-          //     <div key={index} className="snap-start">
-          //       <NftAuctionCardPreview nft={nft} idx={index} />
-          //     </div>
-          //   ))}
-          // </section>
-
           <InfiniteScrollingCarouselReverse carouselData={data}>
             {data.map((nft: MediaRecord, index: number) => (
               <div
@@ -97,7 +96,6 @@ export default function MarketplacePage() {
             ))}
           </InfiniteScrollingCarouselReverse>
         )}
-
         <section className="w-full my-16 flex flex-col items-center">
           <div className="w-full max-w-4xl min-h-[200px] border-2 rounded-lg p-8 flex flex-col md:flex-row items-center gap-6">
             <div className="mb-6 w-full md:w-1/2">
