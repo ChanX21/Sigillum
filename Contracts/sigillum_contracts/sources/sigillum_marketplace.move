@@ -992,9 +992,12 @@ public entry fun relist_on_same_listing<T: key + store>(
     bid_pool.bids = vec_map::empty();
     bid_pool.bid_count = 0;
 
-    let stake_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
-    stake_pool.stakes = vec_map::empty();
-    stake_pool.total_staked = 0;
+    // Reset staking pool if it exists
+    if (table::contains(&marketplace.staking_pools, listing_id)) {
+        let stake_pool = table::borrow_mut(&mut marketplace.staking_pools, listing_id);
+        stake_pool.stakes = vec_map::empty();
+        stake_pool.total_staked = 0;
+    };
     
     // Add NFT to marketplace escrow
     dof::add(&mut marketplace.id, nft_id, nft);
