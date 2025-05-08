@@ -234,34 +234,5 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
   if (blobId.length === 0) {
     return null;
   }
-  const FUNCTION_NAME = 'update_blob_id';
-  const txData = {
-    registryId: REGISTRY_ID,
-    blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId))
-  };
-  
-  // Create the transaction
-  const tx = new Transaction();
-  // Add the register_photo call
-  tx.moveCall({
-    package: PACKAGE_ID,
-    module: MODULE_NAME,
-    function: FUNCTION_NAME,
-    typeArguments: [],
-    arguments: [
-      tx.object(ADMIN_CAP),
-      tx.object(tokenId),
-      tx.pure(txData.blobId)
-    ],
-  });
-      // Sign and execute the transaction
-      await suiClient.signAndExecuteTransaction({
-        transaction: tx,
-        signer: keypair,
-        options: {
-          showEffects: true,
-          showEvents: true
-        }
-      });
   return blobId;
 };
