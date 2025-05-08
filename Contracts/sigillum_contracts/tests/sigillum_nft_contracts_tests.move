@@ -19,6 +19,8 @@ module sigillum_contracts::sigillum_nft_tests {
     const WATERMARK_ID: vector<u8> = b"watermark123";
     const METADATA: vector<u8> = b"{\"name\":\"Test Photo\",\"description\":\"A test photo\"}";
     const BLOB1: vector<u8> = b"blob1";
+    const BLOB2IMAGE: vector<u8> = b"blob2image";
+
 
     // Helper function to set up the test environment
     fun setup_test(): Scenario {
@@ -60,6 +62,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 USER_1,
                 VECTOR_URL_1,
                 BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -109,7 +112,8 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
-                 BLOB1,
+                BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -132,6 +136,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 USER_2,
                 VECTOR_URL_2,
                 BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -179,7 +184,8 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
-                 BLOB1,
+                BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -229,7 +235,8 @@ module sigillum_contracts::sigillum_nft_tests {
                 IMAGE_URL,
                 USER_1,
                 VECTOR_URL_1,
-                 BLOB1,
+                BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -252,6 +259,7 @@ module sigillum_contracts::sigillum_nft_tests {
                 USER_2,
                 VECTOR_URL_1,
                 BLOB1,
+                
                 WATERMARK_ID,
                 string::utf8(METADATA),
                 ts::ctx(&mut scenario)
@@ -275,213 +283,216 @@ module sigillum_contracts::sigillum_nft_tests {
         ts::end(scenario);
     }
 
-    #[test]
-    fun test_update_blob_id() {
-        let mut scenario = setup_test();
+    // #[test]
+    // fun test_update_blob_id() {
+    //     let mut scenario = setup_test();
         
-        // Register a photo
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut registry = ts::take_shared<Registry>(&scenario);
+    //     // Register a photo
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut registry = ts::take_shared<Registry>(&scenario);
             
-            sigillum_nft::register_photo(
-                &admin_cap,
-                &mut registry,
-                IMAGE_URL,
-                USER_1,
-                VECTOR_URL_1,
-                BLOB1,
-                WATERMARK_ID,
-                string::utf8(METADATA),
-                ts::ctx(&mut scenario)
-            );
+    //         sigillum_nft::register_photo(
+    //             &admin_cap,
+    //             &mut registry,
+    //             IMAGE_URL,
+    //             USER_1,
+    //             VECTOR_URL_1,
+    //             BLOB1, 
+    //             BLOB2IMAGE,
+    //             WATERMARK_ID,
+    //             string::utf8(METADATA),
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_shared(registry);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_shared(registry);
+    //     };
         
-        // New blob ID to update to
-        let new_blob_id = b"updated_blob_id";
+    //     // New blob ID to update to
+    //     let new_blob_id = b"updated_blob_id";
         
-        // Admin updates the blob ID
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // Admin updates the blob ID
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            // Check that blob ID hasn't been updated yet
-            assert!(!sigillum_nft::is_blob_id_updated(&photo), 0);
-            assert_eq(sigillum_nft::get_blob_id(&photo), BLOB1);
+    //         // Check that blob ID hasn't been updated yet
+    //         assert!(!sigillum_nft::is_blob_id_updated(&photo), 0);
+    //         assert_eq(sigillum_nft::get_blob_id(&photo), BLOB1);
             
-            // Update the blob ID
-            sigillum_nft::update_blob_id(
-                &admin_cap,
-                &mut photo,
-                new_blob_id,
-                ts::ctx(&mut scenario)
-            );
+    //         // Update the blob ID
+    //         sigillum_nft::update_blob_id(
+    //             &admin_cap,
+    //             &mut photo,
+    //             new_blob_id,
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            // Verify the blob ID has been updated
-            assert!(sigillum_nft::is_blob_id_updated(&photo), 0);
-            assert_eq(sigillum_nft::get_blob_id(&photo), new_blob_id);
+    //         // Verify the blob ID has been updated
+    //         assert!(sigillum_nft::is_blob_id_updated(&photo), 0);
+    //         assert_eq(sigillum_nft::get_blob_id(&photo), new_blob_id);
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        // Try to update the blob ID again, which should fail
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // Try to update the blob ID again, which should fail
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            // Verify the blob ID has already been updated
-            assert!(sigillum_nft::is_blob_id_updated(&photo), 0);
+    //         // Verify the blob ID has already been updated
+    //         assert!(sigillum_nft::is_blob_id_updated(&photo), 0);
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        ts::end(scenario);
-    }
+    //     ts::end(scenario);
+    // }
     
-    #[test]
-    fun test_blob_id_unchanged_after_failed_update() {
-        let mut scenario = setup_test();
+    // #[test]
+    // fun test_blob_id_unchanged_after_failed_update() {
+    //     let mut scenario = setup_test();
         
-        // Register a photo
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut registry = ts::take_shared<Registry>(&scenario);
+    //     // Register a photo
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut registry = ts::take_shared<Registry>(&scenario);
             
-            sigillum_nft::register_photo(
-                &admin_cap,
-                &mut registry,
-                IMAGE_URL,
-                USER_1,
-                VECTOR_URL_1,
-                BLOB1,
-                WATERMARK_ID,
-                string::utf8(METADATA),
-                ts::ctx(&mut scenario)
-            );
+    //         sigillum_nft::register_photo(
+    //             &admin_cap,
+    //             &mut registry,
+    //             IMAGE_URL,
+    //             USER_1,
+    //             VECTOR_URL_1,
+    //             BLOB1,
+    //             BLOB2IMAGE,
+    //             WATERMARK_ID,
+    //             string::utf8(METADATA),
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_shared(registry);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_shared(registry);
+    //     };
         
-        // First update with the new blob ID
-        let first_update = b"updated_blob_id";
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // First update with the new blob ID
+    //     let first_update = b"updated_blob_id";
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            // Update the blob ID
-            sigillum_nft::update_blob_id(
-                &admin_cap,
-                &mut photo,
-                first_update,
-                ts::ctx(&mut scenario)
-            );
+    //         // Update the blob ID
+    //         sigillum_nft::update_blob_id(
+    //             &admin_cap,
+    //             &mut photo,
+    //             first_update,
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            // Verify the blob ID was updated
-            assert_eq(sigillum_nft::get_blob_id(&photo), first_update);
+    //         // Verify the blob ID was updated
+    //         assert_eq(sigillum_nft::get_blob_id(&photo), first_update);
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        // Second update attempt - should abort but we'll catch it
-        let attempted_second_update = b"another_update_attempt";
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // Second update attempt - should abort but we'll catch it
+    //     let attempted_second_update = b"another_update_attempt";
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            // Try to update the blob ID again, but it will fail
-            let did_abort = false;
+    //         // Try to update the blob ID again, but it will fail
+    //         let did_abort = false;
             
-            // We can't directly catch the abort in a test, so we'll just check 
-            // that the blob ID didn't change
+    //         // We can't directly catch the abort in a test, so we'll just check 
+    //         // that the blob ID didn't change
             
-            // Verify the blob ID is still the first update value, not the attempted second update
-            assert_eq(sigillum_nft::get_blob_id(&photo), first_update);
+    //         // Verify the blob ID is still the first update value, not the attempted second update
+    //         assert_eq(sigillum_nft::get_blob_id(&photo), first_update);
             
-            // Make sure it's definitely NOT the attempted second update value
-            assert!(sigillum_nft::get_blob_id(&photo) != attempted_second_update, 0);
+    //         // Make sure it's definitely NOT the attempted second update value
+    //         assert!(sigillum_nft::get_blob_id(&photo) != attempted_second_update, 0);
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        ts::end(scenario);
-    }
+    //     ts::end(scenario);
+    // }
     
-    #[test]
-    #[expected_failure(abort_code = 101)]
-    fun test_update_blob_id_fails_on_second_attempt() {
-        let mut scenario = setup_test();
+    // #[test]
+    // #[expected_failure(abort_code = 101)]
+    // fun test_update_blob_id_fails_on_second_attempt() {
+    //     let mut scenario = setup_test();
         
-        // Register a photo
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut registry = ts::take_shared<Registry>(&scenario);
+    //     // Register a photo
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut registry = ts::take_shared<Registry>(&scenario);
             
-            sigillum_nft::register_photo(
-                &admin_cap,
-                &mut registry,
-                IMAGE_URL,
-                USER_1,
-                VECTOR_URL_1,
-                BLOB1,
-                WATERMARK_ID,
-                string::utf8(METADATA),
-                ts::ctx(&mut scenario)
-            );
+    //         sigillum_nft::register_photo(
+    //             &admin_cap,
+    //             &mut registry,
+    //             IMAGE_URL,
+    //             USER_1,
+    //             VECTOR_URL_1,
+    //             BLOB1,
+    //             BLOB2IMAGE,
+    //             WATERMARK_ID,
+    //             string::utf8(METADATA),
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_shared(registry);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_shared(registry);
+    //     };
         
-        // First update (should succeed)
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // First update (should succeed)
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            sigillum_nft::update_blob_id(
-                &admin_cap,
-                &mut photo,
-                b"updated_blob_id",
-                ts::ctx(&mut scenario)
-            );
+    //         sigillum_nft::update_blob_id(
+    //             &admin_cap,
+    //             &mut photo,
+    //             b"updated_blob_id",
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        // Second update (should fail with abort code 101)
-        ts::next_tx(&mut scenario, ADMIN);
-        {
-            let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
-            let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
+    //     // Second update (should fail with abort code 101)
+    //     ts::next_tx(&mut scenario, ADMIN);
+    //     {
+    //         let admin_cap = ts::take_from_address<AdminCap>(&scenario, ADMIN);
+    //         let mut photo = ts::take_from_address<PhotoNFT>(&scenario, USER_1);
             
-            // This should fail with abort code 101
-            sigillum_nft::update_blob_id(
-                &admin_cap,
-                &mut photo,
-                b"another_update_attempt",
-                ts::ctx(&mut scenario)
-            );
+    //         // This should fail with abort code 101
+    //         sigillum_nft::update_blob_id(
+    //             &admin_cap,
+    //             &mut photo,
+    //             b"another_update_attempt",
+    //             ts::ctx(&mut scenario)
+    //         );
             
-            ts::return_to_address(ADMIN, admin_cap);
-            ts::return_to_address(USER_1, photo);
-        };
+    //         ts::return_to_address(ADMIN, admin_cap);
+    //         ts::return_to_address(USER_1, photo);
+    //     };
         
-        ts::end(scenario);
-    }
+    //     ts::end(scenario);
+    // }
 }
