@@ -26,6 +26,7 @@ import { Button } from "../ui/button";
 import { RelistForm } from "../shared/RelistForm";
 import { RelistModal } from "../shared/RelistModal";
 import { client } from "@/lib/suiClient";
+import { Clock } from "lucide-react";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -256,8 +257,8 @@ export const NFTDetailView = ({
                   <p className="text-2xl font-semibold">
                     {listingDetails
                       ? `${formatSuiAmount(
-                          Number(listingDetails.highestBid)
-                        )} SUI`
+                        Number(listingDetails.highestBid)
+                      )} SUI`
                       : "0 SUI"}
                   </p>
                 )}
@@ -437,14 +438,21 @@ export const NFTDetailView = ({
 
           <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
             <span className="text-gray-600">Walrus</span>
-            <Link
-              href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
-              target="_blank"
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <GiWalrusHead />
-              <span>{shortenAddress(nft.vector.blobId)}</span>
-            </Link>
+            {nft.vector.blobId ? (
+              <Link
+                href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
+                target="_blank"
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <GiWalrusHead />
+                <span>{shortenAddress(nft.vector.blobId)}</span>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2 text-sm cursor-pointer">
+                <Clock width={15}/>
+                Available in 1 hour.
+              </div>
+            )}
           </div>
         </div>
       </div>
