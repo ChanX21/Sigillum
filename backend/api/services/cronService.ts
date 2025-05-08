@@ -8,8 +8,8 @@ import qdrantClient from '../clients/qdrant.js';
  * Initialize cron jobs
  */
 export const initCronJobs = () => {
-  // Schedule blob ID update job to run every 1 minutes
-  cron.schedule('*/1 * * * *', async () => {
+  // Schedule blob ID update job to run every 10 minutes
+  cron.schedule('*/10 * * * *', async () => {
     try {
       console.log('[CRON] Starting blob ID update job...');
       
