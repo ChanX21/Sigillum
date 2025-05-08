@@ -57,7 +57,7 @@ export const initCronJobs = () => {
           // Update the image record in the database
           await AuthenticatedImage.findByIdAndUpdate(
             image._id,
-            { 'vector.blobId': blobId }
+            { vector: { ...image.vector, blobId: blobId } }
           );
           
           console.log(`[CRON] Successfully updated blob ID for image ${image._id}: ${blobId}`);
