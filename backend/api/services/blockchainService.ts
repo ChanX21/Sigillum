@@ -216,7 +216,7 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
   const keypair = Ed25519Keypair.fromSecretKey(privateKey);
   let blobId = "";
   for (let i = 0; i < 5; i++) {
-  try {
+    try {
   const blob = await walrusClient.writeBlob({
     blob: new TextEncoder().encode(JSON.stringify(vector)),
     deletable: false,
@@ -230,7 +230,7 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
     await new Promise(resolve => setTimeout(resolve, 3000));
     continue;
   }
-  }
+  } 
   if (blobId.length === 0) {
     return null;
   }
@@ -242,7 +242,6 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
   
   // Create the transaction
   const tx = new Transaction();
-  
   // Add the register_photo call
   tx.moveCall({
     package: PACKAGE_ID,
@@ -251,8 +250,7 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
     typeArguments: [],
     arguments: [
       tx.object(ADMIN_CAP),
-      tx.object(REGISTRY_ID),
-      tx.pure.address(tokenId),
+      tx.object(tokenId),
       tx.pure(txData.blobId)
     ],
   });
