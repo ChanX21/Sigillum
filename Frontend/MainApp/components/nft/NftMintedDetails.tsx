@@ -48,7 +48,7 @@ export function NftMintedDetails({
           </div>
           <button
             onClick={handleDownload}
-            className="mt-4 flex items-center gap-2 border border-gray-400 px-4 py-2  bg-white hover:bg-gray-100 text-sm font-normal"
+            className="mt-4 cursor-pointer flex items-center gap-2 border border-gray-400 px-4 py-2  bg-white hover:bg-gray-100 text-sm font-normal"
           >
             <GoDownload size={18} />
             Download Watermarked Image

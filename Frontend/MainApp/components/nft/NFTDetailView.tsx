@@ -26,6 +26,7 @@ import { Button } from "../ui/button";
 import { RelistForm } from "../shared/RelistForm";
 import { RelistModal } from "../shared/RelistModal";
 import { client } from "@/lib/suiClient";
+import { Clock } from "lucide-react";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -272,6 +273,7 @@ export const NFTDetailView = ({
                 ) : error ? (
                   <p className="text-red-500 text-sm">{error}</p>
                 ) : (
+
                   <div className="flex flex-col">
                     <p className="text-2xl font-semibold">
                       {listingDetails ? `${converted.sui}` : "SUI 0.00"}
@@ -280,6 +282,7 @@ export const NFTDetailView = ({
                       {listingDetails ? `${converted.usd}` : "USD 0.00"}
                     </p>
                   </div>
+
                 )}
               </div>
             </div>
@@ -460,14 +463,21 @@ export const NFTDetailView = ({
 
           <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
             <span className="text-gray-600">Walrus</span>
-            <Link
-              href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
-              target="_blank"
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <GiWalrusHead />
-              <span>{shortenAddress(nft.vector.blobId)}</span>
-            </Link>
+            {nft.vector.blobId ? (
+              <Link
+                href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
+                target="_blank"
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <GiWalrusHead />
+                <span>{shortenAddress(nft.vector.blobId)}</span>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2 text-sm cursor-pointer">
+                <Clock width={15}/>
+                Available in 1 hour.
+              </div>
+            )}
           </div>
         </div>
       </div>

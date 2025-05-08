@@ -12,8 +12,8 @@ export function useGetImageById(id: string) {
       return response.data as MediaRecord;
     },
     enabled: !!id,
-    refetchInterval: (data) => {
-      // console.log("Refetching",data.state.data)
+
+    refetchInterval: (data) => {    
 
       // Keep polling if data is null, stop if we got it
       return data.state.data === null ? 7000 : false;

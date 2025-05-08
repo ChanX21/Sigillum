@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useGetImageById } from "@/hooks/useGetImageById";
 import { IoMdCloudUpload } from "react-icons/io";
+import { Clock } from "lucide-react";
 
 interface NFTDetailsProps {
   compact?: boolean;
@@ -17,23 +18,29 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   const [imageId, setImageId] = useState<string>('')
 
   const {
-    data,refetch,isLoading:nftDetailLoading
+    data, refetch, isLoading: nftDetailLoading
   } = useGetImageById(imageId);
 
   useEffect(() => {
     if (result?.image?.id) {
-      setImageId(result.image.id)      
+      setImageId(result.image.id)
     }
   }, [result?.image.id]);
 
   useEffect(() => {
-    if (data) {
-      console.log("Nft Detail", data);
+    if (result) {
+      console.log("Auth Result: ", result)
     }
-  }, [data]);
-  
+  }, [result])
+  useEffect(() => {
+    if (data) {
+      console.log("Data : ", data)
+    }
+  }, [data])
+
+
   const details = compact
-    ? [{ label: "NFT Id", value: "#52" }]
+    ? [{ label: "NFT Id", value: result?.image?.id }]
     : [
       { label: "NFT Id", value: result?.image?.id },
       {
@@ -46,7 +53,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
       },
       {
         label: "Vector Url",
-        value: `https://walrusscan.com/testnet/blob/${data?.vector?.blobId}`,
+        value: `https://walruscan.com/testnet/blob/${data?.vector?.blobId}`,
       },
     ];
   const handleCopy = async (text: string, label: string) => {
@@ -78,29 +85,38 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
                 {detail.label}
               </p>
               <p className="text-sm font-medium flex items-center gap-2">
-                <span>
+                <span className="flex items-center gap-2 mt-1">
                   {[
                     "IPFS URL",
                     "SHA-256 Hash",
                     "Perceptual Hash",
                     "Vector Url",
                   ].includes(detail.label)
-                    ? !data && detail.label === "Vector Url" ? "Loading... " : shortenAddress(detail.value, 10, 10) 
+                    ? (!data || !data.vector.blobId) && detail.label === "Vector Url" ? (
+                      <>
+                        <Clock width={15} />
+                        Blob ID will be ready within an hour.
+                      </>
+                    ) : shortenAddress(detail.value, 10, 10)
                     : detail.value}
                 </span>
-                {detail.value !== "uploaded" ? (
-                  <Button
-                    onClick={() =>
-                      handleCopy(detail.value as string, detail.label as string)
-                    }
-                  >
-                    <FaRegCopy size={12} className="cursor-pointer" />
-                  </Button>
-                ) : (
-                  <Button onClick={() => toast("NFT uploaded successfully.")}>
-                    <IoMdCloudUpload size={12} className="cursor-pointer" />
-                  </Button>
+                {!(detail.label === 'Vector Url' && !data?.vector?.blobId) && (
+                  detail.label !== "Status" ? (
+                    <Button
+                      className="scale-90"
+                      onClick={() =>
+                        handleCopy(detail.value as string, detail.label as string)
+                      }
+                    >
+                      <FaRegCopy size={12} width={20} className="cursor-pointer" />
+                    </Button>
+                  ) : (
+                    <Button className="scale-90" onClick={() => toast("NFT uploaded successfully.")}>
+                      <IoMdCloudUpload size={12} className="cursor-pointer" />
+                    </Button>
+                  )
                 )}
+
               </p>
             </div>
           ))}
