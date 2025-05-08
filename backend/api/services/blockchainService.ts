@@ -67,7 +67,6 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
- * @param {number[]} vector - Vector of the image
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
@@ -75,14 +74,13 @@ export interface VerificationResult {
 export const mintNFT = async (
   creatorAddress: string,
   imageUrl: string,
-  vector: number[],
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !imageUrl || !vector || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, vector, watermark CID, and metadata CID are required');
+    if (!creatorAddress || !imageUrl || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -96,45 +94,37 @@ export const mintNFT = async (
 
     // Create keypair from private key
     const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-    
-        const { blobId } = await walrusClient.writeBlob({
-          blob: new TextEncoder().encode(JSON.stringify(vector)),
-          deletable: false,
-          epochs: 3,
-          signer: keypair,
-        });
 
+ // Serialize data for transaction
+ const txData = {
+  registryId: REGISTRY_ID,
+  imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
+  vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+  blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+  watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
+  metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
+};
 
-    // Serialize data for transaction
-    const txData = {
-      registryId: REGISTRY_ID,
-      imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
-      vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-      blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId)),
-      watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
-      metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
-    };
+// Create the transaction
+const tx = new Transaction();
 
-    // Create the transaction
-    const tx = new Transaction();
-
-    // Add the register_photo call
-    tx.moveCall({
-      package: PACKAGE_ID,
-      module: MODULE_NAME,
-      function: FUNCTION_NAME,
-      typeArguments: [],
-      arguments: [
-        tx.object(ADMIN_CAP),
-        tx.object(REGISTRY_ID),
-        tx.pure(txData.imageUrl),
-        tx.pure.address(creatorAddress),
-        tx.pure(txData.vectorUrl),
-        tx.pure(txData.blobId),
-        tx.pure(txData.watermarkId),
-        tx.pure(txData.metadata)
-      ],
-    });
+// Add the register_photo call
+tx.moveCall({
+  package: PACKAGE_ID,
+  module: MODULE_NAME,
+  function: FUNCTION_NAME,
+  typeArguments: [],
+  arguments: [
+    tx.object(ADMIN_CAP),
+    tx.object(REGISTRY_ID),
+    tx.pure(txData.imageUrl),
+    tx.pure.address(creatorAddress),
+    tx.pure(txData.vectorUrl),
+    tx.pure(txData.blobId),
+    tx.pure(txData.watermarkId),
+    tx.pure(txData.metadata)
+  ],
+});
     // Sign and execute the transaction
     const result = await suiClient.signAndExecuteTransaction({
       transaction: tx,
@@ -147,7 +137,6 @@ export const mintNFT = async (
     return {
       transactionHash: result.digest,
       tokenId: (result.events?.[0]?.parsedJson as { photo_id: string })?.photo_id || '',
-      blobId: blobId
     };
   } catch (error) {
     console.error('Error minting NFT:', error);
@@ -211,4 +200,39 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
     console.error('Error creating soft listing:', error);
     throw error;
   }
+};
+
+/**
+ * Walrus blob update
+ * @param {string} tokenId - NFT token ID
+ * @param {number[]} vector - Vector of the image
+ * @returns {Promise<string>} - Blob ID
+ */
+export const updateBlob = async (tokenId: string, vector: number[]) => {
+  const privateKey = process.env.SUI_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('SUI_PRIVATE_KEY environment variable is not set');
+  }
+  const keypair = Ed25519Keypair.fromSecretKey(privateKey);
+  let blobId = "";
+  for (let i = 0; i < 5; i++) {
+    try {
+  const blob = await walrusClient.writeBlob({
+    blob: new TextEncoder().encode(JSON.stringify(vector)),
+    deletable: false,
+    epochs: 3,
+    signer: keypair,
+  });
+  blobId = blob.blobId;
+  break;
+  } catch (error) {
+    console.log('Error updating blob:', error);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    continue;
+  }
+  } 
+  if (blobId.length === 0) {
+    return null;
+  }
+  return blobId;
 };

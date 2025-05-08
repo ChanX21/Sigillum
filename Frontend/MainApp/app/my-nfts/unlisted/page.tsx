@@ -157,7 +157,7 @@ const UnlistedNfts = () => {
                       <div className="mt-6">
                         <Link href={"/marketplace"}>
                           <Button variant="outline" asChild>
-                            <Link href="#">Browse Marketplace</Link>
+                            <span>Browse Marketplace</span>
                           </Button>
                         </Link>
                       </div>

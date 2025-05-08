@@ -1,5 +1,9 @@
 import { MediaRecord, NFTMetadata } from "@/types";
-import { fetchMetadata, formatSuiAmount } from "@/utils/web2";
+import {
+  convertMistToSuiAndUsd,
+  fetchMetadata,
+  formatSuiAmount,
+} from "@/utils/web2";
 import { useCountdown } from "@/hooks/useCountdown";
 import Image from "next/image";
 import Link from "next/link";
@@ -45,6 +49,10 @@ export const NftAuctionCardPreview = ({
   const [error, setError] = useState<string | null>(null);
   const wallet = useWallet();
   const { address } = wallet;
+  const [converted, setConverted] = useState<{ sui: string; usd: string }>({
+    sui: "SUI 0.00",
+    usd: "USD 0.00",
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,6 +94,10 @@ export const NftAuctionCardPreview = ({
         if (details) {
           // Cast the details to match our interface
           setListingDetails(details as unknown as ListingDataResponse);
+          const result = await convertMistToSuiAndUsd(
+            Number(details.highestBid)
+          );
+          setConverted(result);
           //console.log("Listing details:", details);
         }
       } catch (err) {
@@ -108,19 +120,12 @@ export const NftAuctionCardPreview = ({
   // console.log(listingDetails);
   return (
     <div
-      className={`w-[320px] bg-white border-2  overflow-hidden flex flex-col`}
+      className={`w-[320px] bg-white border-2  overflow-hidden flex flex-col ${
+        isReserve ? "border-b-primary" : "border-gray-300"
+      }`}
     >
       <div className="relative w-full aspect-square">
         <Link href={`/detail/${nft._id}`}>
-          {/* <Image
-            src={metadata?.image || "/fallback.png"}
-            alt={metadata?.name || "nft image"}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 768px) 100vw, 33vw"
-          /> */}
-
           <OptimizedImage
             alt={metadata?.name || ""}
             src={metadata?.image || "/fallback.png"}
@@ -157,25 +162,26 @@ export const NftAuctionCardPreview = ({
 
       {listingDetails?.listPrice !== undefined &&
         (isReserve ? (
-          <div className="flex flex-col items-center py-3 border-t border-gray-300 bg-primary text-xs">
+          <div className="flex flex-col items-center py-3.5 border-t border-primary bg-primary text-xs">
             <p className="text-gray-400">Reserve price</p>
             <span className="font-semibold text-white">
-              {formatSuiAmount(listPriceNumber)} SUI
+              {/* {formatSuiAmount(listPriceNumber)} SUI */}
+              {converted.usd}
             </span>
           </div>
         ) : (
-          <div className="grid grid-cols-2 border-t border-gray-300 text-primary text-xs">
+          <div className="grid grid-cols-2  border-gray-300 border-t text-primary text-xs">
             <div className="flex flex-col items-center py-3 border-r border-gray-300">
               <span className="mb-1 text-gray-400">Current highest bid</span>
               <span className="font-semibold">
-                {hasHighestBid
-                  ? `${formatSuiAmount(Number(listingDetails.highestBid))} SUI`
-                  : "0 SUI"}
+                {hasHighestBid ? `${converted.usd}` : "USD 0.00"}
               </span>
             </div>
             <div className="flex flex-col items-center py-3">
               <span className="mb-1 text-gray-400">Ending in</span>
-              <span className="font-semibold">{timeRemaining}</span>
+              <span className="font-semibold">
+                {timeRemaining === "No deadline" ? "loading..." : timeRemaining}
+              </span>
             </div>
           </div>
         ))}

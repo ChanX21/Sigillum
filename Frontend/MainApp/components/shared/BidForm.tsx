@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
   buildPlaceBidTxWithCoinSelection,
   buildPlaceStakeTxWithCoinSelection,
+  prepareAndBuildBidTransaction,
+  prepareAndBuildStakeTransaction,
 } from "@/utils/blockchainServices";
 import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
@@ -11,6 +13,7 @@ import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
 import { MediaRecord } from "@/types";
 import { client } from "@/lib/suiClient";
+import { formatSuiAmount } from "@/utils/web2";
 
 interface BIDFormProps {
   nft: MediaRecord;
@@ -20,6 +23,7 @@ interface BIDFormProps {
     hasStaked: boolean;
     stakeAmount: number;
   };
+  highestBid?: bigint;
 }
 
 export const BidForm = ({
@@ -27,10 +31,14 @@ export const BidForm = ({
   setOpen,
   fetchListingDetails,
   userStake,
+  highestBid,
 }: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
   const [bidding, setBidding] = useState<boolean>(false);
   const [staking, setStaking] = useState<boolean>(false);
+  const [minimumBid, setMinimumBid] = useState<number>(
+    Number(formatSuiAmount(Number(highestBid))) || 0
+  );
 
   const wallet = useWallet();
   const { address, signAndExecuteTransaction } = wallet;
@@ -50,81 +58,74 @@ export const BidForm = ({
       toast.error("Please enter a valid bid amount");
       return;
     }
+    if (parseFloat(bidAmount) < minimumBid) {
+      toast.error(`Please enter a bid higher than ${minimumBid} SUI`);
+      return;
+    }
 
     try {
       setBidding(true);
 
-      // Log information for debugging
-      console.log("Placing bid with:", {
-        address,
-        listingId: nft.blockchain.listingId,
-        marketplaceId: MARKETPLACE_ID,
-        packageId: PACKAGE_ID,
-        moduleName: MODULE_NAME,
-      });
-
-      // Convert bid amount to MIST (1 SUI = 10^9 MIST)
       const bidAmountMist = BigInt(
         Math.floor(parseFloat(bidAmount) * 1_000_000_000)
       );
 
-      // Create a SuiClient instance
-      const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client;
 
-      // Use the new helper function to build the transaction
-      const { transaction, success, error } =
-        await buildPlaceBidTxWithCoinSelection(
-          provider,
-          address,
-          MARKETPLACE_ID,
-          nft.blockchain.listingId,
-          bidAmountMist,
-          PACKAGE_ID,
-          MODULE_NAME
-        );
+      // STEP 1: Prepare & Build Transaction (check if coin split is needed)
+      const prepResult = await prepareAndBuildBidTransaction(
+        provider,
+        address,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        bidAmountMist,
+        PACKAGE_ID,
+        MODULE_NAME
+      );
 
-      if (!success) {
-        toast.error(error || "Failed to build transaction");
+      // If preparation is needed, sign and execute preparation tx
+      if (prepResult.preparationNeeded) {
+        toast.info("Preparing coins to place bid...");
+        const prepTxResult = await signAndExecuteTransaction({
+          transaction: prepResult.transaction,
+        });
+
+        if (!prepTxResult) {
+          toast.error("Coin preparation failed.");
+          return;
+        }
+
+        // Give time for blockchain state to update
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+
+      // STEP 2: Now build the actual bid transaction (again, to get updated coin state)
+      const bidResult = await prepareAndBuildBidTransaction(
+        provider,
+        address,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        bidAmountMist,
+        PACKAGE_ID,
+        MODULE_NAME
+      );
+
+      if (!bidResult.success) {
+        toast.error(bidResult.message || "Failed to build bid transaction");
         return;
       }
 
-      // Execute the transaction
-      try {
-        const result = await signAndExecuteTransaction({
-          transaction,
-        });
+      // STEP 3: Execute the bid transaction
+      const result = await signAndExecuteTransaction({
+        transaction: bidResult.transaction,
+      });
 
-        console.log(result);
-
-        if (result) {
-          setBidAmount("");
-          fetchListingDetails?.();
-          setOpen?.(false);
-          toast.success("Bid placed successfully!");
-        }
-      } catch (txError: any) {
-        console.error("Transaction execution error:", txError);
-
-        // Extract more detailed error information
-        const errorMessage = txError?.message || "Unknown error";
-
-        if (
-          errorMessage.includes("dynamic_field") &&
-          errorMessage.includes("borrow_child_object_mut")
-        ) {
-          toast.error(
-            "Failed to place bid: The listing may not exist or you don't have permission to bid on it."
-          );
-        } else if (errorMessage.includes("Dry run failed")) {
-          toast.error(
-            "Failed to place bid: Transaction simulation failed. The listing may not be active."
-          );
-        } else {
-          toast.error(
-            `Failed to place bid: ${errorMessage.substring(0, 100)}...`
-          );
-        }
-        return;
+      console.log(result);
+      if (result) {
+        setBidAmount("");
+        fetchListingDetails?.();
+        setOpen?.(false);
+        toast.success("Bid placed successfully!");
       }
     } catch (error: any) {
       console.error("Error placing bid:", error);
@@ -149,77 +150,66 @@ export const BidForm = ({
     try {
       setStaking(true);
 
-      // Log information for debugging
-      console.log("Placing stake with:", {
-        address,
-        listingId: nft.blockchain.listingId,
-        marketplaceId: MARKETPLACE_ID,
-        packageId: PACKAGE_ID,
-        moduleName: MODULE_NAME,
-      });
-
-      // Convert stake amount to MIST (1 SUI = 10^9 MIST)
       const stakeAmountMist = BigInt(
         Math.floor(parseFloat(bidAmount) * 1_000_000_000)
       );
 
-      // Create a SuiClient instance
-      const provider = client; //new SuiClient({ url: getFullnodeUrl("testnet") });
+      const provider = client;
 
-      // Use the new helper function to build the transaction
-      const { transaction, success, error } =
-        await buildPlaceStakeTxWithCoinSelection(
-          provider,
-          address,
-          MARKETPLACE_ID,
-          nft.blockchain.listingId,
-          stakeAmountMist,
-          PACKAGE_ID,
-          MODULE_NAME
-        );
+      // STEP 1: Prepare & Build Transaction (check if coin split is needed)
+      const prepResult = await prepareAndBuildStakeTransaction(
+        provider,
+        address,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        stakeAmountMist,
+        PACKAGE_ID,
+        MODULE_NAME
+      );
 
-      if (!success) {
-        toast.error(error || "Failed to build transaction");
+      // If preparation is needed, sign and execute preparation tx
+      if (prepResult.preparationNeeded) {
+        toast.info("Preparing coins to place stake...");
+        const prepTxResult = await signAndExecuteTransaction({
+          transaction: prepResult.transaction,
+        });
+
+        if (!prepTxResult) {
+          toast.error("Coin preparation failed.");
+          return;
+        }
+
+        // Give time for blockchain state to update
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+
+      // STEP 2: Now build the actual stake transaction (again, to get updated coin state)
+      const stakeResult = await prepareAndBuildStakeTransaction(
+        provider,
+        address,
+        MARKETPLACE_ID,
+        nft.blockchain.listingId,
+        stakeAmountMist,
+        PACKAGE_ID,
+        MODULE_NAME
+      );
+
+      if (!stakeResult.success) {
+        toast.error(stakeResult.message || "Failed to build stake transaction");
         return;
       }
 
-      // Execute the transaction
-      try {
-        const result = await signAndExecuteTransaction({
-          transaction,
-        });
+      // STEP 3: Execute the stake transaction
+      const result = await signAndExecuteTransaction({
+        transaction: stakeResult.transaction,
+      });
 
-        console.log(result);
-
-        if (result) {
-          setBidAmount("");
-          fetchListingDetails?.();
-          setOpen?.(false);
-          toast.success("Stake placed successfully!");
-        }
-      } catch (txError: any) {
-        console.error("Transaction execution error:", txError);
-
-        // Extract more detailed error information
-        const errorMessage = txError?.message || "Unknown error";
-
-        if (
-          errorMessage.includes("dynamic_field") &&
-          errorMessage.includes("borrow_child_object_mut")
-        ) {
-          toast.error(
-            "Failed to place stake: The listing may not exist or you don't have permission to stake on it."
-          );
-        } else if (errorMessage.includes("Dry run failed")) {
-          toast.error(
-            "Failed to place stake: Transaction simulation failed. The listing may not be active."
-          );
-        } else {
-          toast.error(
-            `Failed to place stake: ${errorMessage.substring(0, 100)}...`
-          );
-        }
-        return;
+      console.log(result);
+      if (result) {
+        setBidAmount(""); // Clear the input field after successful stake
+        fetchListingDetails?.(); // Refresh the listing details
+        setOpen?.(false); // Close the modal (if applicable)
+        toast.success("Stake placed successfully!");
       }
     } catch (error: any) {
       console.error("Error placing stake:", error);
@@ -229,6 +219,7 @@ export const BidForm = ({
     }
   };
 
+  console.log(minimumBid);
   return (
     <div className="space-y-4">
       {/* Bid input */}
@@ -243,6 +234,11 @@ export const BidForm = ({
         />
         <span className="text-lg font-medium">SUI</span>
       </div>
+      {highestBid && (
+        <div className="text-sm text-stone-500">
+          Current highest bid: {formatSuiAmount(Number(highestBid))}
+        </div>
+      )}
 
       <div className="w-full flex gap-2">
         <Button

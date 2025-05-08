@@ -17,9 +17,6 @@ router.post('/clear-session', verifySession, imageAuthController.clearSession);
 // GET /profile - Get user profile
 router.get('/profile', verifySession, imageAuthController.getProfile);
 
-// POST /mint - Mint an image
-router.post('/blockchain', imageAuthController.blockchain);
-
 // POST /status-update - Update the status of an image
 router.post('/status-update/:id', imageAuthController.statusUpdate);
 

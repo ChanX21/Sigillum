@@ -230,7 +230,13 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       ...data
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
-
+    const mintResult = await mintNFT(walletAddress, originalIpfsCid, watermarkedIpfsCid, metadataIpfsCid);
+    const listingResult = await createSoftListing(mintResult.tokenId, {
+      owner: walletAddress,
+      minBid: 2,
+      description: data.description,
+      endTime: Date.now() + 1000 * 60 * 60 * 24 * 2,
+    });
     // Create new authenticated image record
     const vectorId = v4();
     const newAuthenticatedImage = new AuthenticatedImage({
@@ -241,7 +247,12 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       vector: {
         id: vectorId,
         },
-      status: 'uploaded'
+      blockchain: {
+        transactionHash: mintResult.transactionHash,
+        tokenId: mintResult.tokenId,
+        listingId: listingResult
+      },
+      status: 'soft-listed'
     });
     const savedImage = await newAuthenticatedImage.save();
     await qdrantClient.upsert('images', {
@@ -255,16 +266,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
         }
       }]
       });
-    await axios.post(`${process.env.BASE_URL}/blockchain`, {
-      action: 'mint',
-      id: savedImage.id
-    },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.BE_KEY}`
-        }
-      });
 
     res.status(201).json({
       message: 'Image authenticated successfully',
@@ -272,85 +273,14 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
         id: newAuthenticatedImage._id,
         originalIpfsCid,
         watermarkedIpfsCid,
-        status: 'uploaded'
+        tokenId: mintResult.tokenId,
+        listingId: listingResult,
+        status: 'soft-listed'
       }
     });
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
-  }
-};
-/** 
- * Mint or soft list an image
- * @param req - Express request with image hash
- * @param res - Express response object
- */
-export const blockchain = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    if(!authHeader || authHeader.split(' ')[1] !== process.env.BE_KEY) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-    const { action, id } = req.body;
-    if (action === 'mint') {
-      const authenticatedImage = await AuthenticatedImage.findById(id).populate('user');
-      if (!authenticatedImage || (authenticatedImage.status !== 'uploaded' && authenticatedImage.status !== 'error')) {
-        res.status(400).json({ message: 'Image not uploaded' });
-        return;
-      }
-      res.status(200).json({ message: 'Image will be minted' });
-      // Use type assertion to bypass type checking for Qdrant client
-      const vectorResponse = await qdrantClient.retrieve("images", {
-        ids: [authenticatedImage.vector.id],
-        with_vector: true
-      });
-      if(!vectorResponse[0].vector) {  
-        res.status(400).json({ message: 'Image not found' });
-        return;
-      }
-      
-      const result = await mintNFT(authenticatedImage.user.walletAddress, authenticatedImage.original, vectorResponse[0].vector as number[], authenticatedImage.watermarked, authenticatedImage.metadataCID);
-      await AuthenticatedImage.findByIdAndUpdate(
-        authenticatedImage._id,
-        { status: 'minted', blockchain: { ...authenticatedImage.blockchain, transactionHash: result.transactionHash, tokenId: result.tokenId }, vector: { ...authenticatedImage.vector, blobId: result.blobId } }
-      );
-      await axios.post(`${process.env.BASE_URL}/blockchain`, {
-        action: 'soft-list',
-        id: authenticatedImage.id
-      },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.BE_KEY}`
-          }
-        });
-    }
-    else if (action === 'soft-list') {
-      const authenticatedImage = await AuthenticatedImage.findById(id).populate('user');
-      if (!authenticatedImage || (authenticatedImage.status !== 'minted' && authenticatedImage.status !== 'error')) {
-        res.status(400).json({ message: 'Image not minted' });
-        return;
-      }
-      res.status(200).json({ message: 'Image will be soft listed' });
-      const listingId = await createSoftListing(authenticatedImage.blockchain.tokenId, {
-        owner: authenticatedImage.user.walletAddress,
-        minBid: 100,
-        endTime: Date.now() + (24 * 60 * 60 * 1000),
-        description: 'Soft listing',
-        metadataCID: authenticatedImage.metadataCID
-      });
-      await AuthenticatedImage.findByIdAndUpdate(
-        authenticatedImage._id,
-        { status: 'soft-listed', blockchain: { ...authenticatedImage.blockchain, listingId: listingId } }
-      );
-    }
-  } catch (error) {
-    console.error('Error minting or soft listing image:', error);
-    await AuthenticatedImage.findByIdAndUpdate(
-      req.body.id,
-      { status: 'error' }
-    );
   }
 };
 

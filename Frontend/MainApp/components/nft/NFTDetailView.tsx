@@ -15,7 +15,7 @@ import { SuiClient } from "@mysten/sui/client";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { useWallet } from "@suiet/wallet-kit";
-import { formatSuiAmount } from "@/utils/web2";
+import { convertMistToSuiAndUsd, formatSuiAmount } from "@/utils/web2";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidAcceptanceForm } from "../shared/BidAcceptanceForm";
 import Link from "next/link";
@@ -55,6 +55,17 @@ export const NFTDetailView = ({
   }>({
     hasStaked: false,
     stakeAmount: 0,
+  });
+  const [converted, setConverted] = useState<{ sui: string; usd: string }>({
+    sui: "SUI 0.00",
+    usd: "USD 0.00",
+  });
+  const [convertedUserStake, setConvertedUserStake] = useState<{
+    sui: string;
+    usd: string;
+  }>({
+    sui: "SUI 0.00",
+    usd: "USD 0.00",
   });
 
   const fetchListingDetails = async () => {
@@ -113,11 +124,17 @@ export const NFTDetailView = ({
 
       if (userStake) {
         setUserStake(userStake);
+        const result = await convertMistToSuiAndUsd(
+          Number(userStake.stakeAmount)
+        );
+        setConvertedUserStake(result);
       }
 
       if (details) {
         // Cast the details to match our interface
         setListingDetails(details as unknown as ListingDataResponse);
+        const result = await convertMistToSuiAndUsd(Number(details.highestBid));
+        setConverted(result);
         //console.log("Listing details:", details);
       }
     } catch (err) {
@@ -204,7 +221,7 @@ export const NFTDetailView = ({
   }, [nft.blockchain.listingId, address]);
 
   //console.log(nft);
-  // console.log(listingDetails);
+  console.log(listingDetails);
   // console.log("stakersCount", stakersCount);
   // console.log("bidCount", bidCount);
 
@@ -238,7 +255,9 @@ export const NFTDetailView = ({
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
           <div className=" text-primary px-3 py-1  text-sm">
-            {listingDetails?.active ? "Live Auction" : "Inactive"}
+            {listingDetails?.active && !isTimeEnded
+              ? "Live Auction"
+              : "Inactive"}
           </div>
         </div>
       </div>
@@ -254,13 +273,16 @@ export const NFTDetailView = ({
                 ) : error ? (
                   <p className="text-red-500 text-sm">{error}</p>
                 ) : (
-                  <p className="text-2xl font-semibold">
-                    {listingDetails
-                      ? `${formatSuiAmount(
-                        Number(listingDetails.highestBid)
-                      )} SUI`
-                      : "0 SUI"}
-                  </p>
+
+                  <div className="flex flex-col">
+                    <p className="text-2xl font-semibold">
+                      {listingDetails ? `${converted.sui}` : "SUI 0.00"}
+                    </p>
+                    <p className="text-sm text-gray-500 font-semibold">
+                      {listingDetails ? `${converted.usd}` : "USD 0.00"}
+                    </p>
+                  </div>
+
                 )}
               </div>
             </div>
@@ -275,13 +297,18 @@ export const NFTDetailView = ({
       </div>
 
       <div className="min-h-[40px]">
-        {!sold && wallet.connected && wallet.address && !isTimeEnded && (
-          <BidForm
-            nft={nft}
-            fetchListingDetails={fetchListingDetails}
-            userStake={userStake}
-          />
-        )}
+        {!sold &&
+          wallet.connected &&
+          wallet.address &&
+          wallet.address !== listingDetails?.owner &&
+          !isTimeEnded && (
+            <BidForm
+              nft={nft}
+              fetchListingDetails={fetchListingDetails}
+              userStake={userStake}
+              highestBid={listingDetails?.highestBid}
+            />
+          )}
       </div>
 
       {userStake &&
@@ -332,9 +359,7 @@ export const NFTDetailView = ({
                 </span>
               </div>
             </div>
-            <p className="font-medium">
-              {formatSuiAmount(Number(listingDetails.highestBid))} SUI
-            </p>
+            {/* <p className="font-medium">{converted.usd}</p> */}
           </div>
         )}
         {(() => {

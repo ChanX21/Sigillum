@@ -43,7 +43,7 @@ export default function Detail() {
   }, [data]);
 
   if (isLoading) {
-    return <Loading />;
+    return null; //<Loading />;
   }
 
   if (!isAuthenticated) {
@@ -94,11 +94,11 @@ export default function Detail() {
                 {metadata.name}
               </h2>
               {/* Responsive container with aspect ratio */}
-              <div className="relative w-full rounded-4xl aspect-square md:aspect-[4/3] lg:aspect-[16/10] py-10 ">
+              <div className="relative w-full  aspect-square md:aspect-[4/3] lg:aspect-[16/10] py-10 ">
                 <OptimizedImage
                   src={getImageUrl()}
                   alt={metadata?.name || "NFT Image"}
-                  className="rounded-4xl object-contain"
+                  className=" object-contain"
                   priority={true}
                   loading="eager"
                   sizes="(max-width: 640px) 95vw, (max-width: 1024px) 65vw, 50vw"

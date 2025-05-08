@@ -7,9 +7,9 @@ import { Button } from "../ui/button";
 import { MediaRecord } from "@/types";
 import { NFTMetadata } from "@/types";
 import {
+  convertMistToSuiAndUsd,
   fetchMetadata,
   formatHumanReadableDate,
-  formatSuiAmount,
 } from "@/utils/web2";
 import { useCountdown } from "@/hooks/useCountdown";
 import Link from "next/link";
@@ -38,6 +38,10 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
   const [error, setError] = useState<string | null>(null);
   const wallet = useWallet();
   const { address } = wallet;
+  const [converted, setConverted] = useState<{ sui: string; usd: string }>({
+    sui: "SUI 0.00",
+    usd: "USD 0.00",
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,6 +83,10 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         if (details) {
           // Cast the details to match our interface
           setListingDetails(details as unknown as ListingDataResponse);
+          const result = await convertMistToSuiAndUsd(
+            Number(details.highestBid)
+          );
+          setConverted(result);
           //console.log("Listing details:", details);
         }
       } catch (err) {
@@ -108,14 +116,6 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
         <div className="relative w-full md:w-1/2 ">
           <Link href={`/detail/${nft._id}`}>
             <div className="relative w-full h-[300px] md:h-full">
-              {/* <Image
-                src={metadata?.image || "/fallback.png"}
-                alt={metadata?.name || ""}
-                className="object-cover"
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 50vw"
-              /> */}
               <OptimizedImage
                 alt={metadata?.name || ""}
                 src={metadata?.image || "/fallback.png"}
@@ -126,7 +126,9 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
               {/* Timer overlay */}
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[160px] h-[40px] rounded-[16px] border border-white/30 bg-white/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[5px] flex items-center justify-center">
                 <span className="text-white font-semibold">
-                  {timeRemaining}
+                  {timeRemaining === "No deadline"
+                    ? "loading..."
+                    : timeRemaining}
                 </span>
               </div>
             </div>
@@ -145,29 +147,11 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
               <>
                 <p className="text-gray-600 mb-1">Current Bid</p>
                 <p className="text-xl font-semibold">
-                  {listingDetails && hasHighestBid
-                    ? `${formatSuiAmount(
-                        Number(listingDetails.highestBid)
-                      )} SUI`
-                    : "0 SUI"}
+                  {listingDetails && hasHighestBid ? converted.usd : "USD 0.00"}
                 </p>
               </>
             )}
           </div>
-
-          {/* Action Buttons */}
-          {/* <div className="flex gap-3 mb-8">
-            <Button
-              className="bg-black text-white px-6 py-2 rounded-none hover:bg-gray-800 transition-colors flex-1"
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              Place Bid
-            </Button>
-            <Button className="bg-white border text-primary border-gray-300 px-6 py-2 rounded-none hover:bg-gray-50 transition-colors flex-1">
-              Stake
-            </Button>
-          </div> */}
 
           {wallet.connected && wallet.address && !isTimeEnded && (
             <ContractForm nft={nft} listingDetails={listingDetails} />

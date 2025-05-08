@@ -63,7 +63,11 @@ export function ContractForm({
             <DialogTitle>Transaction</DialogTitle>
             <DialogDescription>Make your transaction here.</DialogDescription>
           </DialogHeader>
-          <BidForm nft={nft} setOpen={setOpen} />
+          <BidForm
+            nft={nft}
+            setOpen={setOpen}
+            highestBid={listingDetails?.highestBid}
+          />
         </DialogContent>
       </Dialog>
     );
@@ -89,7 +93,11 @@ export function ContractForm({
           <DrawerDescription>Make your transaction here.</DrawerDescription>
         </DrawerHeader>
         <div className="p-4">
-          <BidForm nft={nft} setOpen={setOpen} />
+          <BidForm
+            nft={nft}
+            setOpen={setOpen}
+            highestBid={listingDetails?.highestBid}
+          />
         </div>
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
