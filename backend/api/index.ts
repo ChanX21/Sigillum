@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import { initCronJobs } from './services/cronService.js';
 
 // Initialize Express app
 const app: Application = express();
@@ -23,6 +24,9 @@ app.use('/', apiRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sigillum')
   .then(() => {
+    // Initialize cron jobs after database connection is established
+    initCronJobs();
+    
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
