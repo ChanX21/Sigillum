@@ -51,6 +51,7 @@ module sigillum_contracts::sigillum_nft {
         timestamp: u64,
     }
 
+
     // === Initialization ===
     fun init(ctx: &mut TxContext) {
         // Create and share the Registry
