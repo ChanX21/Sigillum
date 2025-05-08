@@ -18,7 +18,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
   const [imageId, setImageId] = useState<string>('')
 
   const {
-    data, refetch, isLoading: nftDetailLoading
+    data, isLoading: nftDetailLoading
   } = useGetImageById(imageId);
 
   useEffect(() => {
@@ -27,16 +27,7 @@ export const NFTDetails = ({ compact = false }: NFTDetailsProps) => {
     }
   }, [result?.image.id]);
 
-  useEffect(() => {
-    if (result) {
-      console.log("Auth Result: ", result)
-    }
-  }, [result])
-  useEffect(() => {
-    if (data) {
-      console.log("Data : ", data)
-    }
-  }, [data])
+ 
 
 
   const details = compact
