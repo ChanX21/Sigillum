@@ -23,6 +23,7 @@ import {
 import { useGetProfile } from "@/hooks/useProfile";
 import Image from "next/image";
 import axiosInstance from "@/lib/axios";
+import NftSearch from "../nft/NftSearch";
 const MIST_PER_SUI = 1_000_000_000;
 
 export const Header = () => {
@@ -30,6 +31,7 @@ export const Header = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { connected: walletConnected, address, disconnect } = useWallet();
+  const [query, setQuery] = useState<string>("")
   const { balance, loading } = useAccountBalance();
   const { data: profile } = useGetProfile();
   const readableSui = (rawBalance: bigint | number) => {
@@ -46,35 +48,28 @@ export const Header = () => {
           withCredentials: true,
         }
       )
-      .then((res) => {})
+      .then((res) => { })
       .catch((err) => {
         console.log(err);
       });
   };
-  // Close search if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowSearch(false);
-      }
-    };
-    if (showSearch) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showSearch]);
 
   useEffect(() => {
     if (walletConnected) {
       setShowWalletModal(false);
     }
   }, [walletConnected]);
+  const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
 
   return (
     <>
+
       {/* Wallet Modal */}
       <header
-        className={`fixed top-0 z-50 w-full h-12 ${
-          walletConnected && profile?.data?.name ? "md:pr-3" : "md:px-0"
-        } bg-background border-b border-stone-300`}
+        className={`fixed z-50 top-0 w-full h-12 ${walletConnected && profile?.data?.name ? "md:pr-3" : "md:px-0"
+          } bg-background border-b border-stone-300`}
       >
         {showWalletModal && (
           <WalletModal setShowWalletModal={setShowWalletModal} />
@@ -98,17 +93,16 @@ export const Header = () => {
             {/* Search */}
             {walletConnected ? (
               <>
-                <div className="flex items-center rounded-full w-[250px] bg-background h-10 relative">
-                  <IoSearchSharp
-                    size={15}
-                    className="absolute top-3.5 left-2 text-gray-500"
-                    aria-hidden="true"
-                  />
+                <div className="flex z-50 items-center rounded-full w-[250px] bg-background h-10 relative">
+                  <IoSearchSharp size={15} className="absolute z-50 top-3.5 left-2 text-gray-500" />
                   <Input
+                    ref={searchInputRef}
                     type="search"
+                    value={query || ''}
+                    onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search NFTs"
                     className="pl-8 pr-2 h-full text-sm shadow-none"
-                    aria-label="Search NFTs"
+                    onFocus={() => setShowSearchOverlay(true)}
                   />
                 </div>
                 <Link href={"/secure"} className="h-full block">
@@ -194,7 +188,9 @@ export const Header = () => {
           <div className="flex items-center justify-between md:hidden gap-3 h-full">
             {/* Search Toggle */}
             <button
-              onClick={() => setShowSearch((prev) => !prev)}
+              onClick={() => {setShowSearch((prev) => !prev)
+                setShowSearchOverlay(false)
+              }}
               className="p-2 rounded-full hover:bg-muted transition"
               aria-label={showSearch ? "Close search" : "Open search"}
             >
@@ -292,11 +288,35 @@ export const Header = () => {
               placeholder="Search NFTs"
               className="w-full"
               aria-label="Mobile Search NFTs"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setShowSearchOverlay(true)}
               autoFocus
             />
+            <div className="w-full flex justify-center">
+            <div className="absolute w-full r-50 md:mt-[55px] bg-white md:min-w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
+              <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
+              <div className="flex flex-col h-full gap-3">
+                <NftSearch query={query} />
+              </div>
+            </div>
+          </div>
           </div>
         )}
       </header>
+      {showSearchOverlay && (
+        <>
+          <div className="w-full md:flex hidden justify-center">
+            <div className="absolute w-full mt-36  r-50 md:mt-[55px] bg-white md:w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
+              <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
+              <div className="flex flex-col h-full gap-3">
+                <NftSearch query={query} />
+              </div>
+            </div>
+          </div>
+          <div className="fixed flex justify-center inset-0 bg-black/60 z-10 " onClick={() => setShowSearchOverlay(false)}></div>
+        </>
+      )}
     </>
   );
 };

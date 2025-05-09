@@ -58,7 +58,7 @@ export default function MarketplacePage() {
             {Array(6)
               .fill(null)
               .map((_, index) => (
-                <NftPreviewSkeleton />
+                <NftPreviewSkeleton key={index} />
               ))}
           </section>
         ) : (
@@ -81,7 +81,7 @@ export default function MarketplacePage() {
             {Array(6)
               .fill(null)
               .map((_, index) => (
-                <NftPreviewSkeleton />
+                <NftPreviewSkeleton key={index}/>
               ))}
           </section>
         ) : (
