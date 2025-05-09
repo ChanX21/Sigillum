@@ -216,9 +216,9 @@ export const addBlob = async (image: Buffer, vector: number[]) => {
     throw new Error('SUI_PRIVATE_KEY environment variable is not set');
   }
   const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-  let blobId = Date.now().toString();
+  let blobId = "";
   for (let i = 0; i < 5; i++) {
- /*   try {
+  try {
   const blob = await walrusClient.writeBlob({
     blob: new TextEncoder().encode(JSON.stringify({image: image.toString('base64'), vector: vector})),
     deletable: false,
@@ -231,7 +231,7 @@ export const addBlob = async (image: Buffer, vector: number[]) => {
     console.log('Error updating blob:', error);
     await new Promise(resolve => setTimeout(resolve, 3000));
     continue;
-  }*/
+  }
   } 
   if (blobId.length === 0) {
     return null;
