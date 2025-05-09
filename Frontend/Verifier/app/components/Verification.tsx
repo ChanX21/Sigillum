@@ -273,7 +273,7 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                                                 {provenance.ListingCreated?.map((event, index) => (
                                                                     <li key={`created-${index}`} className="relative pl-6">
                                                                         <div className="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-[#1b263b]"></div>
-                                                                        <p className="text-sm font-medium">Listed on the Marketplace</p>
+                                                                        <p className="text-sm font-medium">Listed on the Sui Marketplace</p>
                                                                         <p className="text-xs text-[#616161]">{formatDate(new Date(Number(event.timestampMs)).toISOString())}</p>
                                                                     </li>
                                                                 ))}
