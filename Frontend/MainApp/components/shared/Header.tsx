@@ -281,7 +281,7 @@ export const Header = () => {
         {showSearch && (
           <div
             ref={searchRef}
-            className="absolute top-16 left-0 w-full bg-white p-4 border-b border-gray-200 z-50"
+            className="fixed top-16 left-0 w-full bg-white p-4 border-b border-gray-200 z-50"
           >
             <Input
               type="search"
@@ -307,7 +307,7 @@ export const Header = () => {
       {showSearchOverlay && (
         <>
           <div className="w-full md:flex hidden justify-center">
-            <div className="absolute w-full mt-36  r-50 md:mt-[55px] bg-white md:w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
+            <div className="fixed w-full mt-36  r-50 md:mt-[55px] bg-white md:w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
               <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
               <div className="flex flex-col h-full gap-3">
                 <NftSearch query={query} />
