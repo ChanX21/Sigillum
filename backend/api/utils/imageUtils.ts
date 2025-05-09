@@ -1,7 +1,5 @@
 import sharp from 'sharp';
 import crypto from 'crypto';
-import path from 'path';
-import fs from 'fs';
 import axios from 'axios';
 
 // Type definitions

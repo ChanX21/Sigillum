@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IAuthenticatedImage } from './AuthenticatedImage.js';
+
 export interface IUser extends Document {
   walletAddress: string;
   name: string;

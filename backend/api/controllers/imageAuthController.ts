@@ -1,13 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { processImageForAuthentication } from '../utils/imageUtils.js';
-import { uploadToIPFS, createAndUploadNFTMetadata, uploadVectorToIPFS } from '../services/ipfsService.js';
+import { uploadToIPFS, createAndUploadNFTMetadata } from '../services/ipfsService.js';
 import {
   mintNFT,
   createSoftListing,
   addBlob
 } from '../services/blockchainService.js';
 import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage.js';
-import axios from 'axios';
 import qdrantClient from '../clients/qdrant.js';
 import { v4 } from 'uuid';
 import { Nonce, Session, User, WebSocketSession } from '../models/User.js';

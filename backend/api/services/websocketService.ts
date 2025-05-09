@@ -1,16 +1,12 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
-import { IUser, WebSocketSession } from '../models/User.js';
-import { Document } from 'mongoose';
+import { WebSocketSession } from '../models/User.js';
 
 let io: SocketIOServer;
 
 // JWT secret key
 const JWT_SECRET = process.env.JWT_SECRET || 'sigillum-secret-key';
-
-// Type definition for populated user with Document properties
-type UserDocument = IUser & Document;
 
 /**
  * Initialize the Socket.io server
