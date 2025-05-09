@@ -36,7 +36,7 @@ function OptimizedImage({
   }, [useFallback, fallbackSrc, src]);
 
   const imageSrc = useFallback ? fallbackSrc : src;
-
+  
   return (
     <div className="relative w-full h-full">
       {!loaded && (
