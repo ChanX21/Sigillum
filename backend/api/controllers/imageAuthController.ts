@@ -54,7 +54,7 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     const { signature, message, address } = req.body;
 
     if (!signature || !message) {
-      res.status(400).json({ 
+      res.status(400).json({
         message: 'Signature and message are required for authentication',
         hint: 'Send these in the request body'
       });
@@ -87,7 +87,7 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     // Verify the signature
     const publicKey = await verifyPersonalMessageSignature(messageBytes, signature);
     if (!publicKey.verifyAddress(address)) {
-      res.status(400).json({ 
+      res.status(400).json({
         message: 'Signature verification failed',
         hint: 'Please check your signature and message'
       });
@@ -118,12 +118,13 @@ export const createSession = async (req: Request, res: Response): Promise<void> 
     });
     await session.save();
 
-    res.status(200).cookie("token",token,{
+    res.status(200).cookie("token", token, {
       httpOnly: true,
       secure: true,
-      path:'/',
-      sameSite:'none',
-      maxAge: 3600000,}).json({ message: 'Authentication successful' });
+      path: '/',
+      sameSite: 'none',
+      maxAge: 3600000,
+    }).json({ message: 'Authentication successful' });
   } catch (error) {
     console.error('Error creating session:', error);
     res.status(500).json({ message: 'Failed to create session' });
@@ -186,7 +187,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
  */
 export const uploadImage = async (req: FileRequest, res: Response): Promise<void> => {
   try {
-      if (!req.file) {
+    if (!req.file) {
       res.status(400).json({
         message: 'No image file uploaded',
         hint: 'Make sure you are sending a multipart/form-data request with an image field'
@@ -195,7 +196,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     }
     const { walletAddress } = req.user;
     const data = JSON.parse(req.body.metadata);
-    if(!data.name || !data.description) {
+    if (!data.name || !data.description) {
       res.status(400).json({ message: 'Name and description are required' });
       return;
     }
@@ -204,7 +205,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     const authenticationData = await processImageForAuthentication(req.file.buffer, {
       creatorId: walletAddress
     });
-    
+
 
     // find similar images in qdrant
     const similarImages = await qdrantClient.query("images", {
@@ -215,7 +216,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       },
       limit: 5,
     });
-    if(similarImages.points.filter((image: any) => image.score > 0.85).length > 0) {
+    if (similarImages.points.filter((image: any) => image.score > 0.85).length > 0) {
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
@@ -227,7 +228,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     await webSocketSession.save();
     res.status(200).json({ sessionId: jwt.sign({ sessionId: sessionId }, JWT_SECRET, { expiresIn: JWT_EXPIRATION }) });
     const blobId = await addBlob(req.file.buffer, authenticationData.vector);
-    if(!blobId) {
+    if (!blobId) {
       res.status(500).json({ message: 'Failed to add blob' });
       return;
     }
@@ -238,7 +239,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
 
     // Upload watermarked image to IPFS
     const watermarkedIpfsCid = await uploadToIPFS(authenticationData.watermarkedBuffer);
- 
+
     let metadata = {
       metadataCID: '', // Will be set after IPFS upload
       image: originalIpfsCid,
@@ -246,31 +247,31 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       ...data
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
-     // Send notification - Image uploaded
-  notifyImageUploaded(sessionId, {
-    original: originalIpfsCid,
-    watermarked: watermarkedIpfsCid,
-    metadata: metadataIpfsCid
-  });
+    // Send notification - Image uploaded
+    notifyImageUploaded(sessionId, {
+      original: originalIpfsCid,
+      watermarked: watermarkedIpfsCid,
+      metadata: metadataIpfsCid
+    });
     const mintResult = await mintNFT(walletAddress, originalIpfsCid, blobId, watermarkedIpfsCid, metadataIpfsCid);
-    
+
     // Send notification - NFT minted
     notifyNFTMinted(sessionId, {
       tokenId: mintResult.tokenId,
     });
-    
+
     const listingResult = await createSoftListing(mintResult.tokenId, {
       owner: walletAddress,
       minBid: 2,
       description: data.description,
       endTime: Date.now() + 1000 * 60 * 60 * 24 * 2,
     });
-    
+
     // Send notification - Item soft-listed
     notifySoftListed(sessionId, {
       listingId: listingResult,
     });
-    
+
     // Create new authenticated image record
     const vectorId = v4();
     const newAuthenticatedImage = new AuthenticatedImage({
@@ -280,8 +281,8 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       user: req.user._id,
       vector: {
         id: vectorId,
-        blobId: blobId  
-        },
+        blobId: blobId
+      },
       blockchain: {
         transactionHash: mintResult.transactionHash,
         tokenId: mintResult.tokenId,
@@ -289,7 +290,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       },
       status: 'soft-listed'
     });
-   await newAuthenticatedImage.save();
+    await newAuthenticatedImage.save();
     await qdrantClient.upsert('images', {
       wait: true,
       points: [{
@@ -300,8 +301,8 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
           watermarked: watermarkedIpfsCid,
         }
       }]
-      });
-      await WebSocketSession.deleteOne({ sessionId });
+    });
+    await WebSocketSession.deleteOne({ sessionId });
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
@@ -341,9 +342,9 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
     const filteredSimilarImages = similarImages.points.filter((image: any) => image.score > 0.85);
 
     const verifications: any[] = [];
-    for(let i = 0; i < filteredSimilarImages.length; i++) {
-      let authenticatedImage = await AuthenticatedImage.findOne({"vector.id": filteredSimilarImages[i].id}).populate('verifications user').lean();
-      if(authenticatedImage) {
+    for (let i = 0; i < filteredSimilarImages.length; i++) {
+      let authenticatedImage = await AuthenticatedImage.findOne({ "vector.id": filteredSimilarImages[i].id }).populate('verifications user').lean();
+      if (authenticatedImage) {
         // Create a new verification record
         const verification = new Verification({
           imageId: authenticatedImage._id,
@@ -352,7 +353,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
           updatedAt: new Date()
         });
         const savedVerification = await verification.save();
-        
+
         // Add the verification ID to the image's verifications array
         await AuthenticatedImage.findByIdAndUpdate(
           authenticatedImage._id,
@@ -362,7 +363,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
         verifications[i].score = filteredSimilarImages[i].score;
       }
     }
-    if(verifications.length > 0) {
+    if (verifications.length > 0) {
       res.status(200).json({
         message: 'Image verification successful',
         verifications: verifications
