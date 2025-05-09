@@ -67,6 +67,7 @@ export interface VerificationResult {
  * Mint an NFT with the image metadata and optionally create a soft listing
  * @param {string} creatorAddress - Blockchain address of the creator
  * @param {string} imageUrl - Image URL
+ * @param {string} blobId - Blob ID
  * @param {string} watermarkCID - Watermark CID of the image
  * @param {string} metadataCID - Metadata CID of the image
  * @returns {Promise<Object>} - Minting result including transaction hash and token ID
@@ -74,13 +75,14 @@ export interface VerificationResult {
 export const mintNFT = async (
   creatorAddress: string,
   imageUrl: string,
+  blobId: string,
   watermarkCID: string,
   metadataCID: string,
 ) => {
   try {
     // Validate inputs
-    if (!creatorAddress || !imageUrl || !watermarkCID || !metadataCID) {
-      throw new Error('Creator address, image URL, watermark CID, and metadata CID are required');
+    if (!creatorAddress || !imageUrl || !blobId || !watermarkCID || !metadataCID) {
+      throw new Error('Creator address, image URL, blob ID, watermark CID, and metadata CID are required');
     }
 
     // Get private key from environment
@@ -100,7 +102,7 @@ export const mintNFT = async (
   registryId: REGISTRY_ID,
   imageUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(imageUrl)),
   vectorUrl: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
-  blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode("")),
+  blobId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(blobId)),
   watermarkId: bcs.vector(bcs.u8()).serialize(new TextEncoder().encode(watermarkId)),
   metadata: bcs.string().serialize(`https://${process.env.PINATA_GATEWAY}/ipfs/${metadataCID}`)
 };
@@ -203,22 +205,22 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
 };
 
 /**
- * Walrus blob update
- * @param {string} tokenId - NFT token ID
+ * Walrus blob upload
+ * @param {Buffer} image - Image buffer
  * @param {number[]} vector - Vector of the image
  * @returns {Promise<string>} - Blob ID
  */
-export const updateBlob = async (tokenId: string, vector: number[]) => {
+export const addBlob = async (image: Buffer, vector: number[]) => {
   const privateKey = process.env.SUI_PRIVATE_KEY;
   if (!privateKey) {
     throw new Error('SUI_PRIVATE_KEY environment variable is not set');
   }
   const keypair = Ed25519Keypair.fromSecretKey(privateKey);
-  let blobId = "";
+  let blobId = Date.now().toString();
   for (let i = 0; i < 5; i++) {
-    try {
+ /*   try {
   const blob = await walrusClient.writeBlob({
-    blob: new TextEncoder().encode(JSON.stringify(vector)),
+    blob: new TextEncoder().encode(JSON.stringify({image: image.toString('base64'), vector: vector})),
     deletable: false,
     epochs: 3,
     signer: keypair,
@@ -229,7 +231,7 @@ export const updateBlob = async (tokenId: string, vector: number[]) => {
     console.log('Error updating blob:', error);
     await new Promise(resolve => setTimeout(resolve, 3000));
     continue;
-  }
+  }*/
   } 
   if (blobId.length === 0) {
     return null;

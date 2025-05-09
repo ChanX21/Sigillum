@@ -70,7 +70,9 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
       required: true,
     },
     blobId: {
-      type: String
+      type: String,
+      required: true,
+      unique: true,
     },
   },
   user: {
@@ -81,12 +83,18 @@ const authenticatedImageSchema = new Schema<IAuthenticatedImage>({
   blockchain: {
     transactionHash: {
       type: String,
+      required: true,
+      unique: true,
     },
     tokenId: {
       type: String,
+      required: true,
+      unique: true,
     },
     listingId: {
       type: String,
+      required: true,
+      unique: true,
     },
   },
   verifications: [{
