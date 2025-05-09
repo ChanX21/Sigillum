@@ -111,7 +111,6 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
     // Register event listeners
     socket.on("image:blob", (data) => {
       handleProgress("image:blob")
-
       setStatusStep(2)
       setDetails((prev) => {
         // Check if the detail with the label already exists
@@ -183,7 +182,6 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
     if (error) {
       toast.error(error);
       useImageAuthStore.getState().setError(null)
-      console.log("After:", useImageAuthStore.getState().error);
       setStep(0)
     }
   }, [error])
@@ -212,7 +210,7 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
             </div>
           </div>
           <h3 className="text-lg font-medium mt-6 mb-2">{statusSteps[statusStep].label}</h3>
-          <p className="text-[#616161] text-center">Analyzing image for potential duplicates and unauthorized copies...</p>
+          <p className="text-[#616161] text-center">{statusSteps[statusStep].description}</p>
         </motion.div>
       </AnimatePresence>
       <motion.div className="relative w-full h-2 bg-gray-200 rounded overflow-hidden mt-6">
