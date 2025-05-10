@@ -1,4 +1,4 @@
-import { SiSui } from "react-icons/si";
+import { SiIpfs, SiSui } from "react-icons/si";
 import { GiWalrusHead } from "react-icons/gi";
 import { UserAvatar } from "../shared/UserAvatar";
 import { ListingDataResponse, MediaRecord, NFTMetadata } from "@/types";
@@ -396,18 +396,7 @@ export const NFTDetailView = ({
               <span>SUI</span>
             </div>
           </div>
-          <div className="flex justify-between items-center py-2 border-t border-stone-300">
-            <span className="text-gray-600">Token ID</span>
-            <div className="flex items-center justify-end gap-2">
-              <span> {shortenAddress(nft.blockchain.tokenId) || ""}</span>
-              <button
-                onClick={() => handleCopy(nft?.blockchain?.tokenId)}
-                className=""
-              >
-                <FaRegCopy size={15} className="cursor-pointer" />
-              </button>
-            </div>
-          </div>
+          
           {/* <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
             <div className="flex justify-end items-center gap-2">
@@ -451,13 +440,29 @@ export const NFTDetailView = ({
           </div>
           {listingDetails && (
             <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
-              <span className="text-gray-600">Metadata</span>
+              <span className="text-gray-600">Asset Info</span>
               <Link
                 href={`${process.env.NEXT_PUBLIC_PINATA_URL}${metadataCID}`}
                 target="_blank"
+                className="hover:underline"
               >
-                <span className="underline cursor-pointer">IPFS</span>
+                <span className="cursor-pointer flex items-center gap-2"> View on Ipfs <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </span>
+                  
               </Link>
+              
             </div>
           )}
 
