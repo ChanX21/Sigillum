@@ -13,13 +13,7 @@ export function NftMintedDetails({
 }) {
   const { result } = useImageAuthStore() as AuthState
 
-  // const handleDownload = () => {
-  //   const link = document.createElement("a");
-  //   link.href = `${process.env.NEXT_PUBLIC_PINATA_URL}${result?.image.watermarkedIpfsCid}`; // Replace with your image URL
-  //   link.download = "watermarked-image"; // The filename to save as
-  //   link.target = "_blank"
-  //   link.click();
-  // };
+  
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full">
       {/* Back button */}

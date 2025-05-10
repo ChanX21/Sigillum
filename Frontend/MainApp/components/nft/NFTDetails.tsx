@@ -15,6 +15,7 @@ import { GiWalrusHead } from "react-icons/gi";
 import Image from "next/image";
 import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
 import Link from "next/link";
+import OptimizedImage from "../shared/OptimizedImage";
 
 interface NFTDetailsProps {
   compact?: boolean;
@@ -84,7 +85,6 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
       value: '',
     },
   ]);
-
 
 
   const [imageUrl, setImageUrl] = useState('')
@@ -192,6 +192,14 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
     toast.success(`Copied ${label} Successfully`);
   };
 
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = imageUrl; // Replace with your image URL
+    link.download = "watermarked-image"; // The filename to save as
+    link.target = "_blank"
+    link.click();
+  };
+
   return !completed ? (
     <Card className="flex md:min-h-[60vh] flex-col items-center justify-center md:max-w-[30%] px-10 py-16 relative">
       <AnimatePresence mode="wait">
@@ -227,17 +235,17 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
       <div className="w-full max-w-4xl border border-gray-300 rounded-lg shadow-sm p-0 flex flex-col md:flex-row bg-white mt-2">
         <div className="flex flex-col items-start w-full md:w-[55%] p-8 pb-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden  ">
-            <Image
-              src={imageUrl || '/placeholder.svg'}
-              alt="NFT"
+            <OptimizedImage
+              alt={"Nft"}
+              src={imageUrl || "/fallback.png"}
+              sizes="(max-width: 768px) 100vw, 50vw"
               fill
               className="object-cover rounded-lg"
               style={{ objectPosition: "center" }}
-              priority
             />
           </div>
           <button
-            // onClick={handleDownload}
+            onClick={handleDownload}
             className="mt-4 cursor-pointer flex items-center gap-2 border border-gray-400 px-4 py-2  bg-white hover:bg-gray-100 text-sm font-normal"
           >
             <GoDownload size={18} />
