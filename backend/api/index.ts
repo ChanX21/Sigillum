@@ -7,7 +7,7 @@ import apiRoutes from './routes/index.js';
 
 // Initialize Express app
 const app: Application = express();
-const PORT: number = parseInt(process.env.PORT || '5000', 10);
+const PORT: number = parseInt(process.env.PORT || '5001', 10);
 
 // Middlewares
 app.use(cors({
