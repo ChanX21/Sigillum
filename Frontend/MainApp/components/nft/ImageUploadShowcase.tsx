@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import Image from "next/image";
 import { Button } from "../ui/button";
-import { Shield, X } from "lucide-react";
+import { Loader2, Shield, X } from "lucide-react";
 import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
@@ -40,10 +40,9 @@ export function ImageUploadShowcase({
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {  connected } = useWallet();
+  const { connected } = useWallet();
   const {
     error,
     isSuccess,
@@ -60,13 +59,7 @@ export function ImageUploadShowcase({
     },
   });
 
-  const checkPlagiarism = () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 3000);
-    });
-  };
+
 
   const onSubmit = async (data: NFTFormValues) => {
     if (!connected) {
@@ -79,14 +72,11 @@ export function ImageUploadShowcase({
     }
     if (imageFile && connected) {
       setShowForm(false);
-      setIsCheckingPlagiarism(true);
       try {
-        await checkPlagiarism();
-        setIsCheckingPlagiarism(false);
         const { name, description } = data;
         authenticateImage({ image: imageFile, name, description });
+        setStep(1)
       } catch (error) {
-        setIsCheckingPlagiarism(false);
         toast.error("Plagiarism check failed");
         setShowForm(true);
       }
@@ -131,7 +121,7 @@ export function ImageUploadShowcase({
   };
 
   useEffect(() => {
-    if (isPending || isCheckingPlagiarism) {
+    if (isPending) {
       setStepLoading(true);
     } else {
       setStepLoading(false);
@@ -144,7 +134,7 @@ export function ImageUploadShowcase({
       toast.success("Image Authenticated Successfully");
       setStep(1);
     }
-  }, [error, isSuccess, isPending, isCheckingPlagiarism]);
+  }, [error, isSuccess, isPending]);
 
   return (
     <div
@@ -198,82 +188,56 @@ export function ImageUploadShowcase({
               />
             </div>
 
-            {showForm ? (
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:w-[30%]">
-                <h2 className="text-2xl font-bold mb-6">NFT Details</h2>
 
-                <div className="space-y-6 h-full flex flex-col items-between">
-                  <div className="flex flex-col justify-center gap-10">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">NFT Name</Label>
-                      <Input
-                        id="name"
-                        placeholder="Enter a name for your NFT"
-                        className="border border-gray-300"
-                        {...form.register("name")}
-                      />
-                      {form.formState.errors.name && (
-                        <p className="text-red-500 text-sm">{form.formState.errors.name.message}</p>
-                      )}
-                      <p className="text-xs text-gray-500">Give your NFT a unique and memorable name</p>
-                    </div>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:w-[30%]">
+              <h2 className="text-2xl font-bold mb-6">NFT Details</h2>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Describe your NFT..."
-                        className="border border-gray-300"
-                        rows={4}
-                        {...form.register("description")}
-                      />
-                      {form.formState.errors.description && (
-                        <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
-                      )}
-                      <p className="text-xs text-gray-500">Add details about your NFT's story, features or significance</p>
-                    </div>
+              <div className="space-y-6 h-full flex flex-col items-between">
+                <div className="flex flex-col justify-center gap-10">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">NFT Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter a name for your NFT"
+                      className="border border-gray-300"
+                      {...form.register("name")}
+                    />
+                    {form.formState.errors.name && (
+                      <p className="text-red-500 text-sm">{form.formState.errors.name.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500">Give your NFT a unique and memorable name</p>
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="rounded-none w-full mt-auto"
-                    variant="default"
-                  >
-                    Secure & Mint
-                  </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe your NFT..."
+                      className="border border-gray-300"
+                      rows={4}
+                      {...form.register("description")}
+                    />
+                    {form.formState.errors.description && (
+                      <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500">Add details about your NFT's story, features or significance</p>
+                  </div>
                 </div>
-              </form>
-            ) : (
-              <>
-                {/* Plagiarism Loader */}
-                {isCheckingPlagiarism && (
-                  <div className="flex flex-col items-center justify-center md:max-w-[30%] py-16">
-                    <div className="relative w-20 h-20">
-                      <div className="absolute inset-0 border-4 border-t-[#1b263b] border-[#f1f3f5] rounded-full animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Shield className="w-8 h-8 text-[#1b263b]" />
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-medium mt-6 mb-2">Checking Plagiarism</h3>
-                    <p className="text-[#616161] text-center">Analyzing image for potential duplicates and unauthorized copies...</p>
-                  </div>
-                )}
 
-                {/* Securing Image Loader */}
-                {isPending && (
-                  <div className="flex flex-col items-center justify-center md:max-w-[30%] py-16">
-                    <div className="relative w-20 h-20">
-                      <div className="absolute inset-0 border-4 border-t-[#1b263b] border-[#f1f3f5] rounded-full animate-spin"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Shield className="w-8 h-8 text-[#1b263b]" />
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-medium mt-6 mb-2">Securing Image</h3>
-                    <p className="text-[#616161] text-center">Encrypting and storing your image securely on the blockchain...</p>
-                  </div>
-                )}
-              </>
-            )}
+                <Button
+                  type="submit"
+                  className="rounded-none w-full mt-auto"
+                  variant="default"
+                >
+                  {isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    'Secure & Mint'
+                  )}
+                </Button>
+              </div>
+            </form>
+
 
             <Button
               onClick={() => {

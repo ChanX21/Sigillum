@@ -7,6 +7,7 @@ import { AxiosError } from "axios";
 export function useAuthenticateImage() {
     const setResult = useImageAuthStore((s) => s.setResult);
     const setError = useImageAuthStore((s) => s.setError);
+    const setSessionId = useImageAuthStore((s) => s.setSessionId);
     return useMutation({
         mutationKey: ["authenticate-image"],
         mutationFn: ({ image, name, description }: { image: File, name: string, description: string }) => {
@@ -14,6 +15,7 @@ export function useAuthenticateImage() {
             formData.append("image", image);
             formData.append('metadata', JSON.stringify({ name, description }));
 
+            setError(''); 
             return axiosInstance
                 .post(`/authenticate`, formData, {
                     headers: {
@@ -29,11 +31,22 @@ export function useAuthenticateImage() {
                     throw new Error(message);
                 })
         },
+        onMutate:() => {
+            setError('')
+        },
         onSuccess: (data) => {
-            setResult(data); // Store in Zustand
+            setResult(data);
+            setSessionId(data.sessionId) // Store in Zustand
         },
         onError: (error: AxiosError) => {
-            const errorMessage = (error.response?.data as { message?: string })?.message || "Unknown error";
+
+            // Try to extract the error message in a robust way
+            const errorMessage =
+                (error.response?.data as any)?.message ||
+                (error.response?.data as any)?.error ||
+                error.message ||
+                "Unknown error";
+
             setError(errorMessage);
         },
     });

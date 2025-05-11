@@ -79,7 +79,7 @@ export default function Detail() {
 
       <main className="flex flex-col md:flex-row w-full min-h-screen pt-10">
         {/* Back Button - Fixed position on mobile, absolute on desktop */}
-        <div className="fixed md:absolute top-16 left-4 z-10">
+        <div className="fixed md:absolute top-16 left-4 ">
           <Button variant="outline" onClick={() => window.history.back()}>
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
