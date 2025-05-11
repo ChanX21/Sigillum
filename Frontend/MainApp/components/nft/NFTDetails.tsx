@@ -14,7 +14,7 @@ import { GiWalrusHead } from "react-icons/gi";
 import OptimizedImage from "../shared/OptimizedImage";
 
 interface NFTDetailsProps {
-  compact?: boolean;
+  compact?: boolean;  
   setStep: (step: number) => void;
 }
 const statusSteps = [
