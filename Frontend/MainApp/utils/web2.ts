@@ -113,7 +113,7 @@ export async function convertMistToSuiAndUsd(
 
     return {
       sui: "SUI " + suiAmount.toFixed(suiAmount > 0 ? 4 : 2),
-      usd: "USD " + usdValue.toFixed(4),
+      usd: "USD " + usdValue.toFixed(2),
     };
   } catch (error) {
     console.error("Failed to fetch SUI price:", error);

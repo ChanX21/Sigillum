@@ -143,7 +143,13 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
               <>
                 <p className="text-gray-600 mb-1">Current Bid</p>
                 <p className="text-xl font-semibold">
-                  {listingDetails && hasHighestBid ? converted.usd : "USD 0.00"}
+                  {listingDetails && hasHighestBid ? (
+                    <>
+                      {converted.usd} 
+                      <span className="text-xs text-gray-400 font-regular ml-1">({converted.sui})</span>
+                    </>
+
+                  ) : "USD 0.00"}
                 </p>
               </>
             )}
