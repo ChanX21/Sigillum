@@ -60,7 +60,7 @@ const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, token
     }
 
     return (
-        <Dialog open={dialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild className='border-t' onClick={() => setDialogOpen(true)}>
                 <Button
                     variant="default"
