@@ -21,13 +21,6 @@ export interface ISession extends Document {
   updatedAt: Date;
 }
 
-export interface IWebSocketSession extends Document {
-  sessionId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-
 const nonceSchema = new Schema<INonce>({
   nonce: { type: String, required: true, unique: true },
   user: { type: String, required: true },
@@ -49,14 +42,7 @@ const sessionSchema = new Schema<ISession>({
   updatedAt: { type: Date, default: Date.now },
 });
 
-const webSocketSessionSchema = new Schema<IWebSocketSession>({
-  sessionId: { type: String, required: true, unique: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
-
 const User = model<IUser>('User', userSchema);
 const Nonce = model<INonce>('Nonce', nonceSchema);
 const Session = model<ISession>('Session', sessionSchema);
-const WebSocketSession = model<IWebSocketSession>('WebSocketSession', webSocketSessionSchema);
-export { User, Nonce, Session, WebSocketSession };
+export { User, Nonce, Session };

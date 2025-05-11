@@ -9,10 +9,9 @@ import {
 import { AuthenticatedImage, Verification } from '../models/AuthenticatedImage.js';
 import qdrantClient from '../clients/qdrant.js';
 import { v4 } from 'uuid';
-import { Nonce, Session, User, WebSocketSession } from '../models/User.js';
+import { Nonce, Session, User } from '../models/User.js';
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import jwt from 'jsonwebtoken';
-import { notifyImageUploaded, notifyNFTMinted, notifySoftListed, notifyBlobUploaded } from '../services/websocketService.js';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
@@ -218,20 +217,22 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
-    const sessionId = v4();
-    // Create a new web socket session
-    const webSocketSession = new WebSocketSession({
-      sessionId
-    });
-    await webSocketSession.save();
-    res.status(200).json({ sessionId: jwt.sign({ sessionId: sessionId }, JWT_SECRET, { expiresIn: JWT_EXPIRATION }) });
+      res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  const sendEvent = (event: 'blob' | 'upload' | 'mint' | 'soft-list', isSuccess: boolean, data: any) => {
+    res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
+  };
     const blobId = await addBlob(req.file.buffer, authenticationData.vector);
     if(!blobId) {
       res.status(500).json({ message: 'Failed to add blob' });
       return;
     }
     // Send notification - Blob uploaded
-    notifyBlobUploaded(sessionId, blobId);
+    sendEvent('blob', true, { blobId });
     // Upload original image to IPFS
     const originalIpfsCid = await uploadToIPFS(req.file.buffer);
 
@@ -246,7 +247,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     };
     const metadataIpfsCid = await createAndUploadNFTMetadata(metadata, originalIpfsCid);
      // Send notification - Image uploaded
-  notifyImageUploaded(sessionId, {
+  sendEvent('upload', true, {
     original: originalIpfsCid,
     watermarked: watermarkedIpfsCid,
     metadata: metadataIpfsCid
@@ -254,7 +255,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     const mintResult = await mintNFT(walletAddress, originalIpfsCid, blobId, watermarkedIpfsCid, metadataIpfsCid);
     
     // Send notification - NFT minted
-    notifyNFTMinted(sessionId, {
+    sendEvent('mint', true, {
       tokenId: mintResult.tokenId,
     });
     
@@ -266,7 +267,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     });
     
     // Send notification - Item soft-listed
-    notifySoftListed(sessionId, {
+    sendEvent('soft-list', true, {
       listingId: listingResult,
     });
     
@@ -300,7 +301,6 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
         }
       }]
       });
-      await WebSocketSession.deleteOne({ sessionId });
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
