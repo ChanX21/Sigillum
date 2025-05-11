@@ -302,6 +302,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
         }
       }]
       });
+      res.end();
   } catch (error) {
     console.error('Error authenticating image:', error);
     res.status(500).json({ message: 'Failed to authenticate image' });
