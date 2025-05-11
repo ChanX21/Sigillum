@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { IoCloseSharp, IoSearchSharp } from "react-icons/io5";
-import { Shield, User } from "lucide-react";
+import { User } from "lucide-react";
 import Link from "next/link";
-
+import { AnimatePresence, motion } from 'framer-motion';
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useAccountBalance, useWallet } from "@suiet/wallet-kit";
@@ -188,7 +188,8 @@ export const Header = () => {
           <div className="flex items-center justify-between md:hidden gap-3 h-full">
             {/* Search Toggle */}
             <button
-              onClick={() => {setShowSearch((prev) => !prev)
+              onClick={() => {
+                setShowSearch((prev) => !prev)
                 setShowSearchOverlay(false)
               }}
               className="p-2 rounded-full hover:bg-muted transition"
@@ -294,29 +295,48 @@ export const Header = () => {
               autoFocus
             />
             <div className="w-full flex justify-center">
-            <div className="absolute w-full r-50 md:mt-[55px] bg-white md:min-w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
-              <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
-              <div className="flex flex-col h-full gap-3">
-                <NftSearch query={query} />
+              <div className="absolute w-full r-50 md:mt-[55px] bg-white md:min-w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
+                <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
+                <div className="flex flex-col h-full gap-3">
+                  <NftSearch query={query} />
+                </div>
               </div>
             </div>
-          </div>
           </div>
         )}
       </header>
-      {showSearchOverlay && (
-        <>
-          <div className="w-full md:flex hidden justify-center">
-            <div className="fixed w-full mt-36  r-50 md:mt-[55px] bg-white md:w-[550px] h-[450px] z-50 md:rounded-2xl p-5 overflow-scroll">
-              <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
-              <div className="flex flex-col h-full gap-3">
-                <NftSearch query={query} />
-              </div>
-            </div>
-          </div>
-          <div className="fixed flex justify-center inset-0 bg-black/60 z-10 " onClick={() => setShowSearchOverlay(false)}></div>
-        </>
-      )}
+      <AnimatePresence>
+        {showSearchOverlay && (
+          <>
+            {/* Backdrop (clickable outside) */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 flex items-start justify-center bg-black/60"
+              onClick={() => {
+                setShowSearchOverlay(false);
+              }}
+            >
+              {/* White popup (click inside = do nothing) */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                onClick={(e) => e.stopPropagation()} // Prevent outside click
+                className="bg-white md:w-[550px] h-[450px] md:mt-[50px] md:rounded-2xl p-5 overflow-scroll"
+              >
+                <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
+                <div className="flex flex-col h-full gap-3">
+                  <NftSearch query={query} />
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

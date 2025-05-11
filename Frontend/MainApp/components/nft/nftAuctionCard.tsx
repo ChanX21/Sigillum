@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
-import Image from "next/image";
-import { Button } from "../ui/button";
 import { MediaRecord } from "@/types";
 import { NFTMetadata } from "@/types";
 import {
@@ -19,7 +16,6 @@ import { ContractForm } from "../shared/ContractForm";
 import OptimizedImage from "../shared/OptimizedImage";
 import { ListingDataResponse } from "@/types";
 import { useWallet } from "@suiet/wallet-kit";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { SiSui } from "react-icons/si";
@@ -125,7 +121,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
               />
               {/* Timer overlay */}
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[160px] h-[40px] rounded-[16px] border border-white/30 bg-white/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-[5px] flex items-center justify-center">
-                <span className="text-white font-semibold">
+                <span className="text-white text-xs font-semibold">
                   {timeRemaining === "No deadline"
                     ? "loading..."
                     : timeRemaining}

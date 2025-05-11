@@ -411,7 +411,7 @@ export const NFTDetailView = ({
             </div>
           </div> */}
           <div className="flex justify-between items-center py-2 border-t border-stone-300">
-            <span className="text-gray-600">Contract</span>
+            <span className="text-gray-600">Token Contract</span>
             <Link
               href={`${process.env.NEXT_PUBLIC_SUI_EXPLORER_URL}${nft.blockchain.tokenId}`}
               target="_blank"

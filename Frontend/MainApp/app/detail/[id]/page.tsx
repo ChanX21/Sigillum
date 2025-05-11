@@ -13,7 +13,6 @@ import { NFTDetailView } from "@/components/nft/NFTDetailView";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { shortenAddress } from "@/utils/shortenAddress";
 import { useAuth } from "@/hooks/useAuth";
-import { Loading } from "@/components/shared/Loading";
 
 export default function Detail() {
   const id = useParams().id as string;

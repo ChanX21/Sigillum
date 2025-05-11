@@ -2,7 +2,7 @@ import { MediaRecord, NFTMetadata } from "@/types";
 import { fetchMetadata } from "@/utils/web2";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { UserAvatar } from "../shared/UserAvatar";
 import { shortenAddress } from "@/utils/shortenAddress";
 import OptimizedImage from "../shared/OptimizedImage";
