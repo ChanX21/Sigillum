@@ -225,7 +225,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
   });
 
   const sendEvent = (event: 'blob' | 'upload' | 'mint' | 'soft-list', isSuccess: boolean, data: any) => {
-    res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
+    res.write(JSON.stringify({ event, isSuccess, data }) + '\n\n');
   };
     const blobId = await addBlob(req.file.buffer, authenticationData.vector);
     if (!blobId) {
