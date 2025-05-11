@@ -4,17 +4,13 @@ import { FaRegCopy } from "react-icons/fa";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { useGetImageById } from "@/hooks/useGetImageById";
 import { IoMdCloudUpload } from "react-icons/io";
-import { CheckCircle2, CircleAlert, Clock, ImageIcon, Shield, UploadCloud } from "lucide-react";
+import { CheckCircle2, Shield, UploadCloud } from "lucide-react";
 import { initSocket } from "@/lib/socket";
 import { GoDownload } from "react-icons/go";
 import { Card } from "../ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { GiWalrusHead } from "react-icons/gi";
-import Image from "next/image";
-import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
-import Link from "next/link";
 import OptimizedImage from "../shared/OptimizedImage";
 
 interface NFTDetailsProps {
@@ -24,8 +20,8 @@ interface NFTDetailsProps {
 const statusSteps = [
   {
     key: "authenticate",
-    label: "Authenticating Image",
-    description: "Verifying the originality and integrity of the uploaded image.",
+    label: "AI-Powered Authentication",
+    description: "Sigillum AI is verifying the originality and integrity of the uploaded image using advanced image analysis.",
     icon: <Shield className="w-8 h-8" />,
   },
   {
@@ -37,7 +33,7 @@ const statusSteps = [
   {
     key: "uploaded",
     label: "Uploading Image",
-    description: "Uploading the image to the server or storage system.",
+    description: "Storing the image on Decentralized Pinata & Walrus servers..",
     icon: <UploadCloud className="w-8 h-8" />,
   },
   {
@@ -45,7 +41,7 @@ const statusSteps = [
     label: "Tokenizing Image",
     description: "Tokenizing the image as an NFT on the blockchain.",
     icon: <Shield className="w-8 h-8" />,
-  },
+  },  
   {
     key: "softListed",
     label: "Soft Listing on Marketplace",
