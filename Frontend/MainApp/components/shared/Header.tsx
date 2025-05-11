@@ -317,6 +317,7 @@ export const Header = () => {
               className="fixed inset-0 z-40 flex items-start justify-center bg-black/60"
               onClick={() => {
                 setShowSearchOverlay(false);
+                setShowSearch(false)
               }}
             >
               {/* White popup (click inside = do nothing) */}
@@ -325,8 +326,9 @@ export const Header = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                onClick={(e) => e.stopPropagation()} // Prevent outside click
-                className="bg-white md:w-[550px] h-[450px] md:mt-[50px] md:rounded-2xl p-5 overflow-scroll"
+                onClick={(e) => e.stopPropagation()}
+                 // Prevent outside click
+                className="bg-white md:w-[550px] h-[450px] md:mt-[50px] md:rounded-2xl p-5 overflow-scroll hidden md:block"
               >
                 <h2 className="text-md font-medium text-[#8e8e8e]">Nft's</h2>
                 <div className="flex flex-col h-full gap-3">
