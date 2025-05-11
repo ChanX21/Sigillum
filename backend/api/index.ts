@@ -4,10 +4,18 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import http from 'http';
+import { initSocketIO } from './services/websocketService.js';
 
 // Initialize Express app
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '5002', 10);
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocketIO(server);
 
 // Middlewares
 app.use(cors({
@@ -23,7 +31,8 @@ app.use('/', apiRoutes);
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sigillum')
   .then(() => {
-    app.listen(PORT, () => {
+    // Listen on the HTTP server instead of Express app
+    server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   })
@@ -41,6 +50,6 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Handle unhandled routes
 app.use((req: Request, res: Response) => {
   res.status(404).json({ message: 'Route not found' });
-}); 
+});
 
 export default app;
