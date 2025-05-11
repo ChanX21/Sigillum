@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
-import Image from "next/image";
-import { Button } from "../ui/button";
 import { MediaRecord } from "@/types";
 import { NFTMetadata } from "@/types";
 import {
@@ -19,7 +16,6 @@ import { ContractForm } from "../shared/ContractForm";
 import OptimizedImage from "../shared/OptimizedImage";
 import { ListingDataResponse } from "@/types";
 import { useWallet } from "@suiet/wallet-kit";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { SiSui } from "react-icons/si";

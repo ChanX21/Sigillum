@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { IoCloseSharp, IoSearchSharp } from "react-icons/io5";
-import { Shield, User } from "lucide-react";
+import { User } from "lucide-react";
 import Link from "next/link";
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion';
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useAccountBalance, useWallet } from "@suiet/wallet-kit";

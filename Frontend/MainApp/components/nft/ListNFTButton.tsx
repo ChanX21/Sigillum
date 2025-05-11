@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWallet } from '@suiet/wallet-kit';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { useUpdateNftDets } from '@/hooks/useUpdateNftDets';
 import { MARKETPLACE_ID, MODULE_NAME, PACKAGE_ID } from '@/lib/suiConfig';
@@ -21,7 +21,7 @@ import { listNft } from '@/utils/blockchainServices';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Coins, DollarSign, List, RefreshCcw, Rocket } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 
 const ListNFTButton = ({ listingId, tokenId, nftId }: { listingId: string, tokenId: string, nftId: string }) => {
     const [listPrice, setlistPrice] = useState<string>('')
