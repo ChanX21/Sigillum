@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-
+import { IAuthenticatedImage } from './AuthenticatedImage.js';
 export interface IUser extends Document {
   walletAddress: string;
   name: string;
@@ -20,6 +20,13 @@ export interface ISession extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IWebSocketSession extends Document {
+  sessionId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
 const nonceSchema = new Schema<INonce>({
   nonce: { type: String, required: true, unique: true },
@@ -42,7 +49,14 @@ const sessionSchema = new Schema<ISession>({
   updatedAt: { type: Date, default: Date.now },
 });
 
+const webSocketSessionSchema = new Schema<IWebSocketSession>({
+  sessionId: { type: String, required: true, unique: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
 const User = model<IUser>('User', userSchema);
 const Nonce = model<INonce>('Nonce', nonceSchema);
 const Session = model<ISession>('Session', sessionSchema);
-export { User, Nonce, Session };
+const WebSocketSession = model<IWebSocketSession>('WebSocketSession', webSocketSessionSchema);
+export { User, Nonce, Session, WebSocketSession };
