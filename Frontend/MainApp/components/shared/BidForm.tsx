@@ -234,11 +234,7 @@ export const BidForm = ({
         />
         <span className="text-lg font-medium">SUI</span>
       </div>
-      {highestBid && (
-        <div className="text-sm text-stone-500">
-          Current highest bid: {formatSuiAmount(Number(highestBid))}
-        </div>
-      )}
+      
 
       <div className="w-full flex gap-2">
         <Button
