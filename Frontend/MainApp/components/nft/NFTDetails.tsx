@@ -14,7 +14,7 @@ import { GiWalrusHead } from "react-icons/gi";
 import OptimizedImage from "../shared/OptimizedImage";
 
 interface NFTDetailsProps {
-  compact?: boolean;  
+  compact?: boolean;
   setStep: (step: number) => void;
 }
 const statusSteps = [
@@ -41,7 +41,7 @@ const statusSteps = [
     label: "Tokenizing Image",
     description: "Tokenizing the image as an NFT on the blockchain.",
     icon: <Shield className="w-8 h-8" />,
-  },  
+  },
   {
     key: "softListed",
     label: "Soft Listing on Marketplace",
@@ -122,6 +122,13 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
         }
         return [...prev, newDetail];
       });
+    });
+    socket.on("image:failed", (data) => {
+      handleProgress("image:authenticate")
+      toast.error(data?.message || "Failed to Secure Image, try again.")
+      useImageAuthStore.getState().setError(null)
+      setStep(0)
+      setStatusStep(0)
     });
 
     socket.on("image:uploaded", (data) => {
