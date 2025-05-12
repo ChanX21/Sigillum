@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check, Copy } from 'lucide-react'
+import { ChevronRight, Clock, Download, FileWarning, History, Share2, Shield, User, X, Check, Copy, View, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { motion } from "framer-motion"
@@ -11,6 +11,7 @@ import BeforeAfterSlide from './BeforeAfterSlide'
 import axios from 'axios'
 import { UserAvatar } from './UserAvatar'
 import { displayNftEvents } from '@/utils/blockchainServices'
+import Link from 'next/link'
 
 interface VerificationProps {
     image: string | null
@@ -86,14 +87,14 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
 
         return response.data
     }
-  
+
     useEffect(() => {
         if (verificationData && verificationData.verifications) {
             console.log(verificationData)
             fetchMetadata().then((res) => {
                 setAuthenticImage(res.image)
                 displayNftEvents(verificationData.verifications[0].blockchain.tokenId).then(res => {
-                  
+
                     setProvenance(res)
                 })
             }).catch(err => {
@@ -298,14 +299,18 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                     </div>
 
                                     <div className="flex gap-4 pt-4 border-t border-[#f1f3f5]">
-                                        <Button className="md:flex-1 w-[50%] px-3 bg-[#000] hover:bg-gray-950 rounded-none text-white gap-2 md:py-6 py-3">
-                                            <Download className="w-4 h-4" />
-                                            Download Report
-                                        </Button>
-                                        <Button variant="outline" className="md:flex-1 w-[50%] px-3 gap-2 md:py-6 py-3 border-[#000] text-[#000] rounded-none">
+                                        <Link href={`https://sigillum.digital/detail/${verificationData.verifications[0]._id}`} target='_blank' className='w-[50%] flex'>
+                                            <Button className="md:flex-1 px-3 bg-[#000] hover:bg-gray-950 rounded-none text-white gap-2 md:py-6 py-3 border border-black">
+                                                <ExternalLink className="w-4 h-4" />
+                                                View Lisitng
+                                            </Button>
+                                        </Link>
+
+                                        <Button variant="outline" className="md:flex-1 w-[50%] px-3 gap-2 md:py-6 py-3 border-[#000] text-[#000] rounded-none ">
                                             <Share2 className="w-4 h-4" />
                                             Share Results
                                         </Button>
+
                                     </div>
                                 </div>
                             ) : verificationError ? (
