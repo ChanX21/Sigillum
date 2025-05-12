@@ -131,3 +131,13 @@ export const notifySoftListed = (sessionId: string, listingData: any) => {
     listingData,
   });
 }; 
+
+export const notifyFailed = (sessionId: string, message: string) => {
+  if (!io) return;
+
+  // Send to specific user's room
+  io.to(`image:${sessionId}`).emit('image:failed', {
+    sessionId,
+    message,
+  });
+};

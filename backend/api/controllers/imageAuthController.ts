@@ -12,7 +12,7 @@ import { v4 } from 'uuid';
 import { Nonce, Session, User, WebSocketSession } from '../models/User.js';
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import jwt from 'jsonwebtoken';
-import { notifyImageUploaded, notifyNFTMinted, notifySoftListed, notifyBlobUploaded } from '../services/websocketService.js';
+import { notifyImageUploaded, notifyNFTMinted, notifySoftListed, notifyBlobUploaded, notifyFailed } from '../services/websocketService.js';
 
 // Custom interface for request with file
 interface FileRequest extends Request {
@@ -227,7 +227,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     res.status(200).json({ sessionId: jwt.sign({ sessionId: sessionId }, JWT_SECRET, { expiresIn: JWT_EXPIRATION }) });
     const blobId = await addBlob(req.file.buffer, authenticationData.vector);
     if(!blobId) {
-      res.status(500).json({ message: 'Failed to add blob' });
+      notifyFailed(sessionId, 'Failed to add blob');
       return;
     }
     // Send notification - Blob uploaded
