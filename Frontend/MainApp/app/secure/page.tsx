@@ -13,8 +13,8 @@ export default function Upload() {
     <>
       <Header />
       <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10 mb-12 ">
-        {step == 0 && <ImageUploadShowcase setStep={setStep} setStepLoading={setStepLoading}/>}
-        {step == 1 && <NftMintedDetails setStep={setStep} />}
+        {step == 0 && <ImageUploadShowcase setStep={setStep} setStepLoading={setStepLoading} />}
+        {step == 1 && <NftMintedDetails step={step} setStep={setStep} />}
       </main>
       <Footer />
     </>

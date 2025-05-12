@@ -7,8 +7,10 @@ import { AuthState, useImageAuthStore } from "@/store/useImageAuthStore";
 import { NFTDetails } from "./NFTDetails";
 
 export function NftMintedDetails({
+  step,
   setStep,
 }: {
+  step:number;
   setStep: (step: number) => void;
 }) {
   const { result } = useImageAuthStore() as AuthState
@@ -29,7 +31,7 @@ export function NftMintedDetails({
       </div>
 
       {/* NFT Details */}
-      <NFTDetails setStep={setStep}/>
+      <NFTDetails step={step} setStep={setStep}/>
 
 
       

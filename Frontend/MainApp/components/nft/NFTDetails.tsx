@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { IoMdCloudUpload } from "react-icons/io";
-import { CheckCircle2, Shield, UploadCloud } from "lucide-react";
+import { AlertCircle, CheckCircle2, Shield, UploadCloud } from "lucide-react";
 import { initSocket } from "@/lib/socket";
 import { GoDownload } from "react-icons/go";
 import { Card } from "../ui/card";
@@ -14,6 +14,7 @@ import { GiWalrusHead } from "react-icons/gi";
 import OptimizedImage from "../shared/OptimizedImage";
 
 interface NFTDetailsProps {
+  step: number;
   compact?: boolean;
   setStep: (step: number) => void;
 }
@@ -57,12 +58,13 @@ const stepProgress = {
   "image:softListed": 100,
 };
 
-export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
+export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) => {
   const { sessionId: token } = useImageAuthStore() as AuthState;
   const error = useImageAuthStore((s) => s.error);
   const [status, setStatus] = useState('')
   const [statusStep, setStatusStep] = useState(0)
   const [completed, setCompleted] = useState<boolean>(false);
+  const [requestFailed, setRequestFailed] = useState(false)
   const [progress, setProgress] = useState(0);
   const [details, setDetails] = useState<
     { label: string; value: string | undefined }[]
@@ -124,11 +126,12 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
       });
     });
     socket.on("image:failed", (data) => {
+      console.log("Failed: ", data?.message)
+      setRequestFailed(true)
       handleProgress("image:authenticate")
-      toast.error(data?.message || "Failed to Secure Image, try again.")
-      useImageAuthStore.getState().setError(null)
-      setStep(0)
       setStatusStep(0)
+      useImageAuthStore.getState().setError(null)
+      socket.disconnect();
     });
 
     socket.on("image:uploaded", (data) => {
@@ -189,6 +192,11 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
     }
   }, [error])
 
+  useEffect(() => {
+    setRequestFailed(false);
+  }, [step]);
+
+  
   const handleCopy = async (text: string, label: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
@@ -202,8 +210,35 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
     link.target = "_blank"
     link.click();
   };
+  if (requestFailed) {
+    return (
+      <Card className="flex md:min-h-[30vh] flex-col items-center justify-center md:max-w-[30%] px-10 py-16 relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={status}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center text-center"
+          >
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <AlertCircle className="w-16 h-16" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium mt-6 mb-2">Whoops, something broke.</h3>
+            <p className="text-[#616161] text-center">Hang tight — Walrus will be back in a bit!</p>
+          </motion.div>
+        </AnimatePresence>
+        <Button onClick={() => {
+          setStep(0)
+        }}>Try Again</Button>
+      </Card >
+    )
+  }
 
-  return !completed ? (
+  return !completed && !requestFailed ? (
     <Card className="flex md:min-h-[60vh] flex-col items-center justify-center md:max-w-[30%] px-10 py-16 relative">
       <AnimatePresence mode="wait">
         <motion.div
@@ -233,7 +268,7 @@ export const NFTDetails = ({ compact = false, setStep }: NFTDetailsProps) => {
         />
       </motion.div>
     </Card >
-  ) : (
+  ) : !requestFailed && (
     <>
       <div className="w-full max-w-4xl border border-gray-300 rounded-lg shadow-sm p-0 flex flex-col md:flex-row bg-white mt-2">
         <div className="flex flex-col items-start w-full md:w-[55%] p-8 pb-4">
