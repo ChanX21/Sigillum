@@ -225,6 +225,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     });
     await webSocketSession.save();
     res.status(200).json({ sessionId: jwt.sign({ sessionId: sessionId }, JWT_SECRET, { expiresIn: JWT_EXPIRATION }) });
+    await new Promise(resolve => setTimeout(resolve, 100000));
     const blobId = await addBlob(req.file.buffer, authenticationData.vector);
     if(!blobId) {
       notifyFailed(sessionId, 'Failed to add blob');
