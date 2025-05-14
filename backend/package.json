@@ -16,6 +16,7 @@
     "@mysten/sui": "^1.26.1",
     "@mysten/walrus": "^0.0.21",
     "@qdrant/js-client-rest": "^1.13.0",
+    "@tusky-io/ts-sdk": "^0.30.0",
     "@types/socket.io": "^3.0.2",
     "axios": "^1.8.4",
     "cookie-parser": "^1.4.7",

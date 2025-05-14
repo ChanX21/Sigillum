@@ -1,8 +1,10 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { WalrusClient } from '@mysten/walrus';
+import { Tusky } from '@tusky-io/ts-sdk';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { bcs } from '@mysten/sui/bcs';
+import path from 'path';
+import { unlinkSync, writeFileSync } from 'fs';
 
 // use getFullnodeUrl to define Devnet RPC location
 const rpcUrl = getFullnodeUrl('testnet');
@@ -13,12 +15,12 @@ const suiClient = new SuiClient({
 	url: rpcUrl,
 });
 
-
-const walrusClient = new WalrusClient({
-	network: 'testnet',
-  suiRpcUrl: rpcUrl,
+// Initialize Tusky client with a Sui wallet
+const tuskyClient = new Tusky({
+    wallet: {
+      privateKey: process.env.SUI_PRIVATE_KEY
+    }
 });
-
 // Sui contract configuration - extract package ID and module name from the fully qualified name
 const PACKAGE_ID_WITH_MODULE = process.env.SUI_PACKAGE_ID || '';
 const PACKAGE_ID = PACKAGE_ID_WITH_MODULE.split('::')[0];
@@ -211,21 +213,16 @@ export const createSoftListing = async (tokenId: string, listingOptions: Listing
  * @returns {Promise<string>} - Blob ID
  */
 export const addBlob = async (image: Buffer, vector: number[]) => {
-  const privateKey = process.env.SUI_PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error('SUI_PRIVATE_KEY environment variable is not set');
-  }
-  const keypair = Ed25519Keypair.fromSecretKey(privateKey);
+  await tuskyClient.auth.signIn();
+  
+  const tempPath = path.resolve('tmp', 'blob.json');
+  writeFileSync(tempPath, JSON.stringify({image: image.toString('base64'), vector: vector}));
+  const { id: vaultId } = await tuskyClient.vault.create("Vector Storage Vault", { encrypted: false });
   let blobId = "";
   for (let i = 0; i < 5; i++) {
   try {
-  const blob = await walrusClient.writeBlob({
-    blob: new TextEncoder().encode(JSON.stringify({image: image.toString('base64'), vector: vector})),
-    deletable: false,
-    epochs: 3,
-    signer: keypair,
-  });
-  blobId = blob.blobId;
+    blobId = await tuskyClient.file.upload(vaultId, tempPath);
+    unlinkSync(tempPath);
   break;
   } catch (error) {
     console.log('Error updating blob:', error);
