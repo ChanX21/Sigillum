@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light" style={{ colorScheme: 'light' }}>
-      <body className={`${albertSans.className} bg-white`}>
+      <body className={`${albertSans.className} bg-white overflow-x-hidden`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
           <Toaster /> 

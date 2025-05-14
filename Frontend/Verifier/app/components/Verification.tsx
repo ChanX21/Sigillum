@@ -299,8 +299,8 @@ const Verification = ({ image, verificationError, verificationData, isVerifying,
                                     </div>
 
                                     <div className="flex gap-4 pt-4 border-t border-[#f1f3f5]">
-                                        <Link href={`https://sigillum.digital/detail/${verificationData.verifications[0]._id}`} target='_blank' className='w-[50%] flex'>
-                                            <Button className="md:flex-1 px-3 bg-[#000] hover:bg-gray-950 rounded-none text-white gap-2 md:py-6 py-3 border border-black">
+                                        <Link href={`https://sigillum.digital/detail/${verificationData.verifications[0]._id}`} target='_blank' className='w-[50%]  flex-1'>
+                                            <Button className="md:flex-1 w-full px-3 bg-[#000] hover:bg-gray-950 rounded-none text-white gap-2 md:py-6 py-3 border border-black">
                                                 <ExternalLink className="w-4 h-4" />
                                                 View Lisitng
                                             </Button>

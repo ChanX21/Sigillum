@@ -229,7 +229,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
     if(!blobId) {
       notifyFailed(sessionId, 'Failed to add blob');
       return;
-    }
+    } 
     // Send notification - Blob uploaded
     notifyBlobUploaded(sessionId, blobId);
     // Upload original image to IPFS
