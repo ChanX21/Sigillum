@@ -27,6 +27,8 @@ import { RelistForm } from "../shared/RelistForm";
 import { RelistModal } from "../shared/RelistModal";
 import { client } from "@/lib/suiClient";
 import { Clock } from "lucide-react";
+import Image from "next/image";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -396,7 +398,7 @@ export const NFTDetailView = ({
               <span>SUI</span>
             </div>
           </div>
-          
+
           {/* <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
             <div className="flex justify-end items-center gap-2">
@@ -447,39 +449,48 @@ export const NFTDetailView = ({
                 className="hover:underline"
               >
                 <span className="cursor-pointer flex items-center gap-2"> View on Ipfs <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
                 </span>
-                  
+
               </Link>
-              
+
             </div>
           )}
 
           <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
-            <span className="text-gray-600">Walrus</span>
+            <span className="text-gray-600">Blob Id</span>
             {nft.vector.blobId ? (
-              <Link
-                href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
-                target="_blank"
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <GiWalrusHead />
-                <span>{shortenAddress(nft.vector.blobId)}</span>
-              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(nft.vector.blobId)
+                      toast.success("Copied BlobId Successfully")
+                    }}
+                  >
+                    <Image src={'/tusky-wink.svg'} alt="Tusky Io" width={17} height={15} />
+                    <span>{shortenAddress(nft.vector.blobId)}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy to clipboard</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
             ) : (
               <div className="flex items-center gap-2 text-sm cursor-pointer">
-                <Clock width={15}/>
+                <Clock width={15} />
                 Available in 1 hour.
               </div>
             )}
