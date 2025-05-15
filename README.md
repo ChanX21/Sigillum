@@ -78,7 +78,7 @@ Sigillum operates on a dual-system architecture:
 - Provides immediate ownership and provenance information
 - Creates an entry point to the Web3 ecosystem
 
-![image](https://github.com/user-attachments/assets/85c1f896-a433-4605-b140-7d34e6c5ea6e)
+![image](https://github.com/user-attachments/assets/eb1f27f5-2cb7-4776-b474-900a112f8a39)
 
 
 ## DeFi Flow
