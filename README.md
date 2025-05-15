@@ -17,6 +17,7 @@ In an era where digital manipulation is commonplace, Sigillum offers a solution 
 
 ![image](https://github.com/user-attachments/assets/84e101d0-38d9-4b70-acfd-1c8f0bad2736)
 
+
 ## Verifier App
 
 Url: https://verifier.sigillum.digital/
@@ -63,7 +64,6 @@ Sigillum introduces a groundbreaking feature that links real-world engagement to
 
 ![image](https://github.com/user-attachments/assets/577da540-348e-44f0-afcf-d7c8aaf609ca)
 
-
 Sigillum operates on a dual-system architecture:
 
 ### Web3 Integrated Side
@@ -79,6 +79,8 @@ Sigillum operates on a dual-system architecture:
 - Creates an entry point to the Web3 ecosystem
 
 ![image](https://github.com/user-attachments/assets/e928c5e7-1020-47fd-a9b4-71fff94f8369)
+![image](https://github.com/user-attachments/assets/85c1f896-a433-4605-b140-7d34e6c5ea6e)
+
 
 
 
