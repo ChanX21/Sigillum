@@ -1,14 +1,14 @@
 // CONSTANTS
 import { Transaction } from "@mysten/sui/transactions";
 
-import { EventId, SuiClient, SuiEvent } from "@mysten/sui/client";
+import { SuiClient } from "@mysten/sui/client";
 import { MODULE_NAME, PACKAGE_ID } from "@/lib/suiConfig";
 const nftTypeArg = `${PACKAGE_ID}::sigillum_nft::PhotoNFT`;
 export const buildAcceptBidTx = (
   marketplaceObjectId: string,
   listingId: string,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Transaction => {
   const tx = new Transaction();
 
@@ -29,7 +29,7 @@ export const buildWithdrawStakeTx = (
   marketplaceObjectId: string,
   listingId: string,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Transaction => {
   const tx = new Transaction();
 
@@ -57,7 +57,7 @@ export async function getObjectDetails(
   moduleName: string,
   marketplaceObjectId: string,
   listingId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   if (!address) return null;
   // If no address is provided, use a default address for read-only operations
@@ -76,7 +76,6 @@ export async function getObjectDetails(
       sender: senderAddress,
       transactionBlock: tx,
     });
-    // console.log("Result:", result);
 
     //Check for dynamic_field error
     if (
@@ -102,40 +101,40 @@ export async function getObjectDetails(
         listPrice: BigInt(
           new DataView(Uint8Array.from(returnValues[2][0]).buffer).getBigUint64(
             0,
-            true
-          )
+            true,
+          ),
         ),
         listingType: returnValues[3][0][0],
         minBid: BigInt(
           new DataView(Uint8Array.from(returnValues[4][0]).buffer).getBigUint64(
             0,
-            true
-          )
+            true,
+          ),
         ),
         highestBid: BigInt(
           new DataView(Uint8Array.from(returnValues[5][0]).buffer).getBigUint64(
             0,
-            true
-          )
+            true,
+          ),
         ),
         highestBidder: bytesToHex([...new Uint8Array(returnValues[6][0])]),
         active: Boolean(returnValues[7][0][0]),
         verificationScore: BigInt(
           new DataView(Uint8Array.from(returnValues[8][0]).buffer).getBigUint64(
             0,
-            true
-          )
+            true,
+          ),
         ),
         startTime: BigInt(
           new DataView(Uint8Array.from(returnValues[9][0]).buffer).getBigUint64(
             0,
-            true
-          )
+            true,
+          ),
         ),
         endTime: BigInt(
           new DataView(
-            Uint8Array.from(returnValues[10][0]).buffer
-          ).getBigUint64(0, true)
+            Uint8Array.from(returnValues[10][0]).buffer,
+          ).getBigUint64(0, true),
         ),
       };
 
@@ -167,7 +166,7 @@ function parseU64FromByteArray(byteArray: number[]): number {
     return Number(value);
   }
 
-  // Otherwise return as number (might lose precision for very large values)
+  // Otherwise return as number
   return Number(value);
 }
 
@@ -180,7 +179,7 @@ async function callMoveWithU64Return(
   marketplaceObjectId: string,
   listingId: string,
   address: string | null = null,
-  errorPrefix: string = "Failed to get value"
+  errorPrefix: string = "Failed to get value",
 ): Promise<number | null> {
   if (!address) return null;
   const tx = new Transaction();
@@ -207,7 +206,6 @@ async function callMoveWithU64Return(
     // The byte array is the first and only return value
     const returnValues = result.results[0].returnValues;
 
-    // Based on the example, the u64 value is the first item in returnValues
     if (returnValues[0] && returnValues[0][1] === "u64") {
       return parseU64FromByteArray(returnValues[0][0]);
     }
@@ -225,7 +223,7 @@ async function callMoveWithU64Return(
     throw new Error(
       `${errorPrefix}: ${
         error instanceof Error ? error.message : "Unknown error occurred"
-      }`
+      }`,
     );
   }
 }
@@ -237,7 +235,7 @@ export async function getStakersCount(
   moduleName: string,
   marketplaceObjectId: string,
   listingId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   return callMoveWithU64Return(
     provider,
@@ -247,7 +245,7 @@ export async function getStakersCount(
     marketplaceObjectId,
     listingId,
     address,
-    "Failed to get stakers count"
+    "Failed to get stakers count",
   );
 }
 
@@ -258,7 +256,7 @@ export async function getBidCount(
   moduleName: string,
   marketplaceObjectId: string,
   listingId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   return callMoveWithU64Return(
     provider,
@@ -268,7 +266,7 @@ export async function getBidCount(
     marketplaceObjectId,
     listingId,
     address,
-    "Failed to get bid count"
+    "Failed to get bid count",
   );
 }
 // Function to get fee percentage
@@ -277,7 +275,7 @@ export async function getFeePercentage(
   packageId: string,
   moduleName: string,
   marketplaceObjectId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   if (!address) return null;
   const tx = new Transaction();
@@ -310,7 +308,7 @@ export async function getTotalVolume(
   packageId: string,
   moduleName: string,
   marketplaceObjectId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   if (!address) return null;
   const tx = new Transaction();
@@ -343,7 +341,7 @@ export async function getTotalListings(
   packageId: string,
   moduleName: string,
   marketplaceObjectId: string,
-  address: string | null = null
+  address: string | null = null,
 ) {
   if (!address) return null;
   const tx = new Transaction();
@@ -380,7 +378,7 @@ export async function getListingIds(
   limit: number = 10,
   onlyActive: boolean = true,
   listingType: number = 0,
-  address: string | null = null
+  address: string | null = null,
 ): Promise<{ listingIds: string[]; hasMore: boolean }> {
   if (!address) return { listingIds: [], hasMore: false };
 
@@ -434,7 +432,7 @@ export const buildPlaceBidTx = (
   packageId: string,
   moduleName: string,
   bidAmountMist: bigint, // The amount to bid
-  address: string // User's address
+  address: string, // User's address
 ): Transaction => {
   const tx = new Transaction();
 
@@ -458,16 +456,13 @@ export const buildPlaceBidTx = (
     arguments: [marketplaceArg, listingIdArg, paymentArg],
   });
 
-  // Return remaining coin to the user
-  // tx.transferObjects([remainingCoin], tx.pure.address(address));
-
   return tx;
 };
 
 export async function buildPrepareCoinsTx(
   provider: SuiClient,
   address: string,
-  estimatedGasFee: bigint = BigInt(30_000_000)
+  estimatedGasFee: bigint = BigInt(30_000_000),
 ): Promise<{ transaction: Transaction; success: boolean; reason?: string }> {
   const { data: coinData } = await provider.getCoins({
     owner: address,
@@ -483,7 +478,7 @@ export async function buildPrepareCoinsTx(
   }
 
   const sorted = [...coinData].sort((a, b) =>
-    Number(BigInt(b.balance) - BigInt(a.balance))
+    Number(BigInt(b.balance) - BigInt(a.balance)),
   );
 
   const mainCoin = sorted[0];
@@ -512,7 +507,7 @@ export async function buildPlaceBidTxWithCoinSelection(
   listingId: string,
   bidAmountMist: bigint,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Promise<{
   transaction: Transaction;
   success: boolean;
@@ -525,23 +520,15 @@ export async function buildPlaceBidTxWithCoinSelection(
       coinType: "0x2::sui::SUI",
     });
 
-    if (!coinData || coinData.length === 0) {
-      return {
-        transaction: new Transaction(),
-        success: false,
-        error: "No coins available",
-      };
-    }
-
     const sortedCoins = [...coinData].sort((a, b) =>
-      Number(BigInt(b.balance) - BigInt(a.balance))
+      Number(BigInt(b.balance) - BigInt(a.balance)),
     );
 
     const estimatedGasFee = BigInt(30_000_000); // 0.03 SUI
 
     const totalBalance = sortedCoins.reduce(
       (sum, coin) => sum + BigInt(coin.balance),
-      BigInt(0)
+      BigInt(0),
     );
 
     if (totalBalance < bidAmountMist + estimatedGasFee) {
@@ -554,86 +541,20 @@ export async function buildPlaceBidTxWithCoinSelection(
       };
     }
 
-    let gasCoin = null;
-    let bidCoin = null;
-
-    for (const coin of sortedCoins) {
-      if (
-        BigInt(coin.balance) >= estimatedGasFee &&
-        BigInt(coin.balance) < bidAmountMist + estimatedGasFee
-      ) {
-        gasCoin = coin;
-        break;
-      }
-    }
-
-    if (!gasCoin) {
-      for (const coin of sortedCoins) {
-        if (BigInt(coin.balance) >= estimatedGasFee) {
-          gasCoin = coin;
-          break;
-        }
-      }
-    }
-
-    if (gasCoin) {
-      for (const coin of sortedCoins) {
-        if (
-          coin.coinObjectId !== gasCoin.coinObjectId &&
-          BigInt(coin.balance) >= bidAmountMist
-        ) {
-          bidCoin = coin;
-          break;
-        }
-      }
-    }
-
-    if (!gasCoin || !bidCoin) {
-      return {
-        transaction: new Transaction(),
-        success: false,
-        needsPreparation: true,
-        error:
-          "Need to split coin first. Cannot use same coin for gas and bid.",
-      };
-    }
-
     const tx = new Transaction();
-    tx.setSender(address);
-    tx.setGasBudget(Number(estimatedGasFee));
-    tx.setGasPayment([
-      {
-        objectId: gasCoin.coinObjectId,
-        version: gasCoin.version,
-        digest: gasCoin.digest,
-      },
+
+    const splitBidCoins = tx.splitCoins(tx.gas, [
+      tx.pure.u64(bidAmountMist.toString()),
     ]);
 
-    const bidCoinObj = tx.object(bidCoin.coinObjectId);
-
-    if (BigInt(bidCoin.balance) > bidAmountMist) {
-      const splitBidCoins = tx.splitCoins(bidCoinObj, [
-        tx.pure.u64(bidAmountMist.toString()),
-      ]);
-
-      tx.moveCall({
-        target: `${packageId}::${moduleName}::place_bid`,
-        arguments: [
-          tx.object(marketplaceObjectId),
-          tx.pure.address(listingId),
-          splitBidCoins[0],
-        ],
-      });
-    } else {
-      tx.moveCall({
-        target: `${packageId}::${moduleName}::place_bid`,
-        arguments: [
-          tx.object(marketplaceObjectId),
-          tx.pure.address(listingId),
-          bidCoinObj,
-        ],
-      });
-    }
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::place_bid`,
+      arguments: [
+        tx.object(marketplaceObjectId),
+        tx.pure.address(listingId),
+        splitBidCoins[0],
+      ],
+    });
 
     return { transaction: tx, success: true };
   } catch (error) {
@@ -654,12 +575,13 @@ export async function prepareAndBuildBidTransaction(
   listingId: string,
   bidAmountMist: bigint,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Promise<{
   transaction: Transaction;
   success: boolean;
   preparationNeeded?: boolean;
   message?: string;
+  error?: string;
 }> {
   const result = await buildPlaceBidTxWithCoinSelection(
     provider,
@@ -668,7 +590,7 @@ export async function prepareAndBuildBidTransaction(
     listingId,
     bidAmountMist,
     packageId,
-    moduleName
+    moduleName,
   );
 
   if (result.success) return result;
@@ -702,7 +624,7 @@ export async function buildPlaceStakeTxWithCoinSelection(
   listingId: string,
   stakeAmountMist: bigint,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Promise<{
   transaction: Transaction;
   success: boolean;
@@ -724,118 +646,40 @@ export async function buildPlaceStakeTxWithCoinSelection(
       coinType: "0x2::sui::SUI",
     });
 
-    if (!coinData || coinData.length === 0) {
-      return {
-        transaction: new Transaction(),
-        success: false,
-        error: "No SUI coins available.",
-      };
-    }
-
     const sortedCoins = [...coinData].sort((a, b) =>
-      Number(BigInt(b.balance) - BigInt(a.balance))
+      Number(BigInt(b.balance) - BigInt(a.balance)),
     );
 
     const estimatedGasFee = BigInt(30_000_000); // 0.03 SUI
     const totalBalance = sortedCoins.reduce(
       (sum, coin) => sum + BigInt(coin.balance),
-      BigInt(0)
+      BigInt(0),
     );
 
     if (totalBalance < stakeAmountMist + estimatedGasFee) {
       return {
         transaction: new Transaction(),
         success: false,
-        error: `Insufficient balance. Need ${
+        error: `Insufficient balance. You need ${
           Number(stakeAmountMist + estimatedGasFee) / 1_000_000_000
-        } SUI, but have ${Number(totalBalance) / 1_000_000_000} SUI.`,
-      };
-    }
-
-    let gasCoin = null;
-    let stakeCoin = null;
-
-    // Prepare gasCoin (first step)
-    for (const coin of sortedCoins) {
-      if (
-        BigInt(coin.balance) >= estimatedGasFee &&
-        BigInt(coin.balance) < stakeAmountMist + estimatedGasFee
-      ) {
-        gasCoin = coin;
-        break;
-      }
-    }
-
-    if (!gasCoin) {
-      for (const coin of sortedCoins) {
-        if (BigInt(coin.balance) >= estimatedGasFee) {
-          gasCoin = coin;
-          break;
-        }
-      }
-    }
-
-    // Prepare stakeCoin (second step)
-    if (gasCoin) {
-      for (const coin of sortedCoins) {
-        if (
-          coin.coinObjectId !== gasCoin.coinObjectId &&
-          BigInt(coin.balance) >= stakeAmountMist
-        ) {
-          stakeCoin = coin;
-          break;
-        }
-      }
-    }
-
-    // If no gas or stake coin available, we need preparation
-    if (!gasCoin || !stakeCoin) {
-      return {
-        transaction: new Transaction(),
-        success: false,
-        needsPreparation: true,
-        error:
-          "Need to split coins first. Cannot use the same coin for gas and staking.",
+        } SUI, but you have ${Number(totalBalance) / 1_000_000_000} SUI.`,
       };
     }
 
     const tx = new Transaction();
-    tx.setSender(address);
-    tx.setGasBudget(Number(estimatedGasFee));
-    tx.setGasPayment([
-      {
-        objectId: gasCoin.coinObjectId,
-        version: gasCoin.version,
-        digest: gasCoin.digest,
-      },
+
+    const splitStakeCoins = tx.splitCoins(tx.gas, [
+      tx.pure.u64(stakeAmountMist.toString()),
     ]);
 
-    const stakeCoinObj = tx.object(stakeCoin.coinObjectId);
-
-    // Handling coin split if necessary (for stake coin)
-    if (BigInt(stakeCoin.balance) > stakeAmountMist) {
-      const splitStakeCoins = tx.splitCoins(stakeCoinObj, [
-        tx.pure.u64(stakeAmountMist.toString()),
-      ]);
-
-      tx.moveCall({
-        target: `${packageId}::${moduleName}::stake_on_listing`,
-        arguments: [
-          tx.object(marketplaceObjectId),
-          tx.pure.address(listingId),
-          splitStakeCoins[0],
-        ],
-      });
-    } else {
-      tx.moveCall({
-        target: `${packageId}::${moduleName}::stake_on_listing`,
-        arguments: [
-          tx.object(marketplaceObjectId),
-          tx.pure.address(listingId),
-          stakeCoinObj,
-        ],
-      });
-    }
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::stake_on_listing`,
+      arguments: [
+        tx.object(marketplaceObjectId),
+        tx.pure.address(listingId),
+        splitStakeCoins[0],
+      ],
+    });
 
     return { transaction: tx, success: true };
   } catch (error) {
@@ -857,12 +701,13 @@ export async function prepareAndBuildStakeTransaction(
   listingId: string,
   stakeAmountMist: bigint,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Promise<{
   transaction: Transaction;
   success: boolean;
   preparationNeeded?: boolean;
   message?: string;
+  error?: string;
 }> {
   const result = await buildPlaceStakeTxWithCoinSelection(
     provider,
@@ -871,7 +716,7 @@ export async function prepareAndBuildStakeTransaction(
     listingId,
     stakeAmountMist,
     packageId,
-    moduleName
+    moduleName,
   );
 
   if (result.success) return result;
@@ -898,158 +743,13 @@ export async function prepareAndBuildStakeTransaction(
   return result;
 }
 
-// export async function buildPlaceStakeTxWithCoinSelection(
-//   provider: SuiClient,
-//   address: string,
-//   marketplaceObjectId: string,
-//   listingId: string,
-//   stakeAmountMist: bigint,
-//   packageId: string,
-//   moduleName: string
-// ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
-//   try {
-//     console.log("Starting to build stake transaction with params:", {
-//       address,
-//       marketplaceObjectId,
-//       listingId,
-//       stakeAmountMist: stakeAmountMist.toString(),
-//       packageId,
-//       moduleName,
-//     });
-
-//     const { data: coinData } = await provider.getCoins({
-//       owner: address,
-//       coinType: "0x2::sui::SUI",
-//     });
-
-//     if (!coinData || coinData.length === 0) {
-//       return {
-//         transaction: new Transaction(),
-//         success: false,
-//         error: "No SUI coins available.",
-//       };
-//     }
-
-//     const sortedCoins = [...coinData].sort((a, b) =>
-//       Number(BigInt(b.balance) - BigInt(a.balance))
-//     );
-
-//     const estimatedGasFee = BigInt(30_000_000); // 0.03 SUI
-//     const totalBalance = sortedCoins.reduce(
-//       (sum, coin) => sum + BigInt(coin.balance),
-//       BigInt(0)
-//     );
-
-//     if (totalBalance < stakeAmountMist + estimatedGasFee) {
-//       return {
-//         transaction: new Transaction(),
-//         success: false,
-//         error: `Insufficient balance. Need ${
-//           Number(stakeAmountMist + estimatedGasFee) / 1_000_000_000
-//         } SUI, but have ${Number(totalBalance) / 1_000_000_000} SUI.`,
-//       };
-//     }
-
-//     let gasCoin = null;
-//     let stakeCoin = null;
-
-//     for (const coin of sortedCoins) {
-//       if (
-//         BigInt(coin.balance) >= estimatedGasFee &&
-//         BigInt(coin.balance) < stakeAmountMist + estimatedGasFee
-//       ) {
-//         gasCoin = coin;
-//         break;
-//       }
-//     }
-
-//     if (!gasCoin) {
-//       for (const coin of sortedCoins) {
-//         if (BigInt(coin.balance) >= estimatedGasFee) {
-//           gasCoin = coin;
-//           break;
-//         }
-//       }
-//     }
-
-//     if (gasCoin) {
-//       for (const coin of sortedCoins) {
-//         if (
-//           coin.coinObjectId !== gasCoin.coinObjectId &&
-//           BigInt(coin.balance) >= stakeAmountMist
-//         ) {
-//           stakeCoin = coin;
-//           break;
-//         }
-//       }
-//     }
-
-//     if (!gasCoin || !stakeCoin) {
-//       return {
-//         transaction: new Transaction(),
-//         success: false,
-//         error:
-//           "Need to split coins first. Cannot use the same coin for gas and staking.",
-//       };
-//     }
-
-//     const tx = new Transaction();
-//     tx.setSender(address);
-//     tx.setGasBudget(Number(estimatedGasFee));
-//     tx.setGasPayment([
-//       {
-//         objectId: gasCoin.coinObjectId,
-//         version: gasCoin.version,
-//         digest: gasCoin.digest,
-//       },
-//     ]);
-
-//     const stakeCoinObj = tx.object(stakeCoin.coinObjectId);
-
-//     if (BigInt(stakeCoin.balance) > stakeAmountMist) {
-//       const splitStakeCoins = tx.splitCoins(stakeCoinObj, [
-//         tx.pure.u64(stakeAmountMist.toString()),
-//       ]);
-
-//       tx.moveCall({
-//         target: `${packageId}::${moduleName}::stake_on_listing`,
-//         arguments: [
-//           tx.object(marketplaceObjectId),
-//           tx.pure.address(listingId),
-//           splitStakeCoins[0],
-//         ],
-//       });
-//     } else {
-//       tx.moveCall({
-//         target: `${packageId}::${moduleName}::stake_on_listing`,
-//         arguments: [
-//           tx.object(marketplaceObjectId),
-//           tx.pure.address(listingId),
-//           stakeCoinObj,
-//         ],
-//       });
-//     }
-
-//     return { transaction: tx, success: true };
-//   } catch (error) {
-//     console.error("Error building stake transaction:", error);
-//     return {
-//       transaction: new Transaction(),
-//       success: false,
-//       error: `Failed to build transaction: ${
-//         error instanceof Error ? error.message : String(error)
-//       }`,
-//     };
-//   }
-// }
-
 export async function listNft(
   softListingId: string,
   listPrice: number,
   packageId: string,
   moduleName: string,
   marketplaceObjectId: string,
-  nftId: string
+  nftId: string,
 ): Promise<{ transaction: Transaction; success: boolean; error?: string }> {
   try {
     const tx = new Transaction();
@@ -1090,7 +790,7 @@ export const buildRelistNftTx = async (
   newMinBid: number,
   newEndTime: number,
   packageId: string,
-  moduleName: string
+  moduleName: string,
 ): Promise<Transaction> => {
   try {
     const tx = new Transaction();
@@ -1098,7 +798,6 @@ export const buildRelistNftTx = async (
     tx.setGasBudget(Number(estimatedGasFee));
 
     // Use the same NFT type as in your existing code
-    // This should match the type of your NFT - update if necessary
     const nftTypeArg =
       "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
 
@@ -1129,7 +828,7 @@ export async function getUserStake(
   marketplaceObjectId: string,
   listingId: string,
   stakerAddress: string,
-  callerAddress: string | null = null
+  callerAddress: string | null = null,
 ) {
   if (!callerAddress) return { hasStaked: false, stakeAmount: 0 };
   const tx = new Transaction();
@@ -1149,9 +848,6 @@ export async function getUserStake(
       transactionBlock: tx,
     });
 
-    // For debugging (can be removed in production)
-    // console.log("Raw Result:", JSON.stringify(result, null, 2));
-
     const returnValues = result?.results?.[0]?.returnValues;
     if (!returnValues || !Array.isArray(returnValues)) {
       return { hasStaked: false, stakeAmount: 0 };
@@ -1163,18 +859,17 @@ export async function getUserStake(
 
     // Find the boolean value first
     const boolValues = returnValues.filter(
-      ([value, type]) => type === "bool" && Array.isArray(value)
+      ([value, type]) => type === "bool" && Array.isArray(value),
     );
 
     if (boolValues.length > 0) {
       hasStaked = boolValues[0][0][0] === 1;
     }
 
-    // Find the stake amount - we need to be smart about this
-    // There might be multiple u64 values, but we want the one that represents the stake
+    // Find the stake amount .
     const u64Values = returnValues.filter(
       ([value, type]) =>
-        type === "u64" && Array.isArray(value) && value.length === 8
+        type === "u64" && Array.isArray(value) && value.length === 8,
     );
 
     if (u64Values.length > 0) {

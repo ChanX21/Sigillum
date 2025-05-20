@@ -1,14 +1,10 @@
 import { Button } from "../ui/button";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  buildPlaceBidTxWithCoinSelection,
-  buildPlaceStakeTxWithCoinSelection,
   prepareAndBuildBidTransaction,
   prepareAndBuildStakeTransaction,
 } from "@/utils/blockchainServices";
-import { SuiClient } from "@mysten/sui/client";
-import { getFullnodeUrl } from "@mysten/sui/client";
 import { useWallet } from "@suiet/wallet-kit";
 import { toast } from "sonner";
 import { MediaRecord } from "@/types";
@@ -17,6 +13,7 @@ import { formatSuiAmount } from "@/utils/web2";
 
 interface BIDFormProps {
   nft: MediaRecord;
+  owner?: string;
   setOpen?: (open: boolean) => void;
   fetchListingDetails?: () => Promise<void>;
   userStake?: {
@@ -30,14 +27,14 @@ export const BidForm = ({
   nft,
   setOpen,
   fetchListingDetails,
-  userStake,
+  owner,
   highestBid,
 }: BIDFormProps) => {
   const [bidAmount, setBidAmount] = useState<string>("");
   const [bidding, setBidding] = useState<boolean>(false);
   const [staking, setStaking] = useState<boolean>(false);
   const [minimumBid, setMinimumBid] = useState<number>(
-    Number(formatSuiAmount(Number(highestBid))) || 0
+    Number(formatSuiAmount(Number(highestBid))) || 0,
   );
 
   const wallet = useWallet();
@@ -67,7 +64,7 @@ export const BidForm = ({
       setBidding(true);
 
       const bidAmountMist = BigInt(
-        Math.floor(parseFloat(bidAmount) * 1_000_000_000)
+        Math.floor(parseFloat(bidAmount) * 1_000_000_000),
       );
 
       const provider = client;
@@ -80,7 +77,7 @@ export const BidForm = ({
         nft.blockchain.listingId,
         bidAmountMist,
         PACKAGE_ID,
-        MODULE_NAME
+        MODULE_NAME,
       );
 
       // If preparation is needed, sign and execute preparation tx
@@ -99,7 +96,7 @@ export const BidForm = ({
         await new Promise((resolve) => setTimeout(resolve, 3000));
       }
 
-      // STEP 2: Now build the actual bid transaction (again, to get updated coin state)
+      // STEP 2: Now build the actual bid transaction
       const bidResult = await prepareAndBuildBidTransaction(
         provider,
         address,
@@ -107,11 +104,15 @@ export const BidForm = ({
         nft.blockchain.listingId,
         bidAmountMist,
         PACKAGE_ID,
-        MODULE_NAME
+        MODULE_NAME,
       );
 
       if (!bidResult.success) {
-        toast.error(bidResult.message || "Failed to build bid transaction");
+        toast.error(
+          bidResult.error ||
+            bidResult.message ||
+            "Failed to build bid transaction",
+        );
         return;
       }
 
@@ -151,7 +152,7 @@ export const BidForm = ({
       setStaking(true);
 
       const stakeAmountMist = BigInt(
-        Math.floor(parseFloat(bidAmount) * 1_000_000_000)
+        Math.floor(parseFloat(bidAmount) * 1_000_000_000),
       );
 
       const provider = client;
@@ -164,7 +165,7 @@ export const BidForm = ({
         nft.blockchain.listingId,
         stakeAmountMist,
         PACKAGE_ID,
-        MODULE_NAME
+        MODULE_NAME,
       );
 
       // If preparation is needed, sign and execute preparation tx
@@ -191,11 +192,15 @@ export const BidForm = ({
         nft.blockchain.listingId,
         stakeAmountMist,
         PACKAGE_ID,
-        MODULE_NAME
+        MODULE_NAME,
       );
 
       if (!stakeResult.success) {
-        toast.error(stakeResult.message || "Failed to build stake transaction");
+        toast.error(
+          stakeResult.error ||
+            stakeResult.message ||
+            "Failed to build stake transaction",
+        );
         return;
       }
 
@@ -219,7 +224,6 @@ export const BidForm = ({
     }
   };
 
-  console.log(minimumBid);
   return (
     <div className="space-y-4">
       {/* Bid input */}
@@ -230,39 +234,44 @@ export const BidForm = ({
           placeholder="0.0"
           value={bidAmount}
           onChange={handleBidAmountChange}
-          disabled={bidding || staking}
+          disabled={bidding || staking || wallet.address == owner}
         />
         <span className="text-lg font-medium">SUI</span>
       </div>
-      
 
       <div className="w-full flex gap-2">
         <Button
           className="w-[49%] py-6 text-lg rounded-none"
           size="lg"
           onClick={handlePlaceBid}
-          disabled={bidding || staking || !address || !bidAmount}
+          disabled={
+            bidding ||
+            staking ||
+            !address ||
+            !bidAmount ||
+            wallet.address == owner
+          }
         >
           {bidding ? "Bidding..." : "Place a Bid"}
         </Button>
-        {/* {userStake && !userStake.hasStaked && ( */}
+
         <Button
           className="w-[49%] py-6 text-lg border text-primary rounded-none"
           size="lg"
           onClick={handlePlaceStake}
           variant="outline"
-          disabled={bidding || staking || !address || !bidAmount}
+          disabled={
+            bidding ||
+            staking ||
+            !address ||
+            !bidAmount ||
+            wallet.address == owner
+          }
         >
           {staking ? "Staking..." : "Stake"}
         </Button>
         {/* )} */}
       </div>
-
-      {/* {debugInfo && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-mono overflow-auto max-h-32">
-          {debugInfo}
-        </div>
-      )} */}
     </div>
   );
 };
