@@ -20,7 +20,12 @@ import { getObjectDetails } from "@/utils/blockchainServices";
 import { PACKAGE_ID, MODULE_NAME, MARKETPLACE_ID } from "@/lib/suiConfig";
 import { SiSui } from "react-icons/si";
 import { client } from "@/lib/suiClient";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 interface NFTCardFeaturedProps {
   nft: MediaRecord;
@@ -160,10 +165,13 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   {listingDetails && hasHighestBid ? (
                     <>
                       {converted.usd}
-                      <span className="text-xs text-gray-400 font-regular ml-1">({converted.sui})</span>
+                      <span className="text-xs text-gray-400 font-regular ml-1">
+                        ({converted.sui})
+                      </span>
                     </>
-
-                  ) : "USD 0.00"}
+                  ) : (
+                    "USD 0.00"
+                  )}
                 </p>
               </>
             )}
@@ -200,19 +208,22 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                   target="_blank"
                   className="hover:underline"
                 >
-                  <span className="cursor-pointer flex items-center gap-2"> View on Ipfs <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <span className="cursor-pointer flex items-center gap-2">
+                    {" "}
+                    View on Ipfs{" "}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
                   </span>
                 </Link>
               </div>
@@ -242,7 +253,7 @@ export default function NftAuctionCard({ nft }: NFTCardFeaturedProps) {
                 {" "}
                 {nft.user.name || shortenAddress(nft.user.walletAddress) || ""}
               </p>
-              <p className="text-sm text-gray-500">Owner</p>
+              <p className="text-sm text-gray-500">Creator</p>
             </div>
           </div>
         </div>
