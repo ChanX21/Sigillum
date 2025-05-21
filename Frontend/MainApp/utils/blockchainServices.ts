@@ -757,9 +757,7 @@ export async function listNft(
     const estimatedGasFee = BigInt(50000000); // 0.05 SUI
     tx.setGasBudget(Number(estimatedGasFee));
 
-    const nftTypeArg =
-      "0x11fe6fadbdcf82659757c793e7337f8af5198a9f35cbad68a2337d01395eb657::sigillum_nft::PhotoNFT";
-
+  
     tx.moveCall({
       target: `${packageId}::${moduleName}::convert_to_real_listing`,
       typeArguments: [nftTypeArg],
