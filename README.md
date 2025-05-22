@@ -135,17 +135,6 @@ Our smart contracts are open source and available for review:
 - [SigillumNFT Contract](https://github.com/sigillum/contracts/SigillumNFT.move)
 - [SigillumMarketplace Contract](https://github.com/sigillum/contracts/SigillumMarketplace.move)
 
-## Contributing
-
-We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
-
-## Security
-
-If you discover any security issues, please email security@sigillum.com instead of using the issue tracker.
-
-## License
-
-Sigillum is licensed under the [MIT License](LICENSE.md).
 
 ## Contact
 
