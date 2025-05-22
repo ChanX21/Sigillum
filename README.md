@@ -8,7 +8,6 @@
 
 Sigillum is a revolutionary platform that combines advanced image verification technology with blockchain to authenticate digital imagery and create a trusted marketplace for genuine digital moments.
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/sigillumpro.svg?style=social&label=Follow%20%40SigillumPro)](https://twitter.com/sigillumpro)
 
 ## Overview
