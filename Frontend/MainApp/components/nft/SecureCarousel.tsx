@@ -42,7 +42,7 @@ export default function SecureCarousel() {
           </div>
         ))}
       </div>
-
+        
       {/* Tailwind custom styles below */}
       <style jsx>{`
         .animate-marquee {

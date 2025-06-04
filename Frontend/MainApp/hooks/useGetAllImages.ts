@@ -49,9 +49,9 @@ export function useGetAllImages(
   return useQuery<MediaRecord[], Error>({
     queryKey: ["nfts", { isActiveOnly, owner }],
     queryFn: async () => {
-      if (isActiveOnly && owner) {
-        return getActiveNfts(owner);
-      }
+      // if (isActiveOnly && owner) {
+      //   return getActiveNfts(owner);
+      // }
       const response = await axiosInstance.get("/all");
       return response.data;
     },

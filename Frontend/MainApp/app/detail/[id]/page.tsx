@@ -117,7 +117,7 @@ export default function Detail() {
                           shortenAddress(data.user.walletAddress)}
                       </span>
                       <span className="text-xs bg-primary/10 w-fit text-primary px-2 py-0.5 rounded">
-                        Owner
+                        Creator
                       </span>
                     </div>
                   </div>

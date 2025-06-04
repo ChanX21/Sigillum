@@ -3,7 +3,7 @@ import { shortenAddress } from "@/utils/shortenAddress";
 import { FaRegCopy } from "react-icons/fa";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { IoMdCloudUpload } from "react-icons/io";
 import { AlertCircle, CheckCircle2, Shield, UploadCloud } from "lucide-react";
 import { initSocket } from "@/lib/socket";
@@ -12,6 +12,7 @@ import { Card } from "../ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { GiWalrusHead } from "react-icons/gi";
 import OptimizedImage from "../shared/OptimizedImage";
+import { useAuthenticateImage } from "@/hooks/useAuthenticateImage";
 
 interface NFTDetailsProps {
   step: number;
@@ -58,14 +59,17 @@ const stepProgress = {
   "image:softListed": 100,
 };
 
-export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) => {
+export const NFTDetails = forwardRef((props: NFTDetailsProps, ref) => {
+  const { step, compact = false, setStep } = props;
   const { sessionId: token } = useImageAuthStore() as AuthState;
+
   const error = useImageAuthStore((s) => s.error);
   const [status, setStatus] = useState('')
   const [statusStep, setStatusStep] = useState(0)
   const [completed, setCompleted] = useState<boolean>(false);
   const [requestFailed, setRequestFailed] = useState(false)
   const [progress, setProgress] = useState(0);
+
   const [details, setDetails] = useState<
     { label: string; value: string | undefined }[]
   >([
@@ -79,11 +83,32 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
       value: '',
     },
     {
-      label: "Vector Url",
+      label: "Blob Id",
       value: '',
     },
   ]);
+  const resetComponent = () => {
 
+    setStatus('');
+    setStatusStep(0);
+    setCompleted(false);
+    setProgress(0);
+    setImageUrl('');
+    setDetails([
+      { label: "Token Id", value: '' },
+      { label: "IPFS URL", value: '' },
+      { label: "Status", value: '' },
+      { label: "Blob Id", value: '' },
+    ]);
+
+    // Also reset Zustand state
+    useImageAuthStore.getState().setError(null);
+    useImageAuthStore.getState().setSessionId(null);
+    useImageAuthStore.getState().reset();
+  };
+  useImperativeHandle(ref, () => ({
+    reset: resetComponent
+  }));
 
   const [imageUrl, setImageUrl] = useState('')
 
@@ -113,8 +138,8 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
       setDetails((prev) => {
         // Check if the detail with the label already exists
         const newDetail = {
-          label: "Vector Url",
-          value: `https://walruscan.com/testnet/blob/${data.blobId}`,
+          label: "Blob Id",
+          value: `${data.blobId}`,
         };
         // Update if exists, otherwise add new
         if (prev.some((detail) => detail.label === newDetail.label)) {
@@ -127,10 +152,11 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
     });
     socket.on("image:failed", (data) => {
       console.log("Failed: ", data?.message)
-      setRequestFailed(true)
+
       handleProgress("image:authenticate")
       setStatusStep(0)
-      useImageAuthStore.getState().setError(null)
+      resetComponent()
+      setRequestFailed(true)
       socket.disconnect();
     });
 
@@ -181,7 +207,9 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
         return [...prev, newDetail];
       });
     });
-
+    return () => {
+      socket.disconnect()
+    }
   }, [token])
 
   useEffect(() => {
@@ -196,7 +224,7 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
     setRequestFailed(false);
   }, [step]);
 
-  
+
   const handleCopy = async (text: string, label: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
@@ -233,6 +261,7 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
         </AnimatePresence>
         <Button onClick={() => {
           setStep(0)
+          resetComponent()
         }}>Try Again</Button>
       </Card >
     )
@@ -310,7 +339,7 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
                     {[
                       "Token Id",
                       "IPFS URL",
-                      "Vector Url",
+                      "Blob Id",
                     ].includes(detail.label)
                       ? shortenAddress(detail.value, 10, 10)
                       : detail.value}
@@ -347,7 +376,7 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
                         "IPFS URL",
                         "SHA-256 Hash",
                         "Perceptual Hash",
-                        "Vector Url",
+                        "Blob Id",
                       ].includes(detail.label)
                         ? shortenAddress(detail.value, 10, 10)
                         : detail.value}
@@ -392,4 +421,4 @@ export const NFTDetails = ({ step, compact = false, setStep }: NFTDetailsProps) 
       </div>
     </>
   );
-};
+});

@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { BidForm } from "./BidForm";
 import { MediaRecord } from "@/types";
 import { ListingDataResponse } from "@/types";
+import { useWallet } from "@suiet/wallet-kit";
 
 export function ContractForm({
   nft,
@@ -34,6 +35,7 @@ export function ContractForm({
   nft: MediaRecord;
   listingDetails: ListingDataResponse | null;
 }) {
+  const wallet = useWallet();
   const [open, setOpen] = React.useState(false);
   const isDesktop = useMediaQuery({
     query: "(min-width: 1224px)",
@@ -47,7 +49,10 @@ export function ContractForm({
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         {!sold && (
-          <DialogTrigger asChild>
+          <DialogTrigger
+            asChild
+            disabled={wallet.address !== listingDetails?.owner}
+          >
             <div className="flex gap-3 mb-8">
               <Button className="bg-black text-white px-6 py-2 rounded-none hover:bg-gray-800 transition-colors flex-1">
                 Place Bid
@@ -67,6 +72,7 @@ export function ContractForm({
             nft={nft}
             setOpen={setOpen}
             highestBid={listingDetails?.highestBid}
+            owner={listingDetails?.owner}
           />
         </DialogContent>
       </Dialog>
@@ -97,6 +103,7 @@ export function ContractForm({
             nft={nft}
             setOpen={setOpen}
             highestBid={listingDetails?.highestBid}
+            owner={listingDetails?.owner}
           />
         </div>
         <DrawerFooter className="pt-2">
@@ -106,21 +113,5 @@ export function ContractForm({
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
-  );
-}
-
-function ProfileForm({ className }: React.ComponentProps<"form">) {
-  return (
-    <form className={cn("grid items-start gap-4", className)}>
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input type="email" id="email" defaultValue="shadcn@example.com" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="username">Username</Label>
-        <Input id="username" defaultValue="@shadcn" />
-      </div>
-      <Button type="submit">Save changes</Button>
-    </form>
   );
 }

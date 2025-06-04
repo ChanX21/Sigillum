@@ -46,29 +46,35 @@ export default function BeforeAfterSlide({
   }
 
   const handleTouchMove = (e: TouchEvent) => {
-    if (!containerRef.current) return
+    if (!isDragging || !containerRef.current) return
 
-    e.preventDefault()
-    const touch = e.touches[0]
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width))
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
+  const touch = e.touches[0]
+  const rect = containerRef.current.getBoundingClientRect()
+  const x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width))
+  const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
 
-    setSliderPosition(percentage)
+  setSliderPosition(percentage)
   }
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove)
-    window.addEventListener("mouseup", handleMouseUp)
-    window.addEventListener("touchmove", handleTouchMove, { passive: false })
-    window.addEventListener("touchend", handleMouseUp)
+    if (!isDragging) return
 
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove)
-      window.removeEventListener("mouseup", handleMouseUp)
-      window.removeEventListener("touchmove", handleTouchMove)
-      window.removeEventListener("touchend", handleMouseUp)
-    }
+  const handleTouchMoveWithPrevent = (e: TouchEvent) => {
+    e.preventDefault() // allowed only because passive is false
+    handleTouchMove(e)
+  }
+
+  window.addEventListener("mousemove", handleMouseMove)
+  window.addEventListener("mouseup", handleMouseUp)
+  window.addEventListener("touchmove", handleTouchMoveWithPrevent, { passive: false })
+  window.addEventListener("touchend", handleMouseUp)
+
+  return () => {
+    window.removeEventListener("mousemove", handleMouseMove)
+    window.removeEventListener("mouseup", handleMouseUp)
+    window.removeEventListener("touchmove", handleTouchMoveWithPrevent)
+    window.removeEventListener("touchend", handleMouseUp)
+  }
   }, [isDragging])
 
   return (

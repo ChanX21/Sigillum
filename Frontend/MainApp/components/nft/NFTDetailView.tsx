@@ -27,6 +27,13 @@ import { RelistForm } from "../shared/RelistForm";
 import { RelistModal } from "../shared/RelistModal";
 import { client } from "@/lib/suiClient";
 import { Clock } from "lucide-react";
+import Image from "next/image";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 interface NFTDetailViewProps {
   nft: MediaRecord;
@@ -83,7 +90,7 @@ export const NFTDetailView = ({
         MODULE_NAME,
         MARKETPLACE_ID,
         nft.blockchain.listingId,
-        address
+        address,
       );
 
       const stakersCount = await getStakersCount(
@@ -92,7 +99,7 @@ export const NFTDetailView = ({
         MODULE_NAME,
         MARKETPLACE_ID,
         nft.blockchain.listingId,
-        address
+        address,
       );
 
       const bidCount = await getBidCount(
@@ -101,7 +108,7 @@ export const NFTDetailView = ({
         MODULE_NAME,
         MARKETPLACE_ID,
         nft.blockchain.listingId,
-        address
+        address,
       );
 
       const userStake = await getUserStake(
@@ -111,7 +118,7 @@ export const NFTDetailView = ({
         MARKETPLACE_ID,
         nft.blockchain.listingId,
         address,
-        address
+        address,
       );
 
       if (stakersCount) {
@@ -125,7 +132,7 @@ export const NFTDetailView = ({
       if (userStake) {
         setUserStake(userStake);
         const result = await convertMistToSuiAndUsd(
-          Number(userStake.stakeAmount)
+          Number(userStake.stakeAmount),
         );
         setConvertedUserStake(result);
       }
@@ -135,7 +142,6 @@ export const NFTDetailView = ({
         setListingDetails(details as unknown as ListingDataResponse);
         const result = await convertMistToSuiAndUsd(Number(details.highestBid));
         setConverted(result);
-        //console.log("Listing details:", details);
       }
     } catch (err) {
       console.error("Error fetching listing details:", err);
@@ -155,21 +161,12 @@ export const NFTDetailView = ({
     try {
       setUnstaking(true);
 
-      // Log information for debugging
-      console.log("Unstaking with:", {
-        address,
-        listingId: nft.blockchain.listingId,
-        marketplaceId: MARKETPLACE_ID,
-        packageId: PACKAGE_ID,
-        moduleName: MODULE_NAME,
-      });
-
-      // Use the new helper function to build the transaction
+      // Use the helper function to build the transaction
       const transaction = buildWithdrawStakeTx(
         MARKETPLACE_ID,
         nft.blockchain.listingId,
         PACKAGE_ID,
-        MODULE_NAME
+        MODULE_NAME,
       );
 
       // Execute the transaction
@@ -195,15 +192,15 @@ export const NFTDetailView = ({
           errorMessage.includes("borrow_child_object_mut")
         ) {
           toast.error(
-            "Failed to unstake: The listing may not exist or you don't have permission to stake on it."
+            "Failed to unstake: The listing may not exist or you don't have permission to stake on it.",
           );
         } else if (errorMessage.includes("Dry run failed")) {
           toast.error(
-            "Failed to unstake: Transaction simulation failed. The listing may not be active."
+            "Failed to unstake: Transaction simulation failed. The listing may not be active.",
           );
         } else {
           toast.error(
-            `Failed to unstake: ${errorMessage.substring(0, 100)}...`
+            `Failed to unstake: ${errorMessage.substring(0, 100)}...`,
           );
         }
         return;
@@ -222,10 +219,6 @@ export const NFTDetailView = ({
 
   //console.log(nft);
   console.log(listingDetails);
-  // console.log("stakersCount", stakersCount);
-  // console.log("bidCount", bidCount);
-
-  // console.log("userStake", userStake);
 
   const sold =
     !listingDetails?.active &&
@@ -249,9 +242,6 @@ export const NFTDetailView = ({
   return (
     <div className="space-y-8">
       <div>
-        {/* <h1 className="text-2xl font-semibold mb-4 border-b border-stone-300">
-          {metadata?.name || ""}
-        </h1> */}
         <div className="flex items-center ">
           <div className="bg-primary rounded-full p-1" />
           <div className=" text-primary px-3 py-1  text-sm">
@@ -273,7 +263,6 @@ export const NFTDetailView = ({
                 ) : error ? (
                   <p className="text-red-500 text-sm">{error}</p>
                 ) : (
-
                   <div className="flex flex-col">
                     <p className="text-2xl font-semibold">
                       {listingDetails ? `${converted.sui}` : "SUI 0.00"}
@@ -282,7 +271,6 @@ export const NFTDetailView = ({
                       {listingDetails ? `${converted.usd}` : "USD 0.00"}
                     </p>
                   </div>
-
                 )}
               </div>
             </div>
@@ -307,6 +295,7 @@ export const NFTDetailView = ({
               fetchListingDetails={fetchListingDetails}
               userStake={userStake}
               highestBid={listingDetails?.highestBid}
+              owner={listingDetails?.owner}
             />
           )}
       </div>
@@ -396,7 +385,7 @@ export const NFTDetailView = ({
               <span>SUI</span>
             </div>
           </div>
-          
+
           {/* <div className="flex justify-between items-center py-2 border-t border-stone-300">
             <span className="text-gray-600">Owner</span>
             <div className="flex justify-end items-center gap-2">
@@ -446,7 +435,10 @@ export const NFTDetailView = ({
                 target="_blank"
                 className="hover:underline"
               >
-                <span className="cursor-pointer flex items-center gap-2"> View on Ipfs <svg
+                <span className="cursor-pointer flex items-center gap-2">
+                  {" "}
+                  View on Ipfs{" "}
+                  <svg
                     className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
@@ -460,26 +452,38 @@ export const NFTDetailView = ({
                     />
                   </svg>
                 </span>
-                  
               </Link>
-              
             </div>
           )}
 
           <div className="flex justify-between items-center py-2 border-t border-b border-stone-300">
-            <span className="text-gray-600">Walrus</span>
+            <span className="text-gray-600">Blob Id</span>
             {nft.vector.blobId ? (
-              <Link
-                href={`https://walruscan.com/testnet/blob/${nft.vector.blobId}`}
-                target="_blank"
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <GiWalrusHead />
-                <span>{shortenAddress(nft.vector.blobId)}</span>
-              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(nft.vector.blobId);
+                      toast.success("Copied BlobId Successfully");
+                    }}
+                  >
+                    <Image
+                      src={"/tusky-wink.svg"}
+                      alt="Tusky Io"
+                      width={17}
+                      height={15}
+                    />
+                    <span>{shortenAddress(nft.vector.blobId)}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy to clipboard</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <div className="flex items-center gap-2 text-sm cursor-pointer">
-                <Clock width={15}/>
+                <Clock width={15} />
                 Available in 1 hour.
               </div>
             )}

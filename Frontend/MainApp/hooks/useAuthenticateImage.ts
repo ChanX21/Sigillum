@@ -3,11 +3,13 @@ import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
 import { useImageAuthStore } from "../store/useImageAuthStore";
 import { AxiosError } from "axios";
+import { useRef } from "react";
 
 export function useAuthenticateImage() {
     const setResult = useImageAuthStore((s) => s.setResult);
     const setError = useImageAuthStore((s) => s.setError);
     const setSessionId = useImageAuthStore((s) => s.setSessionId);
+
     return useMutation({
         mutationKey: ["authenticate-image"],
         mutationFn: ({ image, name, description }: { image: File, name: string, description: string }) => {
@@ -15,7 +17,10 @@ export function useAuthenticateImage() {
             formData.append("image", image);
             formData.append('metadata', JSON.stringify({ name, description }));
 
-            setError(''); 
+            
+            // Ensure error state is cleared before sending the request
+            setError('');
+
             return axiosInstance
                 .post(`/authenticate`, formData, {
                     headers: {
@@ -28,10 +33,15 @@ export function useAuthenticateImage() {
                     const axiosErr = error as AxiosError<{ message?: string }>;
                     const message =
                         axiosErr.response?.data?.message || axiosErr.message || "Upload failed";
+                    // Check if aborted
+                    if (axiosErr.name === "CanceledError" || message === "canceled") {
+                        console.log("Securing Image Aborted");
+                    }
+                    console.log(error)
                     throw new Error(message);
                 })
         },
-        onMutate:() => {
+        onMutate: () => {
             setError('')
         },
         onSuccess: (data) => {
@@ -39,16 +49,17 @@ export function useAuthenticateImage() {
             setSessionId(data.sessionId) // Store in Zustand
         },
         onError: (error: AxiosError) => {
-
             // Try to extract the error message in a robust way
             const errorMessage =
                 (error.response?.data as any)?.message ||
                 (error.response?.data as any)?.error ||
                 error.message ||
                 "Unknown error";
+            console.log("On Error", errorMessage)
 
             setError(errorMessage);
         },
     });
+
 }
 
