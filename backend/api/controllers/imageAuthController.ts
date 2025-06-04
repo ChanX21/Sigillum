@@ -214,7 +214,7 @@ export const uploadImage = async (req: FileRequest, res: Response): Promise<void
       },
       limit: 5,
     });
-    if(similarImages.points.filter((image: any) => image.score > 0.85).length > 0) {
+    if(similarImages.points.filter((image: any) => image.score > 0.94).length > 0) {
       res.status(400).json({ message: 'Image already authenticated' });
       return;
     }
