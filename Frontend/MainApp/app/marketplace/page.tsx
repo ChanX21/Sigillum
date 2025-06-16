@@ -1,4 +1,6 @@
 "use client";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import NftAuctionCard from "@/components/nft/nftAuctionCard";
 import NftAuctionCardPreview from "@/components/nft/NftAuctionCardPreview";
 import { Footer } from "@/components/shared/Footer";
@@ -7,6 +9,14 @@ import InfiniteScrollingCarousel from "@/components/shared/InfiniteScrollingCaro
 import InfiniteScrollingCarouselReverse from "@/components/shared/InfiniteScrollingCarouselReverse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useGetAllImages } from "@/hooks/useGetAllImages";
 import { MediaRecord } from "@/types";
 import { useWallet } from "@suiet/wallet-kit";
@@ -22,6 +32,21 @@ export default function MarketplacePage() {
     true,
     wallet.address
   );
+  
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    // Check if user has already seen the disclaimer
+    const hasSeenDisclaimer = localStorage.getItem('sigillum_marketplace_disclaimer_seen');
+    if (!hasSeenDisclaimer && isAuthenticated) {
+      setShowDisclaimer(true);
+    }
+  }, [isAuthenticated]);
+
+  const handleAgreeToDisclaimer = () => {
+    localStorage.setItem('sigillum_marketplace_disclaimer_seen', 'true');
+    setShowDisclaimer(false);
+  };
 
   if (isLoading) {
     return null;
@@ -34,6 +59,64 @@ export default function MarketplacePage() {
   return (
     <>
       <Header />
+
+      <Dialog open={showDisclaimer} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-2xl [&>button]:hidden">
+          <div className="relative w-full h-48 mb-6 rounded-lg overflow-hidden">
+            <Image
+              src="/classicpic.jpg"
+              alt="Classical Art"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-2xl font-bold text-center mb-2">
+              Testnet Notice
+            </DialogTitle>
+            <DialogDescription className="text-center text-base leading-relaxed">
+              <div className="space-y-4 text-gray-600">
+                <p>
+                  <strong>Important:</strong> This application is currently running on testnet and is for testing purposes only.
+                </p>
+                <p>
+                  Any NFTs authenticated or transactions made within this app are <strong>not considered valid</strong> on the mainnet and are purely for demonstration and testing.
+                </p>
+                <p>
+                  Please <strong>wait for our mainnet release</strong> which will be available soon for full functionality and real asset authentication.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Thank you for your patience as we continue to improve Sigillum!
+                </p>
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                  <p className="text-sm text-gray-700">
+                    <strong>Stay Updated:</strong> Follow us on X/Twitter{" "}
+                    <a 
+                      href="https://twitter.com/sigillumpro" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 font-medium underline"
+                    >
+                      @sigillumpro
+                    </a>
+                    {" "}for the latest updates on our mainnet launch!
+                  </p>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center mt-6">
+            <Button 
+              onClick={handleAgreeToDisclaimer}
+              className="w-full sm:w-auto px-8 py-2 bg-black text-white hover:bg-gray-800 font-medium"
+            >
+              I Understand, Proceed to Marketplace
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex flex-col w-full min-h-screen pt-24 px-4 md:px-10">
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
