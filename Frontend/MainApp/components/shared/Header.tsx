@@ -82,8 +82,8 @@ export const Header = () => {
           >
             <Image
               alt="Sigillum"
-              width={140}
-              height={30}
+              width={201.6}
+              height={43.2}
               src={"/icons/SIGILLUM_LOGO.png"}
             />
           </Link>
